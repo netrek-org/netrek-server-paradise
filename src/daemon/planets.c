@@ -513,9 +513,9 @@ pbomb(void)
 
 	    l = &planets[p->p_planet];	/* get planet being bombed */
 
+	    /* if he's non-hostile, quit bombing */
 	    if ((!((p->p_swar | p->p_hostile) & l->pl_owner))
 		&& (l->pl_owner != NOBODY)) {
-		/* if he's non-hostile, quit bombing */
 		p->p_flags &= ~PFBOMB;
 		continue;
 	    }
@@ -542,7 +542,7 @@ pbomb(void)
 
 	    p->p_swar |= l->pl_owner;	/* set player at war w/ owner */
 
-	    if(CAN_BOMB(p, ARMIES))
+	    if (CAN_BOMB(p, ARMIES))
 	    {
 	      rnd = (lrand48() % 50) + p->p_ship.s_bomb;/* pick random number */
 	      rnd = (int) ((float) rnd / 33.0 + 0.5);	/* calc armies bombed */
@@ -568,7 +568,7 @@ pbomb(void)
             if(!configvals->resource_bombing)
 	      continue;
             
-	    if(CAN_BOMB(p, FUEL))
+	    if (CAN_BOMB(p, FUEL))
 	    {
 	      if(configvals->slow_bomb)
 		l->pl_tfuel -= rnd * 5;	/* knock fuel timer down */
@@ -583,7 +583,7 @@ pbomb(void)
 	      }
 	    }
 	    
-            if(CAN_BOMB(p, AGRI))
+            if (CAN_BOMB(p, AGRI))
 	    {
 	      if(configvals->slow_bomb)
 		l->pl_tagri -= rnd * 4;	/* attack the agri timer */
@@ -598,7 +598,7 @@ pbomb(void)
 	      }
 	    }
 
-	    if((CAN_BOMB(p, SHIPYARD) && (l->pl_flags & PLSHIPYARD)) ||
+	    if ((CAN_BOMB(p, SHIPYARD) && (l->pl_flags & PLSHIPYARD)) ||
 	       (CAN_BOMB(p, REPAIR) && !(l->pl_flags & PLSHIPYARD)) ||
 	       (CAN_BOMB(p, REPAIR) && CAN_BOMB(p, SHIPYARD)))
 	    {
