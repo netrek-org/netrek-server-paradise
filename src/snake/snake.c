@@ -94,7 +94,7 @@ static void printsnakeUsage(void) {
     printf("Options:\n\
   -p		-- patrol\n\
   -n		-- noSmush (snake is not vindictive)\n\
-  -s		-- noSmush (snake is vindictive)\n\
+  -s		-- Smush (snake is vindictive)\n\
   -g # #	-- guardian: -g <planet1> <planet2>\n\
 		   (must be 2 planets listed, by number).\n\
   -b		-- berserk\n\

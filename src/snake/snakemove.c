@@ -695,8 +695,8 @@ whokilledme(struct plasmatorp *pt)
     for (i = 0, j = &phasers[i]; i < MAXPLAYER; i++, j++) {
 	if (j->ph_status == PHHIT2) {
 	    if (debug) {
-		fprintf(stderr, "found PHHIT2 from %d at %d,%d\n", players[i].p_no,
-			j->ph_x, j->ph_y);
+		fprintf(stderr, "found PHHIT2 from %d at %d,%d\n", 
+			players[i].p_no, j->ph_x, j->ph_y);
 		fprintf(stderr, "plasma is at %d,%d\n", pt->pt_x, pt->pt_y);
 		fprintf(stderr, "fl is at %d,%d\n", fl->pt_x, fl->pt_y);
 		fprintf(stderr, "fr is at %d,%d\n", fr->pt_x, fr->pt_y);
@@ -837,8 +837,9 @@ check_explode(void)
 	else {
 	    /* explode all torps in sequence, 1 per cycle until all gone */
 	    for (j = perfs[0]; j; j = (j == perfs[1] ? NULL : perfs[1])) {
-		for (l = (j == perfs[0]) ? 0 : length, i = j->p_no * MAXTORP, k = &torps[i];
-		     i < j->p_no * MAXTORP + length; i++, k++, l++) {
+		for (l = (j == perfs[0]) ? 0 : length, i = j->p_no * MAXTORP, 
+		     k = &torps[i]; i < j->p_no * MAXTORP + length; 
+		     i++, k++, l++) {
 		    if (l == explodetorps && k->t_status != TEXPLODE &&
 			k->t_status != TFREE) {
 			k->t_status = TEXPLODE;
