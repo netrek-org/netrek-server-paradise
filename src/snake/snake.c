@@ -123,6 +123,7 @@ int main(int argc, char **argv)
     char    tlet;
     int     usage = 0;
     double  frequency = 10;	/* default of 10 updates per second */
+    char   *rf;
 
     argv0 = argv[0];
     tno = -1;
@@ -247,6 +248,10 @@ int main(int argc, char **argv)
 #endif
 
 /*   readsysdefaults();*/
+
+    /* init ranks data */
+    rf = build_path(RANKS_FILE);
+    init_data(rf);
 
     /* init trig tables */
     init_trig();

@@ -671,9 +671,11 @@ main(int argc, char **argv)
 	    glfd = open(paths, O_RDWR | O_CREAT, 0744);	/* try to create file */
 	}
 	else {
-	    if (read(glfd, (char *) status, sizeof(struct status)) !=
+	    int nr;
+
+	    if ((nr = read(glfd, (char *) status, sizeof(struct status))) !=
 		sizeof(struct status)) {	/* try to read file */
-		fprintf(stderr, "Global file wrong size.  Resetting all stats\n");
+		fprintf(stderr, "Global file wrong size (read %d, expected %d).  Resetting all stats\n", nr, sizeof(struct status));
 		memset((char *) status, 0, sizeof(struct status));
 	    }
 	}

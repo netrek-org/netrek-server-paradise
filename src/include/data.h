@@ -100,7 +100,7 @@ extern int commMode;		/* UDP */
 extern int blk_metaserver;
 
 extern double oldmax;
-extern double Sin[], Cos[];
+extern double *Sin, *Cos;
 
 #define VIEWS 16
 extern char pseudo[PSEUDOSIZE];

@@ -201,7 +201,7 @@ openmem(int code, int leagueflag)
 	shmctl(shmid, IPC_SET, &smbuf);
     }
     sharedMemory = (struct memory *) shmat(shmid, (char *) 0, 0);
-    if (sharedMemory == (struct memory *) - 1) {
+    if (sharedMemory == (struct memory *)(-1)) {
 	perror("shared memory");
 	exit(1);
     }

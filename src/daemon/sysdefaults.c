@@ -60,7 +60,7 @@ static char *systemtypes[SHIPS_SYSTEMS] = {
 
 
 
-extern struct field_desc *ship_fields;
+extern struct field_desc ship_fields[];
 
 
 
@@ -206,8 +206,8 @@ shipdefs(int s, FILE *f)
     while (1) {			/* loop until break */
 	if (0 == fgets(buf, sizeof(buf), f))	/* get a string of input */
 	    break;		/* if end of file then break */
-	if (buf[0] == '!')
-	    continue;		/* skip lines that begin with ! */
+	if (buf[0] == '!' || buf[0] == '#')
+	    continue;		/* skip lines that begin with ! or # */
 	len = strlen(buf);
 	if (buf[len - 1] == '\n')	/* blast trailing newline */
 	    buf[--len] = 0;
@@ -221,9 +221,9 @@ shipdefs(int s, FILE *f)
 	sscanf(buf, "%s %s %s", sdesig, field_name, value);
 
 	for (i = 0; ship_fields[i].name; i++) {	/* loop through field names */
-	    if (strcmp(field_name, ship_fields[i].name) == 0 ||	/* found field? */
+	    if (strcmp(field_name, &(ship_fields[i].name[0])) == 0 ||	/* found field? */
 		(strncmp(field_name, "s_", 2) == 0 &&
-		 strcmp(field_name + 2, ship_fields[i].name) == 0))
+		 strcmp(field_name + 2, &(ship_fields[i].name[0])) == 0))
 		break;
 	}
 	if (ship_fields[i].name == 0) {	/* if we did not find name */

@@ -47,7 +47,7 @@ all:
 clean:
 	@cd src && $(MAKE) clean
 
-install:
+install: all
 	@echo "*** Making install directory hierarchy"
 	@if test ! -d $(prefix); then mkdir $(prefix); fi
 	@if test ! -d $(prefix)/etc; then mkdir $(prefix)/etc; fi

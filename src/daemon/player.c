@@ -766,7 +766,6 @@ domove(struct player *j)	/* the player to move */
     float   t;			/* temp float */
     int     k;			/* looping var */
 
-
     /* warp drive */
     if (j->p_desspeed <= j->p_speed && j->p_speed <= j->p_ship.s_imp.maxspeed)
 	j->p_flags &= ~(PFWARP | PFAFTER);
@@ -936,6 +935,7 @@ domove(struct player *j)	/* the player to move */
 	    j->p_speed = maxspeed;
 
     }
+
     j->p_x += (double) j->p_speed * Cos[j->p_dir] * WARP1;	/* adjust coords */
     j->p_y += (double) j->p_speed * Sin[j->p_dir] * WARP1;
     move_player(j->p_no, j->p_x, j->p_y, 1);

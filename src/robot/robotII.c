@@ -321,6 +321,7 @@ main(int argc, char **argv)
     int     bteam=0;
     int     pno;
     int     class;		/* ship class 8/9/91 TC */
+    char    *rf;
 
     argv0 = argv[0];
     srand48(time(NULL) + getpid());
@@ -445,6 +446,10 @@ main(int argc, char **argv)
 
 
     }				/* end for */
+
+    /* init ranks */
+    rf = build_path(RANKS_FILE);
+    init_data(rf);
 
     /* init trig tables */
     init_trig();
