@@ -317,14 +317,16 @@ growplanets(void)
     int     i;			/* looping var */
     struct planet *p;		/* to point within planets */
     int     add;		/* number to add to timers */
-    int     sb_orbits = 0;	/* a building ship orbits */
-    int     osr;
+    char   *sb_op;		/* keep track of orbiting SBs */
+    char   sb_orbits[NUMPLANETS];
 
     if (!status->tourn)
 	return;
 
     if (!configvals->resource_bombing)
 	return;
+
+    memset(sb_orbits, 0, NUMPLANETS);
 
     for (i = 0; i < MAXPLAYER; i++) {	/* go through all players */
 	struct player *py = &players[i];	/* and look for orbiting */
@@ -336,10 +338,11 @@ growplanets(void)
 	p->pl_tfuel += 20;	/* give growth rate a boost */
 	p->pl_tagri += 30;	/* NOTE: change these if PLG consts */
 	p->pl_tshiprepair += 50;/* change */
-	sb_orbits = 1;
+	sb_orbits[py->p_planet] = 1;
     }
     p = &planets[0];		/* start with first planet */
-    for (i = 0; i < NUMPLANETS; i++, p++) {	/* through all planets */
+    sb_op = &sb_orbits[0];
+    for (i = 0; i < NUMPLANETS; i++, p++, sb_op++) {  /* through all planets */
 	if (p->pl_owner == NOBODY)	/* if independent then */
 	    continue;		/* no growth */
 	add = p->pl_armies / 2;	/* rate based on armies */
@@ -364,15 +367,18 @@ growplanets(void)
 	    tlog_res(p, "AGRI");
 	}
 
-        osr = p->pl_tshiprepair;	/* save old value */
-	p->pl_tshiprepair += add;	/* add to ship/repair timer */
-
-        if(p->pl_tshiprepair >= PLGREPAIR)
+        /* add to SY timer only on configval set and sb orbiting,
+	   otherwise clamp at last value, or RPR if auto-grown */
+        if(configvals->shipyard_built_by_sb_only && !(*sb_op) &&
+	   p->pl_tshiprepair + add >= PLGREPAIR)
 	{
-	  /* if only SB builds shipyard, clamp timer if SB isn't orbiting */
-	  if(configvals->shipyard_built_by_sb_only && !sb_orbits)
-	    p->pl_tshiprepair = (osr < PLGREPAIR ? PLGREPAIR : osr);
+	  /* transition from just below PLGREPAIR -> PLGREPAIR */
+	  if(p->pl_tshiprepair < PLGREPAIR &&
+	     p->pl_tshiprepair + add >= PLGREPAIR)
+	    p->pl_tshiprepair = PLGREPAIR;
 	}
+	else
+	  p->pl_tshiprepair += add;
 
 	if ((!(p->pl_flags & PLREPAIR))	/* if not repair */
 	    &&(p->pl_flags & PLMETAL)	/* and metal deposits */

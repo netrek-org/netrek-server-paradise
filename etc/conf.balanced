@@ -49,6 +49,8 @@ RPRDURINGWARP=0
 # ROBOTSTATS=1			# robots accumulate stats.
 # LOSING_ADVANTAGE=0.0		# give losing team an advantage?  If so,
 #                               # set this >= 1.0.  Typical value is 2.0.
+# should only SBs build shipyards (i.e. planets not do it on their own)?
+SHIPYARD_BUILT_BY_SB_ONLY=1
 # max # of planets enemy can still have
 # for victory by other team.  Setting
 # VICTORY_PLANETS=0 ==> old genocide code,
