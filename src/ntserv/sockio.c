@@ -29,6 +29,7 @@ notice appear in all copies.
 
 #include <errno.h>
 #include <netdb.h>
+#include <sys/select.h>
 #include "config.h"
 #include "proto.h"
 #include "ntserv.h"

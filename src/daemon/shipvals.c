@@ -35,12 +35,7 @@ notice appear in all copies.
 
 
  /* This defines the core flags for a normal ship */
-#define SFNCORE  	\
-	/*SFNCANDOCK|*/SFNCANORBIT | SFNARMYNEEDKILL|SFNCANWARP|SFNHASPHASERS|SFNARMYNEEDKILL
-
-
-
-
+#define SFNCORE (SFNCANORBIT | SFNARMYNEEDKILL | SFNCANWARP | SFNHASPHASERS)
 
 
 /*-------------------------------INTERNAL FUNCTONS------------------------*/
