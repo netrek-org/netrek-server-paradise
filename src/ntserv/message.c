@@ -76,6 +76,7 @@ enum token_names_e {
     NUKEGAMETOK,
     FREESLOTTOK,
     ROBOTTOK,
+    SNAKETOK,
     TOURNTOK,
     NEWGALAXY,
     SHIPTIMERTOK,
@@ -802,6 +803,7 @@ parse_control(char *str)
 	{"freeslot", FREESLOTTOK, "freeslot %p"},
 	{"player", PLAYERTOK, "player ..."},
 	{"robot", ROBOTTOK, "robot [args]"},
+	{"snake", SNAKETOK, "snake [args]"},
 	{"quiet", QUIETTOK, "quiet"},
 	{"nukegame", NUKEGAMETOK, "nukegame"},
 	{"restart", RESTARTTOK, "restart"},
@@ -909,6 +911,42 @@ parse_control(char *str)
 	    }
 	    else {
 		sprintf(buf, "Robot forked (pid %d) with arguments %s",
+			pid, nexttoken);
+		respond(buf, 1);
+	    }
+	}
+	return 1;
+
+    case SNAKETOK:
+	{
+	    int     pid;
+	    char        *s;
+
+	    pid = fork();
+	    if (pid == 0) {
+		char    *argv[40];
+		argv[0] = build_path(SNAKE);
+
+		s = nexttoken;
+		for (i=1; 1; i++) {
+		    int size=80;
+		    argv[i] = malloc(size);
+		    if (!get_one_token(s, argv[i], size, &s))
+			break;
+		    realloc(argv[i], strlen(argv[i])+1);
+		}
+		free(argv[i]);
+		argv[i] = 0;
+
+		execvp(argv[0], argv);
+		fprintf(stderr, "Ack! Unable to exec %s\n", argv[0]);
+                exit(1);
+	    }
+	    else if (pid < 0) {
+		respond("Unable to fork snake", 0);
+	    }
+	    else {
+		sprintf(buf, "Snake forked (pid %d) with arguments %s",
 			pid, nexttoken);
 		respond(buf, 1);
 	    }

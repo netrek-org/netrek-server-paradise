@@ -195,6 +195,7 @@ notice appear in all copies.
 #define NTSERV          "bin/ntserv"
 #define DAEMON		"bin/daemonII"
 #define ROBOT		"bin/robotII"
+#define SNAKE		"bin/snake"
 #define LOGFILENAME     "logs/server.log"
 #define CONQFILE	"logs/conquer"
 #define SYSDEF_FILE     "etc/conf.sysdef"
