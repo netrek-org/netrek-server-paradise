@@ -27,6 +27,7 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
+
 #include <ctype.h>
 #include <signal.h>
 #include "config.h"
@@ -34,11 +35,13 @@ notice appear in all copies.
 #include "data.h"
 #include "shmem.h"
 
+
 /* from snakemove.c */
 RETSIGTYPE snakemove();
 RETSIGTYPE exitSnake();
 
 struct player *perfs[2];
+static struct itimerval udt;		/* derived from frequency RF */
 int     num_perfs = 2;
 int     debug = 0;
 int     target = -1;
@@ -49,14 +52,12 @@ int     plan_guard = 0;		/* KAO */
 int     planet1, planet2;	/* KAO */
 int     team1 = 0, team2 = 0;
 int     length = MAXTORP;	/* how many pairs of torps in the snake */
-
-static struct itimerval udt;		/* derived from frequency RF */
 int     lastm;
 int     tno = 0;
 
-static int 
-choose_team(int team)
-{
+
+/* sets up team stuff */
+static int choose_team(int team) {
     if (tno < 0)
 	tno = team;
     if (!team1)
@@ -66,56 +67,54 @@ choose_team(int team)
     return 1;
 }
 
-static int
-config(void)
-{
+
+/* sets up the configuration for the snake */
+static int config(void) {
     /* mostly not used */
     myship->s_phaser.cost = 0;
     myship->s_torp.cost = 0;
     myship->s_cloakcost = 0;
-/*    myship->s_torp.fuse = MAX_SHORT;*/
     myship->s_torp.fuse = 32767;
     myship->s_torp.damage = 10;
     myship->s_plasma.damage = 50;
     myship->s_plasma.cost = 0;
     myship->s_plasma.aux = 0;
     myship->s_plasma.speed = 10;
-/*    myship->s_plasma.fuse = MAX_SHORT;*/
+    myship->s_plasma.fuse = 32767;
     myship->s_torp.fuse = 32767;
     myship->s_wpncoolrate = 100;
     myship->s_egncoolrate = 100;
     return 1;
-}
+}  /* end config() */
 
-/*---------------------[ prints the usage of snake ]---------------------*/
 
-static void
-printsnakeUsage(void)
-{
+/* prints the usage of snake */
+static void printsnakeUsage(void) {
     printf("Usage: snake [options]\n");
     printf("Options:\n\
-  -u -- this usage message\n\
-  -p -- patrol\n\
-  -s -- noSmush (?)\n\
-  -b -- berserk\n\
-  -d -- debug\n\
-  -t -- target <player number>\n\
-  -T -- team [frkoi]\n\
-  -l -- length (in torps)\n\
-  -f -- frequency\n\
-  -g -- guardian:  -g <planet1> <planet2> (must be 2 planets listed,\n\
-                      by number).\n");
-}
+  -p		-- patrol\n\
+  -n		-- noSmush (snake is not vindictive)\n\
+  -s		-- noSmush (snake is vindictive)\n\
+  -g # #	-- guardian: -g <planet1> <planet2>\n\
+		   (must be 2 planets listed, by number).\n\
+  -b		-- berserk\n\
+  -d		-- debug\n\
+  -t#		-- target <player number>\n\
+  -T[frkoi]	-- team [frkoi]\n\
+  -l		-- length (in torps)\n\
+  -f		-- frequency\n\
+  -u		-- this usage message\n");
+}  /* end printsnakeUsage() */
 
-/*--------------------------[ printsnakeUsage ]--------------------------*/
 
-/* likewise as in robotII.c, we don't need ntserv/warning() but don't
-   want to drag in the entirety of ntserv.  Declare null function here. */
-void
-warning(char *t)
-{
-}
+/* 
+ * likewise as in robotII.c, we don't need ntserv/warning() but don't
+ * want to drag in the entirety of ntserv.  Declare null function here.
+ */
+void warning(char *t) { }
 
+
+/* main parses the input and starts the snake */
 int main(int argc, char **argv)
 {
     register int i;
@@ -162,16 +161,20 @@ int main(int argc, char **argv)
 		c = argv[1][2];
 		target = -1;
 		if (c == '\0') {
-		    fprintf(stderr, "Must specify target.  e.g. -t3.\n");
-		    exit(1);
+		    fprintf(stderr, "Must specify target - example: "
+			"\"snake -t#\"  where # is a player number\n\n");
+		    usage++;
 		}
-		if ((c >= '0') && (c <= '9'))
+		else if ((c >= '0') && (c <= '9')) {
 		    target = c - '0';
-		else if ((c >= 'a') && (c <= 'z'))
+		}
+		else if ((c >= 'a') && (c <= 'z')) {
 		    target = c - 'a' + 10;
+		}
 		else {
-		    fprintf(stderr, "Must specify target.  e.g. -t3.\n");
-		    exit(1);
+		    fprintf(stderr, "Must specify a valid target - example: "
+			"\"snake -t#\"  where # is a player number\n\n");
+		    usage++;
 		}
 	    }
 	    break;
@@ -197,8 +200,10 @@ int main(int argc, char **argv)
 		tno = 4;
 		break;
 	    default:
-		fprintf(stderr, "Unknown team type.  Usage -Tx where x is [frkoi]\n");
-		exit(1);
+		fprintf(stderr, "Unknown team type - example: "
+			"\"snake -Tx\"  where x is [frkoi]\n\n");
+		usage++;
+		break;
 	    }			/* end switch argv */
 	    break;
 
@@ -217,35 +222,31 @@ int main(int argc, char **argv)
 		frequency = 1;
 	    }
 	    break;
-	default:
-	    fprintf(stderr, "Unknown option '%c'\n", argv[1][1]);
+	case 'u':
 	    usage++;
-	    exit(1);
+	    break;
+	default:
+	    fprintf(stderr, "Unknown option '%c'\n\n", argv[1][1]);
+	    usage++;
+	    break;
 	}			/* end switch argv[1][1] */
+
+	/* detect error conditions and output a usage statement */
+    	if (usage > 0) {
+	    printsnakeUsage();
+	    exit(1);
+        }
     }				/* end for */
 
-    if (usage) {
-	printsnakeUsage();
-	exit(1);
-    }
 
-    /* if -T wasn't specified default to FED */
-    if (tno < 0)
-	tno = lrand48() % 4;
+    /* if -T wasn't specified default to IND */
+    if (tno < 0) {
+	tno = 4;
+    }
 
     /* XX -- teams imply patrol */
     if (team1 && team2)
 	patrol++;
-
-#if 0
-    /* debug */
-    if (patrol) {
-	printf("snake (%s): patrolling %s,%s\n", teamshort[1 << tno],
-	       teamshort[team1],
-	       teamshort[team2]);
-    }
-    fflush(stdout);
-#endif
 
 /*   readsysdefaults();*/
 
