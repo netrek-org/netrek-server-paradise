@@ -378,3 +378,15 @@ LOSING_ADVANTAGE=%f
 
   If this is >= 1.0 then the losing team gets an army pop advantage.  Makes
 for long games.  If enabled, a good value is around 2.0.
+
+VICTORY_PLANETS=%d
+  
+  If this is more than 0, taking all of the enemy planets is not required
+for victory; this number then indicates how many enemy planets can remain
+for victory.  Default is 0 (normal Paradise style).
+
+REVOLT_WITH_FACILITIES=%hhd
+
+  If this is zero then planets with built facilities (whether AGRI,
+FUEL, REPAIR, or SHIPYARD) will not revolt.  Default is non-zero
+(planets may revolt if they have less than 4 armies).

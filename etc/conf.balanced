@@ -1,0 +1,152 @@
+TOURN=4
+SHIPS=SC,DD,CA,AS,BB,SB,WB
+WEAPONS=PLASMA,TRACTOR
+PLKILLS=2
+#MSKILLS=2
+HIDDEN=1
+#MAXLOAD=5.0
+CONFIRM=0
+UDP=1
+WARPDECEL=1
+EROSION=0.02
+PENETRATION=0.10
+EVACUATION=1
+FUELEXPLOSIONS=1
+GALAXYGENERATOR=9
+FIREDURINGWARPPREP=0
+PLANETSINPLAY=20
+ORBITDIRPROB=1
+TESTERS=14
+POPSCHEME=1
+POPCHOICE=1
+POPSPEED%=14
+VARIABLE_WARP=1
+WARPPREPSTYLE=3
+WARPPREP_SUSPENDABLE=0
+ORBITDIRPROB=0.50
+BEAMLASTARMIES=1
+#IMPROVED_TRACKING=MISSILE
+#CLUECHECK=25
+#CLUEDELAY=216000
+#CLUETIME=300
+#CLUESOURCE=2
+SUN_EFFECT=PHOTON,PLASMA
+NOPREGAMEBEAMUP=1
+GAMESTARTNUKE=1
+NOTTIMEOUT=10
+#
+# new parameters or parameters moved from servconf.h.
+# defaults from src/daemon/sysdefaults.c are listed.
+#
+# RPRDURINGWARPPREP=1
+# RPRDURINGWARP=1
+# WBBOMBINGCREDIT=1		# bonus for WB bombing
+# JSPLANETCREDIT=1		# bonus for JS assists taking planets
+# BUTTTORP_PENALTY=0		# penalize butt torpers?  Modify
+#                               # penalty with ship.wtemp_*
+# SLOWBOMB=1			# slow bombing?
+# ROBOTSTATS=1			# robots accumulate stats.
+# LOSING_ADVANTAGE=0.0		# give losing team an advantage?  If so,
+#                               # set this >= 1.0.  Typical value is 2.0.
+VICTORY_PLANETS=2		# max # of planets enemy can still have
+                                # for victory by other team.  Setting
+				# VICTORY_PLANETS=0 ==> old genocide code,
+                                # i.e., you have to take ALL planets.
+REVOLT_WITH_FACILITIES=0	# can a planet revolt if it still has
+				# built resources?  1 is normal P default.
+
+## bronco style
+#WARPDRIVE=0
+AFTERBURNERS=0
+#NEWARMYGROWTH=0
+#BRONCOSHIPVALS=1
+
+SHIP=0
+SC warp.cost 30
+SC warp.maxspeed 20
+SC maxarmies 0
+SC plasma.damage -1
+end
+
+SHIP=1
+DD warp.cost 45
+DD warp.maxspeed 18
+DD maxarmies 0
+DD bomb 0
+DD plasma.damage -1
+end
+
+SHIP=2
+CA warp.cost 50
+CA warp.maxspeed 16
+CA maxarmies 0
+CA bomb 0
+CA plasma.damage -1
+end
+
+SHIP=3
+BB warp.cost 85
+BB warp.maxspeed 14
+BB maxarmies 0
+BB bomb 30
+BB plasma.damage 250
+BB plasma.speed 20
+BB plasma.cost 5000
+BB plasma.fuse 40
+BB plasma.wtemp 400
+end
+
+SHIP=4
+AS warp.cost 45
+AS warp.maxspeed 12
+AS tractstr 0
+AS tractrng 0
+AS torp.damage 60
+AS torp.speed 8
+AS torp.cost 550
+AS torp.fuse 10
+AS torp.wtemp 40
+AS phaser.damage 20
+AS phaser.speed 10000
+AS phaser.cost 1100
+AS phaser.fuse 40
+AS phaser.wtemp 80
+AS plasma.damage -1
+AS armyperkill 4
+AS maxarmies 10
+AS bomb 0
+AS repair 40
+AS maxdamge 400
+AS maxshield 10
+AS shieldcost 3
+AS detcost 100
+AS detdist 1600
+AS cloakcost 60
+AS scanrange -1
+end
+
+SHIP=5
+SB plasma.damage 300
+SB plasma.speed 24
+SB plasma.cost 6000
+SB plasma.fuse 40
+SB plasma.wtemp 500
+SB maxarmies 50
+SB bomb 0
+SB numdefn 3
+SB numplan 5
+SB rank 2
+end
+
+SHIP=9
+WB plasma.damage 400
+WB plasma.speed 25
+WB plasma.cost 4000
+WB plasma.fuse 35
+WB plasma.wtemp 300
+WB maxarmies 0
+WB bomb 100
+WB numdefn 2
+WB numplan 3
+WB rank 1
+end

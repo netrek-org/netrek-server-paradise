@@ -186,6 +186,12 @@ genocide(int *team1, int *team2)	/* where to put first/second team */
     *team1 = t1;		/* pass back team 1 */
     *team2 = t2;		/* pass back team 2 */
     t = 0;			/* no genocide detected yet */
+#ifndef OLD_GENO
+    if(teams[t1].s_plcount <= configvals->victory_planets || 
+       teams[t2].s_plcount <= configvals->victory_planets)
+      return(1);
+    return(0);
+#else
     for (i = 0; i < NUMPLANETS; i++) {	/* see if team 1 has a planet */
 	if (planets[i].pl_owner == t1) {	/* do they own this */
 	    t++;		/* inc t andd then get out of loop */
@@ -202,6 +208,7 @@ genocide(int *team1, int *team2)	/* where to put first/second team */
 	return (1);		/* return that genocide has occured */
     else			/* else genocide has not occured */
 	return (0);
+#endif
 }
 
 

@@ -396,6 +396,8 @@ static struct field_desc config_fields[] = {
     {"SLOWBOMB", FT_BYTE, OFFSET_OF(slow_bomb)},
     {"ROBOTSTATS", FT_BYTE, OFFSET_OF(robot_stats)},
     {"LOSING_ADVANTAGE", FT_FLOAT, OFFSET_OF(losing_advantage)},
+    {"VICTORY_PLANETS", FT_INT, OFFSET_OF(victory_planets)},
+    {"REVOLT_WITH_FACILITIES", FT_BYTE, OFFSET_OF(revolt_with_facilities)},
     {0}
 };
 
@@ -590,6 +592,9 @@ readsysdefaults(void)
     configvals->robot_stats = 1;
 
     configvals->losing_advantage = 0.0;
+
+    configvals->victory_planets = 0;		/* original Paradise */
+    configvals->revolt_with_facilities = 1;
 
     getshipdefaults();
     initteamvals();

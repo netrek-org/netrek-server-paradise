@@ -714,6 +714,10 @@ revolt(struct planet *l)	/* the planet to check */
     if (!configvals->revolts)
 	return;
 
+    if(!configvals->revolt_with_facilities && 
+       l->pl_flags & (PLORESMASK | PLRESMASK))
+        return;
+
     if (l->pl_trevolt > 0) {	/* revolt timer running? */
 	char    buf[80];	/* to sprintf into */
 
@@ -772,7 +776,8 @@ revolt(struct planet *l)	/* the planet to check */
     }
 }
 
-void check_revolt(void)
+void
+check_revolt(void)
 {
     static int planetlist[MAXPLANETS];
     static int count = 0;

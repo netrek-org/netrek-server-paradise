@@ -214,6 +214,12 @@ struct configuration {
     char    robot_stats;	/* robots accumulate statistics? */
 
     float   losing_advantage;	/* give losing team an army advantage? */
+
+    int     victory_planets;	/* if enemy planets <= victory planets
+                                   you win; victory_planets = 0 is original
+				   "take everything" genocide code. */
+    char    revolt_with_facilities;	/* can planets with facilities
+                                           revolt? */
 };
 
 #ifndef SHMEM_C
