@@ -66,7 +66,7 @@ if (1) \
 // which are only set once
 */
 
-static int     displaykills = 1;
+static int     displaykills = 0;
 static int     docolor = 0;
 static char   *myname;
 
@@ -83,7 +83,7 @@ main(int argc, char **argv)
         if (argv[0][0] == '-') {
             switch (argv[0][1]) {
                 case 'k':
-                    displaykills = 0;
+                    displaykills = 1;
                     break;
                 case 'c':
                     docolor = 1;
@@ -159,7 +159,6 @@ usage(char *me)
         "\nOptions:\n",
         "\t-k    do not remove kills from listing\n",
         "\t-c    colorized text (need higher than a vt100 term)\n",
-        "\t-h    this usage description\n",
         "\nNo options will list every message, any other option will be interpreted as\n",
         "a filter, which is a Terrance Chang mod, and I dont know|care what it is for.\n",
         ""
