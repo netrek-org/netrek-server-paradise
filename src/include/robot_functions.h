@@ -1,5 +1,7 @@
 /*
- * robot_functions.h
+ * include/robot_functions.h
+ *
+ * This is the header file for robot/robot_functions.c
  */
 
 #ifndef ROBOT_FUNCTIONS_H
@@ -119,6 +121,6 @@ static void messAll(char*);
 /* This function destroys the robot gracefully */
 static void exitRobot(void);
 
-#endif
+#endif  /* #ifndef ROBOT_FUNCTIONS_H */
 
-/* end robot_functions.h */
+/* end include/robot_functions.h */

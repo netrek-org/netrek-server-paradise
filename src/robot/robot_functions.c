@@ -1,5 +1,7 @@
 /*
- * robot_functions.c
+ * robot/robot_functions.c
+ *
+ * This is a set of functions used by robots.
  */
 
 
@@ -787,4 +789,4 @@ static void exitRobot(void) {
 }  /* end exitRobot() */
 
 
-/* end robot_functions.c */
+/* end robot/robot_functions.c */
