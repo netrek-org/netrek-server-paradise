@@ -37,6 +37,7 @@ static char* names[NUMNAMES] = {
 
 /* System dependend setups */
 #define MIN_NUM_PLAYERS	(MAXPLAYER - 1) /* How many players to maintain. */
+#define OROBOT          ROBODIR("/robot")
 #define RCMD            ROBOT
 #define REMOTEHOST      "localhost"
 #define TREKSERVER      "localhost"
@@ -47,21 +48,6 @@ static char* names[NUMNAMES] = {
 #define PERSEC (1000000/UPDATE/HOWOFTEN) /* # of robo calls per second*/
 #define ROBOCHECK (10*PERSEC)   /* start or stop a robot */
 #define SENDINFO  (120*PERSEC)		/* send info to all */
-
-
-
-/*                            */
-
-#define OROBOT          ROBODIR("/robot")
-#define NICE            "nice -1"
-#define LOGFILE		ROBODIR("")
-
-
-
-/* Newbie server specific additions */
-
-#define PORT 2592
-
 
 
 #endif  /* #ifndef ROBOT_NEWBIE_H */
