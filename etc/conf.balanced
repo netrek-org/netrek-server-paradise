@@ -1,5 +1,6 @@
 TOURN=4
-SHIPS=SC,DD,CA,AS,BB,SB,WB,TN
+# note that FR == ship 8 == fuel tanker
+SHIPS=SC,DD,CA,AS,BB,SB,WB,FR
 WEAPONS=PLASMA,TRACTOR
 PLKILLS=2
 #MSKILLS=2
@@ -239,6 +240,8 @@ TN torp.speed 8
 TN torp.cost 10
 TN torp.fuse 5
 TN nflags CANWARP,CANFUEL
+# let two ships take on fuel simultaneously
+TN numports 2
 TN bombflags NONE
 TN plasma.damage -1
 TN scanrange -1

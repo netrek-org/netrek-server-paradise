@@ -174,8 +174,8 @@ newdock(int base_num)
     int     angle;
 
     if (!(base->p_flags & PFDOCKOK)) {	/* docking allowed? */
-	sprintf(buf, "Starbase %s refusing us docking permission captain.",
-		base->p_name);
+	sprintf(buf, "%s %s refusing us docking permission captain.",
+		base->p_ship.s_name, base->p_name);
 	warning(buf);		/* if not say so then */
 	return;			/* get out of here */
     }
