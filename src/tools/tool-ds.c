@@ -27,6 +27,7 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
+#include <stdlib.h>
 #include "config.h"
 #include "proto.h"
 #include "tool-util.h"

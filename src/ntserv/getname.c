@@ -34,6 +34,9 @@ notice appear in all copies.
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
+#ifdef HAVE_CRYPT_H
+#include <crypt.h>
+#endif
 #include "proto.h"
 #include "ntserv.h"
 #include "data.h"

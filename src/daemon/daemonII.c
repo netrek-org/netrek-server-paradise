@@ -28,8 +28,9 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-#include <setjmp.h>
 #include <errno.h>
+#include <signal.h>
+#include <setjmp.h>
 #ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
 #endif

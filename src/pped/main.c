@@ -44,7 +44,7 @@ main(int argc, char *argv[])
 	else
 		playerFile = build_path(PLAYERFILE);
 
-	getTTYinfo();
+	getTTYinfo(0);
 	if(ReadIt(playerFile)) exit(1);
 	Interface();
 	exit(0);

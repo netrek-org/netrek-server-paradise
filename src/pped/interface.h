@@ -5,9 +5,10 @@
 #ifndef INTERFACE_H
 #define INTERFACE_H
 
+#include "config.h"
 #include "db.h"
 
-void getTTYinfo P((void));
+RETSIGTYPE getTTYinfo P((int));
 void cls P((void));
 void Interface P((void));
 void Edit P((int));

@@ -1607,9 +1607,13 @@ updateShips(void)
 	   etc)
 	*/
 
+	/* well this is a big doh 
+	   htonl(pl->p_stats.st_di) is an invalid expression - it's not
+	   an int.  I bet this part of it doesn't work very well ;) */
+
 	if (pl->p_status != pstatus->status ||
 	    (repCount % (MAXPLAYER * efticks(5)) == i * efticks(5) &&
-	     (stats->di != htonl(pl->p_stats.st_di) ||
+	     (stats->di != htonl((int)(pl->p_stats.st_di)) ||
 	      stats->kills != htonl(pl->p_stats.st_tkills) ||
 	      stats->losses != htonl(pl->p_stats.st_tlosses) ||
 	      stats->armsbomb != htonl(pl->p_stats.st_tarmsbomb) ||

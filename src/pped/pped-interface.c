@@ -106,8 +106,8 @@ short_rank(int n)
   return(buf);
 }
 
-void
-getTTYinfo(void)
+RETSIGTYPE
+getTTYinfo(int unused)
 {
 	struct winsize ws;
 	char *name, bp[1024], area[1024], *ap = area;

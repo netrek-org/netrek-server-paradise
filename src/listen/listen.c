@@ -37,6 +37,7 @@ stderr go to the same file.
 
 #include <stdarg.h>
 #include <errno.h>
+#include <signal.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
