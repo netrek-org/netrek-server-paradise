@@ -29,11 +29,17 @@ notice appear in all copies.
 
 #include "config.h"
 #include <signal.h>
+#ifdef HAVE_SYS_FILE_H
 #include <sys/file.h>
+#endif
 #include <setjmp.h>
 #include <sys/ioctl.h>
+#ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
+#endif
+#ifdef HAVE_FCNTL_H
 #include <fcntl.h>
+#endif
 
 #include <sys/types.h>
 #include <sys/ipc.h>

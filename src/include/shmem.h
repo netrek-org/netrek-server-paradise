@@ -220,6 +220,9 @@ struct configuration {
 				   "take everything" genocide code. */
     char    revolt_with_facilities;	/* can planets with facilities
                                            revolt? */
+    float   kill_carried_armies;	/* is there a % chance of killing
+                                           carried armies when damaged beyond
+					   50%? */
 };
 
 #ifndef SHMEM_C

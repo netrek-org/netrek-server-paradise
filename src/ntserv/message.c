@@ -51,7 +51,9 @@ notice appear in all copies.
 #include "config.h"
 #include <signal.h>
 #include <ctype.h>
+#ifdef HAVE_FCNTL_H
 #include <fcntl.h>
+#endif
 
 #include "defs.h"
 #include "data.h"

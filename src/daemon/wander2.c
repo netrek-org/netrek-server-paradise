@@ -33,7 +33,9 @@ notice appear in all copies.
 #include <sys/types.h>
 #include <signal.h>
 #include <setjmp.h>
+#ifdef HAVE_SYS_FILE_H
 #include <sys/file.h>
+#endif
 #include <math.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>

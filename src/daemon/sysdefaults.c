@@ -398,6 +398,7 @@ static struct field_desc config_fields[] = {
     {"LOSING_ADVANTAGE", FT_FLOAT, OFFSET_OF(losing_advantage)},
     {"VICTORY_PLANETS", FT_INT, OFFSET_OF(victory_planets)},
     {"REVOLT_WITH_FACILITIES", FT_BYTE, OFFSET_OF(revolt_with_facilities)},
+    {"KILL_CARRIED_ARMIES", FT_FLOAT, OFFSET_OF(kill_carried_armies)},
     {0}
 };
 
@@ -595,6 +596,8 @@ readsysdefaults(void)
 
     configvals->victory_planets = 0;		/* original Paradise */
     configvals->revolt_with_facilities = 1;
+
+    configvals->kill_carried_armies = 0.0;	/* original Paradise */
 
     getshipdefaults();
     initteamvals();

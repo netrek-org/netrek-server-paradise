@@ -30,10 +30,14 @@ notice appear in all copies.
 #include "config.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef HAVE_SYS_FILE_H
 #include <sys/file.h>
+#endif
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#ifdef HAVE_FCNTL_H
 #include <fcntl.h>
+#endif
 #include <errno.h>
 #include <pwd.h>
 #include <ctype.h>

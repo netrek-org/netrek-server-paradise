@@ -31,8 +31,12 @@ notice appear in all copies.
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef HAVE_SYS_FILE_H
 #include <sys/file.h>
+#endif
+#ifdef HAVE_FCNTL_H
 #include <fcntl.h>
+#endif
 #include <signal.h>
 #include <setjmp.h>
 #include <errno.h>

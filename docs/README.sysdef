@@ -390,3 +390,16 @@ REVOLT_WITH_FACILITIES=%hhd
   If this is zero then planets with built facilities (whether AGRI,
 FUEL, REPAIR, or SHIPYARD) will not revolt.  Default is non-zero
 (planets may revolt if they have less than 4 armies).
+
+KILL_CARRIED_ARMIES=%f
+  If this is > 0.0 then there is this chance that if a ship's hull is damaged
+past 50% then a certain number of any carried armies will be killed.  The
+number of armies killed is proportional to the damage over 50% and the
+number of armies carried.  A good number is probably 0.30 (30% chance).
+
+  Example: I shoot at an AS that is carrying 6 armies.  I cause the
+           hull damage to go up to 75% by a torp.  (75 - 50) / 50 = 0.5,
+	   so I have a 30% chance of killing between 0 and 
+	   (0.5 * 6) = 3 armies with that torp.
+
+Note 

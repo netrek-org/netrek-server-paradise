@@ -40,7 +40,9 @@ stderr go to the same file.
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
+#ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
+#endif
 #ifdef SVR4
 #include <sys/termios.h>
 #endif				/* SVR4 */
@@ -48,14 +50,15 @@ stderr go to the same file.
 #include <errno.h>
 #include <time.h>
 #include <netinet/in.h>
+#ifdef HAVE_FCNTL_H
 #include <fcntl.h>
+#endif
 #include <varargs.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <string.h>
-#include <fcntl.h>
 #include "defs.h"
 #include "data.h"
 #include "proto.h"

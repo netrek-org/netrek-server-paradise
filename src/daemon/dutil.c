@@ -196,6 +196,46 @@ inflict_damage(struct player *sp, struct player *op,
     }
     if (damage > 0) {
 	victim->p_damage += damage;	/* all damage to hull */
+
+	/* does hull damage have a chance of killing armies I'm
+	   carrying?  */
+	if (configvals->kill_carried_armies > 0.0 &&
+	    victim->p_damage > victim->p_ship.s_maxdamage/2 &&
+	    victim->p_armies > 0)
+	{
+	  int ak;
+	  int max_cankill =
+	    ((victim->p_damage - (victim->p_ship.s_maxdamage / 2)) * 
+	      victim->p_armies) / (victim->p_ship.s_maxdamage / 2);
+
+          /* possible # of armies to kill, up to proportional amount */
+	  ak = (max_cankill * (lrand48() % 101)) / 100;
+
+          /* if we beat the odds, no armies lost */
+	  if(drand48() >= configvals->kill_carried_armies)
+	    ak = 0;
+
+	  if(ak > 0)
+	  {
+	    victim->p_armies -= ak;
+            if(sp && !friendly(sp, victim) && sp != victim)
+	    {
+	      char buf[80];
+
+	      sp->p_dooshes += ak;
+	      status->dooshes += ak;
+	      sp->p_stats.st_di += 0.02 * 5.0 * (float)victim->p_armies;
+	      sp->p_kills += (float)ak / 10.0;
+
+              sprintf(buf, "%s (%s) had a partial doosh of %s (%s+%d armies)",
+	              sp->p_name, twoletters(sp), 
+		      victim->p_name, twoletters(victim), ak);
+
+              pmessage(buf, 0, MALL | MKILLA, "GOD->ALL");
+	    }
+	  }
+	}
+
 	if (configvals->erosion > 0) {
 	    float   chance = damage * configvals->erosion;
 	    while (chance >= 0.5) {	/* no matter how much you suffer

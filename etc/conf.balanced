@@ -54,6 +54,8 @@ VICTORY_PLANETS=2		# max # of planets enemy can still have
                                 # i.e., you have to take ALL planets.
 REVOLT_WITH_FACILITIES=0	# can a planet revolt if it still has
 				# built resources?  1 is normal P default.
+KILL_CARRIED_ARMIES=0.30	# percent chance any damage beyond 50%
+				# will start killing armies you carry
 
 ## bronco style
 #WARPDRIVE=0

@@ -32,7 +32,9 @@ notice appear in all copies.
 #include <signal.h>
 #include <setjmp.h>
 #include <pwd.h>
+#ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
+#endif
 #include <sys/resource.h>
 #include <stdlib.h>
 

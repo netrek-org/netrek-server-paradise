@@ -37,7 +37,9 @@ notice appear in all copies.
 #include "config.h"
 
 #include <sys/types.h>
+#ifdef HAVE_SYS_FILE_H
 #include <sys/file.h>
+#endif
 #include <pwd.h>
 #include "defs.h"
 #include "data.h"
