@@ -42,8 +42,8 @@ static char *builtin_ranks[] =
  "Admiral:      100, 1000, 2.25, 5.7, 3.6",
  "ROYALTY",
  "Wesley",
- "Centurion",
- "Praetor",
+ "Governor",
+ "Emperor",
  "Q",
  NULL
 };
@@ -234,8 +234,11 @@ parse_ranks(char *filename)
   }
   qsort(ranks, NUMRANKS, sizeof(struct rank), rank_order_fn);
 
+  NUMROYALRANKS++;
   royal = (struct royalty *)malloc(NUMROYALRANKS * sizeof(struct royalty));
   i = 0;
+  /* oop, almost forgot index 0 has no royalty */
+  royal[i++].name = strdup("none");
   while(royalty_head)
   {
     royal_node *or = royalty_head;
