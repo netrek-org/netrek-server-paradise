@@ -819,15 +819,19 @@ check_explode(void)
 	    fr->pt_status = PTEXPLODE;
 	    fr->pt_fuse = 10;
 	}
+
 	/*
 	   now for some fancy stuff. If killer is our target and is hostile
 	   or at war with our team then snake torp head makes a beeline for
 	   him.  This lasts until killer dies or torps have been chasing
 	   killer for 40 cycles
 	*/
-
-	if (killer && WARHOSTILE(killer) && (noSmush < 1) && (killer->p_status == PALIVE) &&
-	    tfuse < 40 && (killer->p_no == target || noSmush < 0)) {
+	if (killer  /* someone killed it */
+	    && WARHOSTILE(killer)
+	    && (noSmush < 1)
+	    && (killer->p_status == PALIVE)
+	    && tfuse < 40
+	    && (killer->p_no == target || noSmush < 0)) {
 	    crash_killer(killer);
 	}
 	else {
