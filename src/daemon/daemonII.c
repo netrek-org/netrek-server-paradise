@@ -421,7 +421,10 @@ move(void)
 
 		cal = time(0);
 		tp = localtime(&cal);
-		strftime(buf, 50, "%m/%d %H:%M", tp);
+		sprintf(buf, "%02d/%02d %02d:%02d", 
+		        tp->tm_mon, tp->tm_mday, tm->tm_hour, tm->tm_min);
+	        /* was: 
+		strftime(buf, 50, "%m/%d %H:%M", tp);*/
 
 		fprintf(logfile, "%s : %2d ", buf, c);
 		for (i = 0; i < c; i++) {

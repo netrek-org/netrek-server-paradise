@@ -25,6 +25,8 @@ CPPFLAGS=@CPPFLAGS@ -I../include
 DEFS=@AUTH_DEFS@ @DEFS@
 LDFLAGS=@LDFLAGS@
 LIBS=@LIBS@ -lm
+CURSESLIBS=@CURSESLIBS@
+TERMLIBS=@TERMLIBS@
 
 INSTALL=@INSTALL@
 INSTALL_SCRIPT=@INSTALL_SCRIPT@
@@ -39,7 +41,7 @@ PPED_OBJS=ppeddata.o db.o file.o interface.o main.o
 all: pped
 
 pped: $(PPED_OBJS)
-	$(CC) $(CFLAGS) -o $@ $(PPED_OBJS) ../common/common.a $(LDFLAGS) $(LIBS)
+	$(CC) $(CFLAGS) -o $@ $(PPED_OBJS) ../common/common.a $(LDFLAGS) $(LIBS) $(CURSESLIBS) $(TERMLIBS)
 
 clean:
 	-rm -f pped $(PPED_OBJS)

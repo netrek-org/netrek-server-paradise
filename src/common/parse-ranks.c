@@ -78,10 +78,9 @@ static char *builtin_ranks[] =
 };
 
 static int
-rank_order_fn(const void *aa, const void *bb)
+rank_order_fn(void *aa, void *bb)
 {
-  const struct rank *r1 = (const struct rank *)aa, 
-                    *r2 = (const struct rank *)bb;
+  struct rank *r1 = (struct rank *)aa, *r2 = (struct rank *)bb;
 
   if(r1->genocides < r2->genocides)
     return(-1);

@@ -32,11 +32,14 @@ INSTALL_DATA=@INSTALL_DATA@
 
 AUTH_PROG=@AUTH_PROG@
 
+# only build if we find -lncurses or -lcurses
+PLAYER_EDITOR=@PLAYER_EDITOR@
+
 #####
 
 L_DIRS=common
 S_DIRS=daemon listen ntserv robot snake
-P_DIRS=tools pped
+P_DIRS=tools $(PLAYER_EDITOR)
 
 all: libs authlib server progs
 

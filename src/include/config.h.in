@@ -30,70 +30,11 @@ notice appear in all copies.
 #ifndef CONFIG_H
 #define CONFIG_H
 
-/* define if you have sysconf */
-#undef HAVE_SYSCONF
-
-/* define if your setsid() doesn't release controlling terminal */
-#undef SETSID_DOESNT_DETACH_TERMINAL
-
-/* Define if the external program "uptime" exists */
-#undef HAVE_UPTIME
-#undef UPTIME_PATH
-
-/* Define to empty if the keyword does not work.  */
-#undef const
-
-/* Define if you do have vprintf. */
-#undef HAVE_VPRINTF
-
-/* Define if you don't have vprintf but do have _doprnt.  */
-#undef HAVE_DOPRNT
-
-/* Define if you have the strftime function.  */
-#undef HAVE_STRFTIME
-
-/* Define if you have <sys/wait.h> that is POSIX.1 compatible.  */
-#undef HAVE_SYS_WAIT_H
-
-/* Define if your struct dirent has d_namlen */
-#undef HAVE_D_NAMLEN
-
-/* Define if your struct tm has tm_zone.  */
-#undef HAVE_TM_ZONE
-
-/* Define if your struct tm has tm_gmtoff */
-#undef HAVE_TM_GMTOFF
-
-/* Define if you don't have tm_zone but do have the external array
-   tzname.  */
-#undef HAVE_TZNAME
-
-/* Define if you have <vfork.h>.  */
-#undef HAVE_VFORK_H
-
-/* Define if you have the strdup function.  */
-#undef HAVE_STRDUP
-
-/* Define if you inet_aton() */
-#undef HAVE_INET_ATON
-
-/* Define if you have rint() */
-#undef HAVE_RINT
-
-/* Define as __inline if that's what the C compiler calls it.  */
-#undef inline
-
-/* Define to `long' if <sys/types.h> doesn't define.  */
-#undef off_t
-
-/* Define to `int' if <sys/types.h> doesn't define.  */
-#undef pid_t
-
 /* Define as the return type of signal handlers (int or void).  */
 #undef RETSIGTYPE
 
-/* Define to `unsigned' if <sys/types.h> doesn't define.  */
-#undef size_t
+/* Define if you have <sys/wait.h> that is POSIX.1 compatible.  */
+#undef HAVE_SYS_WAIT_H
 
 /* Define if the `S_IS*' macros in <sys/stat.h> do not work properly.  */
 #undef STAT_MACROS_BROKEN
@@ -101,63 +42,11 @@ notice appear in all copies.
 /* Define if you have the ANSI C header files.  */
 #undef STDC_HEADERS
 
-/* Define if `sys_siglist' is declared by <signal.h>.  */
-#undef SYS_SIGLIST_DECLARED
-
 /* Define if you can safely include both <sys/time.h> and <time.h>.  */
 #undef TIME_WITH_SYS_TIME
 
 /* Define if your <sys/time.h> declares struct tm.  */
 #undef TM_IN_SYS_TIME
-
-/* Define vfork as fork if vfork does not work.  */
-#undef vfork
-
-/* byte order */
-#undef BYTEORDER
-
-/* Sizes */
-#undef SIZEOF_CHAR
-#undef SIZEOF_SHORT
-#undef SIZEOF_INT
-#undef SIZEOF_LONG
-#undef SIZEOF_LLONG
-#undef SIZEOF_FLOAT
-#undef SIZEOF_DOUBLE
-#undef SIZEOF_LDOUBLE
-
-/* Define if you have the getrusage function.  */
-#undef HAVE_GETRUSAGE
-
-/* Define if you have the gettimeofday function.  */
-#undef HAVE_GETTIMEOFDAY
-
-/* Define if you have the memmove function.  */
-#undef HAVE_MEMMOVE
-
-/* Define if you have the mkdir function.  */
-#undef HAVE_MKDIR
-
-/* Define if you have the select function.  */
-#undef HAVE_SELECT
-
-/* Define if you have the socket function.  */
-#undef HAVE_SOCKET
-
-/* Define if you have the strchr function.  */
-#undef HAVE_STRCHR
-
-/* Define if you have the strcspn function.  */
-#undef HAVE_STRCSPN
-
-/* Define if you have the strerror function.  */
-#undef HAVE_STRERROR
-
-/* Define if you have the strstr function.  */
-#undef HAVE_STRSTR
-
-/* Define if you have the finite function.  */
-#undef HAVE_FINITE
 
 /* Define if you have the <fcntl.h> header file.  */
 #undef HAVE_FCNTL_H
@@ -171,12 +60,20 @@ notice appear in all copies.
 /* Define if you have the <unistd.h> header file.  */
 #undef HAVE_UNISTD_H
 
-#undef RESTRICTIVE_FILES
+/* Define if you have the gethostname function */
+#undef HAVE_GETHOSTNAME
 
-#undef CACHE_WIDTH
-#undef CACHE_DEPTH
+/* Define if you have the gettimeofday function.  */
+#undef HAVE_GETTIMEOFDAY
 
-#undef SYSTEM_TYPE
+/* Define if you have the strdup function.  */
+#undef HAVE_STRDUP
+
+/* define if you have sysconf */
+#undef HAVE_SYSCONF
+
+/* Define if you have the strerror function.  */
+#undef HAVE_STRERROR
 
 /* standard includes */
 #ifdef HAVE_UNISTD_H
