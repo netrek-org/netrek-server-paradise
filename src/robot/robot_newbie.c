@@ -11,6 +11,16 @@
 #include "robot_newbie.h"
 
 
+/* Not sure what this does */
+static int rprog(char *login) {
+   if (strcmp(login, "robot!") == 0) {
+      return 1;
+   }
+
+   return 0;
+}  /* end rprog() */
+
+
 /* this function destroys the robot - may be superceded by exitRobot() */
 static void obliterate(int wflag, char kreason) {
    /* 
@@ -23,7 +33,7 @@ static void obliterate(int wflag, char kreason) {
    /* clear torps and plasmas out */
    MZERO(torps, sizeof(struct torp) * MAXPLAYER * (MAXTORP + MAXPLASMA));
 
-   for (j = firstPlayer; j<=lastPlayer; j++) {
+   for (j = 0; j <= MAXPLAYER; j++) {
       if (j->p_status == PFREE) {
          continue;
       }
@@ -53,6 +63,75 @@ static void obliterate(int wflag, char kreason) {
 }  /* end obliterate() */
 
 
+/* This saves armies that are on robots that are being ejected */
+static void save_armies(struct player *p) {
+   int i, k;
+   char buf[80];
+   char addrbuf[20];
+
+   k=10*(remap[p->p_team]-1);
+
+   if (k>=0 && k<=30) {
+      for (i=0; i<10; i++) {
+         if (planets[i+k].pl_owner==p->p_team) {
+            planets[i+k].pl_armies += p->p_armies;
+            sprintf(addrbuf, "%s->ALL", mastername);
+            sprintf(buf, "%s's %d armies placed on %s", p->p_name,
+            p->p_armies, planets[k+i].pl_name);
+            pmessage(buf, 0, MALL, addrbuf);
+            break;
+         }
+      }  /* end for */
+   }
+}  /* end save_armies() */
+
+
+/* This function stops a robot */
+static void stop_this_bot(struct player *p) {
+   char buf[80];
+   char addrbuf[20];
+
+   p->p_ship.s_type = STARBASE;
+   p->p_whydead=KQUIT;
+   p->p_explode=10;
+   p->p_status=PEXPLODE;
+   p->p_whodead=0;
+
+   sprintf(addrbuf, "%s->ALL", mastername);
+   sprintf(buf, "Robot %s (%2s) was ejected to make room for a human player.",
+      p->p_name, twoletters(me));
+   pmessage(buf, 0, MALL, addrbuf);
+
+   if ((p->p_status != POBSERVE) && (p->p_armies>0)) {
+      save_armies(p);
+   }
+}  /* end stop_this_bot() */
+
+
+/* finds a robot to stop and calls stop_this_bot() */         
+static void stop_a_robot(void) {                              
+   int i;                                                     
+   struct player *j;                                          
+
+   /* Simplistic: nuke the first robot we see. */             
+   for (i = 0, j = players; i < MAXPLAYER; i++, j++) {        
+      if (j->p_status == PFREE) {                             
+         continue;                                            
+      }                                                       
+
+      if (j->p_flags & PFROBOT) {                             
+         continue;                                            
+      }                                                       
+
+      /* If he's at the MOTD we'll get him next time. */      
+      if (j->p_status == PALIVE && rprog(j->p_login)) {       
+         stop_this_bot(j);                                    
+         return;                                              
+      }                                                       
+   }  /* end for */                                                        
+}   /* end stop_a_robot() */                                  
+
+
 /* This function cleans things up */
 static void cleanup(int unused) {
    register struct player *j;
@@ -61,7 +140,7 @@ static void cleanup(int unused) {
    do {
       /* terminate all robots */
       for (i = 0, j = players; i < MAXPLAYER; i++, j++) {
-         if ((j->p_status == PALIVE) && rprog(j->p_login, j->p_monitor)) {
+         if ((j->p_status == PALIVE) && rprog(j->p_login)) {
             stop_this_bot(j);
          }
       }  /* end for */
@@ -70,7 +149,7 @@ static void cleanup(int unused) {
       retry=0;
 
       for (i = 0, j = players; i < MAXPLAYER; i++, j++) {
-         if ((j->p_status != PFREE) && rprog(j->p_login, j->p_monitor)) {
+         if ((j->p_status != PFREE) && rprog(j->p_login)) {
             retry++;
          }
       }  /* end for */
@@ -84,8 +163,8 @@ static void cleanup(int unused) {
       getship(&(j->p_ship), j->p_ship.s_type);
    }  /* end for */
 
-   obliterate(1,KPROVIDENCE);
-   status->gameup &= ~GU_NEWBIE;
+   obliterate(1, KPROVIDENCE);
+   status->gameup = 0;
    exitRobot();
 }
 
@@ -128,24 +207,8 @@ static void start_internal(char *type) {
 }  /* end start_internal() */
 
 
-/* Starts a robot */
-static void start_a_robot(char *team) {
-   char command[256];
-
-   sprintf(command, "%s %s %s %s -h %s -p %d -n '%s' -X robot! -b -O -i",
-      RCMD, robot_host, OROBOT, team, hostname, PORT, namearg() );
-
-   if (fork() == 0) {
-      SIGNAL(SIGALRM, SIG_DFL);
-      execl("/bin/sh", "sh", "-c", command, 0);
-      perror("newbie'execl");
-      _exit(1);
-   }
-}  /* end start_a_robot() */
-
-
 /* Not sure what this does */
-static char * namearg(void) {
+static char* namearg(void) {
    register i, k = 0;
    register struct player *j;
    char *name;
@@ -175,6 +238,22 @@ static char * namearg(void) {
 }  /* end namearg() */
 
 
+/* Starts a robot */
+static void start_a_robot(char *team) {
+   char command[256];
+
+   sprintf(command, "%s %s %s %s -h %s -p %d -n '%s' -X robot! -b -O -i",
+      RCMD, robot_host, OROBOT, team, hostname, PORT, namearg() );
+
+   if (fork() == 0) {
+      SIGNAL(SIGALRM, SIG_DFL);
+      execl("/bin/sh", "sh", "-c", command, 0);
+      perror("newbie'execl");
+      _exit(1);
+   }
+}  /* end start_a_robot() */
+
+
 /* Figure out how many players are in the game */
 static int num_players(int *next_team) {
    int i;
@@ -186,7 +265,7 @@ static int num_players(int *next_team) {
    team_count[FED] = 0;
 
    for (i = 0, j = players; i < MAXPLAYER; i++, j++) {
-      if (j->p_status != PFREE && j->p_status != POBSERV &&
+      if (j->p_status != PFREE && j->p_status != POBSERVE &&
          !(j->p_flags & PFROBOT)) {
          team_count[j->p_team]++;
          c++;
@@ -205,76 +284,6 @@ static int num_players(int *next_team) {
 }  /* end num_players() */
 
 
-/* This saves armies that are on robots that are being ejected */
-static void save_armies(struct player *p) {
-   int i, k;
-
-   k=10*(remap[p->p_team]-1);
-
-   if (k>=0 && k<=30) {
-      for (i=0; i<10; i++) {
-         if (planets[i+k].pl_owner==p->p_team) {
-            planets[i+k].pl_armies += p->p_armies;
-            pmessage(0, MALL, "%s->ALL", "%s's %d armies placed on %s",
-               mastername, p->p_name, p->p_armies, planets[k+i].pl_name);
-            break;
-         }
-      }  /* end for */
-   }
-}  /* end save_armies() */
-
-
-/* This function stops a robot */
-static void stop_this_bot(struct player *p) {
-   p->p_ship.s_type = STARBASE;
-   p->p_whydead=KQUIT;
-   p->p_explode=10;
-   p->p_status=PEXPLODE;
-   p->p_whodead=0;
-
-   pmessage(0, MALL, "%s->ALL",
-      "Robot %s (%2s) was ejected to make room for a human player.",
-      mastername, p->p_name, p->p_mapchars);
-
-   if ((p->p_status != POBSERV) && (p->p_armies>0)) {
-      save_armies(p);
-   }
-}  /* end stop_this_bot() */
-
-/* Not sure what this does */
-static int rprog(char *login) {
-   if (strcmp(login, "robot!") == 0) {
-      return 1;
-   }
-
-   return 0;
-}  /* end rprog() */
-
-
-/* finds a robot to stop and calls stop_this_bot() */
-static void stop_a_robot(void) {
-   int i;
-   struct player *j;
-
-   /* Simplistic: nuke the first robot we see. */
-   for (i = 0, j = players; i < MAXPLAYER; i++, j++) {
-      if (j->p_status == PFREE) {
-         continue;
-      }
-
-      if (j->p_flags & PFROBOT) {
-         continue;
-      }
-
-      /* If he's at the MOTD we'll get him next time. */
-      if (j->p_status == PALIVE && rprog(j->p_login, j->p_monitor)) {
-         stop_this_bot(j);
-         return;
-      }
-   }
-}   /* end stop_a_robot() */
-
-
 /* This function sees if the game is populated by robots only */
 static int is_robots_only(void) {
    register i;
@@ -289,7 +298,7 @@ static int is_robots_only(void) {
          continue;
       }
 
-      if (!rprog(j->p_login, j->p_monitor)) {
+      if (!rprog(j->p_login)) {
          /* Found a human. */
          return 0;
       }
@@ -362,14 +371,9 @@ void checkmess(int unused) {
 
       alternate++;
 
-      if (1) {
-         messAll(255,roboname,"Welcome to the Newbie Server.");
-         messAll(255,roboname,"See http://cow.netrek.org/current/newbie.html");
-      }
-      else {
-         messAll(255,roboname,"Think you have what it takes?  Sign up for the draft league!");
-         messAll(255,roboname, "See http://draft.lagparty.org/");
-      }
+      /* emit a message periodically */
+      messAll("Welcome to Paradise!  This is a newbie server");
+      messAll("Go to http://paradise.netrek.org for more info");
    }
 }   /* end checkmess() */
 
@@ -401,7 +405,7 @@ int main(int argc, char *argv[]) {
 
    SIGNAL(SIGCHILD, reaper);
 
-   openmem(1);
+   openmem(1, 0);
    strcpy(robot_host,REMOTEHOST);
    readsysdefaults();
 
@@ -441,7 +445,7 @@ int main(int argc, char *argv[]) {
 
    oldmctl = mctl->mc_current;
 
-   status->gameup |= GU_NEWBIE;
+   status->gameup = 1;
 
    /* Robot is signalled by the Daemon */
    fprintf(stderr, "Robot Using Daemon Synchronization Timing\n");
