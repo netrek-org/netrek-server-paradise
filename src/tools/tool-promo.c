@@ -27,8 +27,12 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
+#include <sys/stat.h>
 #include "config.h"
 #include "proto.h"
+#include "tool-util.h"
+#include "data.h"
+#include "shmem.h"
 
 static int     nplayers;
 static struct statentry *database;
@@ -43,9 +47,11 @@ static struct highscore *scores;
 static int     scoresize, nscores;
 
 int 
-cmp_score(struct highscore *a, struct highscore *b)
+cmp_score(const void *aa, const void *bb)
 {
-    float   diff = a->newrank - b->newrank;
+  const struct highscore *a = (const struct highscore *)aa;
+  const struct highscore *b = (const struct highscore *)bb;
+  float   diff = a->newrank - b->newrank;
 
     if (diff < 0)
 	return 1;
@@ -82,7 +88,6 @@ main(int argc, char **argv)
     char *rf;
 
     if (argc != 4) {
-	int x;
 	char message[][255] = {
 	    "\n\t'%s n oldfile newfile'\n",
             "\nLists all players who have been promoted more than n ranks.\n",
@@ -143,8 +148,6 @@ main(int argc, char **argv)
     nscores = 0;
 
     while (1) {
-	int     delta;
-	int     dt;
 	struct statentry *prevplayer;
 	struct highscore *currscore;
 

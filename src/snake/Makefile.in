@@ -38,14 +38,14 @@ SNAKE_OBJS=snake.o snakemove.o
 
 all: snake
 
-snake: common.a $(SNAKE_OBJS)
-	$(CC) $(CFLAGS) -o snake $(SNAKE_OBJS) ../common/common.a $(LDFLAGS) $(LIBS)
+snake: robot.a common.a $(SNAKE_OBJS)
+	$(CC) $(CFLAGS) -o snake $(SNAKE_OBJS) ../common/robot.a ../common/common.a $(LDFLAGS) $(LIBS)
 
 clean:
 	-rm -f snake $(SNAKE_OBJS)
 
 install:
-	$(INSTALL) snake $(bindir)
+	$(INSTALL) snake $(prefix)/bin
 
-distclean: clean
+distclea:
 	-rm -f Makefile

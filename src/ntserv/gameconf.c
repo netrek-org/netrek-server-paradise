@@ -133,7 +133,7 @@ static void
 updateGPteamlogos(void)
 {
     char    buf[40];
-    char   *data;
+    unsigned char   *data;
     int     width, height;
     int     i;
 
@@ -208,7 +208,7 @@ updateGPplanetbitmaps(void)
 {
     struct gp_teamplanet_spacket pkt;
     char    buf[40];
-    char   *data;
+    unsigned char   *data;
     int     width, height;
     int     i;
 

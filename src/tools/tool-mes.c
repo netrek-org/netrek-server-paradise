@@ -29,6 +29,9 @@ notice appear in all copies.
 
 #include "config.h"
 #include "proto.h"
+#include "tool-util.h"
+#include "data.h"
+#include "shmem.h"
 
 void
 usage(char *name)
@@ -168,7 +171,7 @@ main(int argc, char **argv)
        ]========================
     */
 
-    openmem(0);
+    openmem(0, 0);
 
     while (1) {
 	char    buf[80];
@@ -180,6 +183,8 @@ main(int argc, char **argv)
 	len = strlen(buf);
 	if (buf[len - 1] == '\n')
 	    buf[--len] = 0;
-	pmessage(buf2, buf, target, flag);
+	pmessage(buf2, target, flag, buf);
     }
+
+   exit(0);
 }

@@ -33,6 +33,9 @@ notice appear in all copies.
 
 #include "config.h"
 #include "proto.h"
+#include "tool-util.h"
+#include "data.h"
+#include "shmem.h"
 
 #define CNORMAL   "\33[37;0m"
 #define CBOLD     "\33[1m"
@@ -46,7 +49,6 @@ notice appear in all copies.
 /* prototypes */
 void       printmes P((char mstr[80], int, int, int));
 void       usage P((char *));
-static int contains P((char *, char *));
 
 #define PRINT(__x) \
 if (1) \
@@ -95,7 +97,7 @@ main(int argc, char **argv)
         argc--;
     }
 
-    openmem(0);
+    openmem(0, 0);
 
     oldmctl = mctl->mc_current;
 
@@ -121,20 +123,6 @@ main(int argc, char **argv)
             fflush(stdout);
         }
     }
-}
-
-static int
-contains(char *str1, char *str2)
-{
-    char   *s;
-    int     length;
-
-    length = strlen(str2);
-    for (s = str1; *s != 0; s++) {
-    if (*s == *str2 && strncmp(s, str2, length) == 0)
-        return (1);
-    }
-    return (0);
 }
 
 void

@@ -30,7 +30,7 @@ INSTALL=@INSTALL@
 INSTALL_SCRIPT=@INSTALL_SCRIPT@
 INSTALL_DATA=@INSTALL_DATA@
 
-VPATH=galaxygen:../common:../rsa
+VPATH=../common:../rsa:galaxygen
 
 ####
 
@@ -50,8 +50,8 @@ clean:
 	@cd galaxygen && $(MAKE) clean
 
 install:
-	$(INSTALL) daemonII $(bindir)
+	$(INSTALL) daemonII $(prefix)/bin
 
-distclean: clean
+distclean:
 	@cd galaxygen && $(MAKE) distclean
 	-rm -f Makefile

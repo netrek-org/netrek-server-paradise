@@ -12,15 +12,10 @@
 # if an argument exists it is taken as the NETREKDIR
 #
 
+NETREKDIR=@NETREKDIR@
+
 if [ X$1 != X ]; then
         NETREKDIR=$1
-elif [ X${NETREKDIR} = X ]; then
-        if [ -f "../etc/conf.netrekdir" ]; then
-                NETREKDIR=`cat "../etc/conf.netrekdir"`
-        else
-                echo "No NETREKDIR variable found, exiting."
-                exit 1
-        fi
 fi
 
 export NETREKDIR

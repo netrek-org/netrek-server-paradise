@@ -27,8 +27,11 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
+#include <signal.h>
 #include "config.h"
 #include "proto.h"
+#include "data.h"
+#include "shmem.h"
 
 #define SYSWIDTH      (GWIDTH/5)/* width of a system */
 
@@ -115,9 +118,33 @@ snakemove(int unused)
 }
 
 static void
+snake_torp(struct torp *t, int n, struct player *p)
+{
+    t->t_no = n;
+    t->t_status = TMOVE;
+    t->t_owner = p->p_no;
+    t->t_team = p->p_team;
+    t->t_dir = 128;
+    if (plan_guard == 0)
+	t->t_damage = SNAKETORPDAMAGE;
+    else
+	t->t_damage = SNAKETORPDAMAGE * 10;
+    t->t_speed = 0;
+    if (berserk)
+	t->t_war = FED | ROM | ORI | KLI;
+    else if (target == -1)
+	t->t_war = 0;
+    else
+	t->t_war = perfs[0]->p_swar | perfs[0]->p_hostile;
+    t->t_fuse = INT_MAX;
+    t->t_turns = 0;
+    p->p_ntorp++;
+}
+
+static void
 startsnake(void)
 {
-    register i, l;
+    register int i, l;
     register struct player *j;
     register struct torp *k;
     struct player *p1 = perfs[0], *p2 = perfs[1];
@@ -217,6 +244,34 @@ startsnake(void)
 	fprintf(stderr, "started\n");
 }
 
+/*
+ * start planet areas are places where people will likely enter the game
+ * (only considers 1 start planet at this time)
+ */
+
+static int
+sp_area(int x, int y)
+{
+    register int i,  px, py;
+
+    for (i = 0; i < NUMPLANETS; i++) {
+	struct planet *pl = &planets[i];
+	if (!(pl->pl_flags & (PLSHIPYARD | PLHOME)))
+	    continue;
+	px = pl->pl_x;
+	py = pl->pl_y;
+	/* printf("checking %s (%d,%d)\n", pl->pl_name, i*10,j); */
+
+	if (!(x < px - 5300 || x > px + 5300 ||
+	      y < py - 5300 || y > py + 5300)) {
+	    return 1;
+	}
+    }
+
+    return 0;
+}
+
+
 static void
 doeyes(void)
 {
@@ -315,10 +370,137 @@ check_tboundary(int teams, unsigned char *mycrs, int range, int x, int y)
     }
 }
 
+RETSIGTYPE
+exitSnake(int sig)
+{
+    register int i;
+    register struct player *j;
+    register struct torp *k;
+    register struct plasmatorp *f;
+
+    r_signal(SIGALRM, SIG_DFL);
+
+    if (debug)
+	fprintf(stderr, "snake exiting\n");
+
+    for (j = perfs[0]; j; j = (j == perfs[1] ? NULL : perfs[1])) {
+	for (i = j->p_no * MAXTORP, k = &torps[i];
+	     i < j->p_no * MAXTORP + length; i++, k++) {
+	    /* torps are free here */
+	    if (k->t_status != TFREE)
+		k->t_status = TOFF;
+	}
+	f = &plasmatorps[j->p_no * MAXPLASMA];
+	f->pt_status = PTFREE;
+	/* plasma */
+    }
+
+    memset(perfs[0], 0, sizeof(struct player));
+    memset(perfs[1], 0, sizeof(struct player));
+    perfs[0]->p_stats.st_tticks = 1;
+    perfs[1]->p_stats.st_tticks = 1;
+
+    /*
+       note: if we had a segmentation violation or bus error we want a core
+       file to debug
+    */
+    if (sig == SIGBUS || sig == SIGSEGV)
+	abort();
+    else
+	exit(0);
+}
+
+static void
+make_war(struct player *p, int plteam)
+{
+    register int i;
+    register struct player *j;
+    register struct torp *k;
+
+    perfs[0]->p_team = plteam;
+    perfs[0]->p_swar = 0;
+    perfs[0]->p_hostile = 0;
+    perfs[1]->p_team = plteam;
+    perfs[1]->p_swar = 0;
+    perfs[1]->p_hostile = 0;
+
+    perfs[0]->p_swar |= p->p_team;
+    perfs[0]->p_hostile |= p->p_team;
+    perfs[1]->p_swar |= p->p_team;
+    perfs[1]->p_hostile |= p->p_team;
+
+    /* update our torps war status */
+    for (j = perfs[0]; j; j = (j == perfs[1] ? NULL : perfs[1])) {
+	for (i = j->p_no * MAXTORP, k = &torps[i];
+	     i < j->p_no * MAXTORP + length; i++, k++) {
+
+	    k->t_war = perfs[0]->p_swar | perfs[0]->p_hostile;
+	}
+    }
+}
+
+static int
+bombcheck(int team1, int team2)
+{
+    register int i;
+    register struct player *j;
+    struct planet *p;
+
+    for (i = 0, j = players; i < MAXPLAYER; i++, j++) {
+	if (j->p_status == PALIVE) {
+	    if ((j->p_flags & PFBOMB) && (j->p_flags & PFORBIT)) {
+		p = &planets[j->p_planet];
+		if (!((j->p_swar | j->p_hostile) & p->pl_owner))
+		    continue;
+
+		if (defenders[p->pl_owner] >= configvals->tournplayers)
+		    continue;
+
+		if (!team1 && !team2) {
+		    /* any planet */
+		    printf("snake found bomber: targeting %c%c\n",
+			   teams[j->p_team].letter, shipnos[j->p_no]);
+		    fflush(stdout);
+		    make_war(j, p->pl_owner);
+		    return j->p_no;
+		}
+		else {
+		    if (team1) {
+			if (p->pl_owner == team1) {
+			    printf("found bomber: targeting %c%c\n",
+				 teams[j->p_team].letter, shipnos[j->p_no]);
+			    fflush(stdout);
+			    make_war(j, p->pl_owner);
+			    return j->p_no;
+			}
+		    }
+		    if (team2) {
+			if (p->pl_owner == team2) {
+			    printf("found bomber: targeting %c%c\n",
+				 teams[j->p_team].letter, shipnos[j->p_no]);
+			    fflush(stdout);
+			    make_war(j, p->pl_owner);
+			    return j->p_no;
+			}
+		    }
+		}
+	    }
+	}
+    }
+    return -1;
+}
+
+/* return rnd between -range & range */
+static int
+rrnd(int range)
+{
+    return lrand48() % (2 * range) - range;
+}
+
 static void
 movesnake(void)
 {
-    register i, px, py;
+    register int i, px, py;
     register struct player *j;
     register struct torp *k /* , *prev = thead */ ;
     unsigned char tc;
@@ -504,6 +686,97 @@ restore_eye(void)
     }
 }
 
+static struct player *
+whokilledme(struct plasmatorp *pt)
+{
+    register int i;
+    register struct phaser *j;
+
+    for (i = 0, j = &phasers[i]; i < MAXPLAYER; i++, j++) {
+	if (j->ph_status == PHHIT2) {
+	    if (debug) {
+		fprintf(stderr, "found PHHIT2 from %d at %d,%d\n", players[i].p_no,
+			j->ph_x, j->ph_y);
+		fprintf(stderr, "plasma is at %d,%d\n", pt->pt_x, pt->pt_y);
+		fprintf(stderr, "fl is at %d,%d\n", fl->pt_x, fl->pt_y);
+		fprintf(stderr, "fr is at %d,%d\n", fr->pt_x, fr->pt_y);
+	    }
+	    if (j->ph_x == pt->pt_x && j->ph_y == pt->pt_y) {
+		return &players[i];
+	    }
+	}
+    }
+    return NULL;
+}
+
+/* NOTE: the procedure could be writing shared memory variables at the same time
+   as the daemon.  This may produce unpredicatable results.  A better
+   implementation would mark the "snake plasma" and have the daemon do the
+   awarding. */
+static void
+award(struct player *win)
+{
+    char    buf[80];
+    char    addrbuf[10];
+
+    if (!win)
+	return;
+
+    if (target == -1 && !(win->p_flags & PFROBOT) && !WARHOSTILE(win)) {
+	strcpy(buf, "Snake eyes!");
+
+	/* what do we have for our big winner today, fred? */
+
+	if (((100 * win->p_damage) / win->p_ship.s_maxdamage) > 50 ||
+	    ((100 * win->p_shield) / win->p_ship.s_maxshield) < 50) {
+	    win->p_damage = 0;
+	    win->p_shield = win->p_ship.s_maxshield;
+	    strcat(buf, " You win free repairs!");
+	}
+	else if (((100 * win->p_fuel) / win->p_ship.s_maxfuel) < 50) {
+	    win->p_fuel = win->p_ship.s_maxfuel;
+	    strcat(buf, " You win free fuel!");
+	}
+	else if (((100 * win->p_etemp) / win->p_ship.s_maxegntemp) > 60) {
+	    win->p_etemp = 0;
+	    strcat(buf, " You win free engine cooling!");
+	}
+	else if (((100 * win->p_wtemp) / win->p_ship.s_maxwpntemp) > 60) {
+	    win->p_wtemp = 0;
+	    strcat(buf, " You win free weapons cooling!");
+	}
+	else {
+	    win->p_damage = 0;
+	    win->p_shield = win->p_ship.s_maxshield;
+	    win->p_fuel = win->p_ship.s_maxfuel;
+	    win->p_etemp = 0;
+	    win->p_wtemp = 0;
+	    strcat(buf, " You feel healthy!");
+	}
+
+	/* ... */
+
+	sprintf(addrbuf, "%s->%c%c", SERVNAME,
+		teams[win->p_team].letter, shipnos[win->p_no]);
+	pmessage2(buf, win->p_no, MINDIV, addrbuf, 255);
+    }
+    sprintf(buf, "%s (%c%c) slew the vile space serpent!",
+	    win->p_name, teams[win->p_team].letter, shipnos[win->p_no]);
+    pmessage2(buf, 0, MALL | MKILLA, MSERVA, 255);
+
+    /* and get .5 kills */
+
+    win->p_kills += 0.5;
+    if (win->p_ship.s_type == STARBASE) {
+	if (win->p_stats.st_sbmaxkills < win->p_kills) {
+	    win->p_stats.st_sbmaxkills = win->p_kills;
+	}
+    }
+    else if (win->p_stats.st_tmaxkills < win->p_kills) {
+	win->p_stats.st_tmaxkills = win->p_kills;
+    }
+}
+
 static void
 check_explode(void)
 {
@@ -577,236 +850,7 @@ check_explode(void)
     }
 }
 
-/* return rnd between -range & range */
-static int
-rrnd(int range)
-{
-    return lrand48() % (2 * range) - range;
-}
 
-static void
-snake_torp(struct torp *t, int n, struct player *p)
-{
-    t->t_no = n;
-    t->t_status = TMOVE;
-    t->t_owner = p->p_no;
-    t->t_team = p->p_team;
-    t->t_dir = 128;
-    if (plan_guard == 0)
-	t->t_damage = SNAKETORPDAMAGE;
-    else
-	t->t_damage = SNAKETORPDAMAGE * 10;
-    t->t_speed = 0;
-    if (berserk)
-	t->t_war = FED | ROM | ORI | KLI;
-    else if (target == -1)
-	t->t_war = 0;
-    else
-	t->t_war = perfs[0]->p_swar | perfs[0]->p_hostile;
-    t->t_fuse = INT_MAX;
-    t->t_turns = 0;
-    p->p_ntorp++;
-}
-
-static struct player *
-whokilledme(struct plasmatorp *pt)
-{
-    register i;
-    register struct phaser *j;
-
-    for (i = 0, j = &phasers[i]; i < MAXPLAYER; i++, j++) {
-	if (j->ph_status == PHHIT2) {
-	    if (debug) {
-		fprintf(stderr, "found PHHIT2 from %d at %d,%d\n", players[i].p_no,
-			j->ph_x, j->ph_y);
-		fprintf(stderr, "plasma is at %d,%d\n", pt->pt_x, pt->pt_y);
-		fprintf(stderr, "fl is at %d,%d\n", fl->pt_x, fl->pt_y);
-		fprintf(stderr, "fr is at %d,%d\n", fr->pt_x, fr->pt_y);
-	    }
-	    if (j->ph_x == pt->pt_x && j->ph_y == pt->pt_y) {
-		return &players[i];
-	    }
-	}
-    }
-    return NULL;
-}
-
-/* NOTE: the procedure could be writing shared memory variables at the same time
-   as the daemon.  This may produce unpredicatable results.  A better
-   implementation would mark the "snake plasma" and have the daemon do the
-   awarding. */
-static void
-award(struct player *win)
-{
-    char    buf[80];
-    char    addrbuf[10];
-
-    if (!win)
-	return;
-
-    if (target == -1 && !(win->p_flags & PFROBOT) && !WARHOSTILE(win)) {
-	strcpy(buf, "Snake eyes!");
-
-	/* what do we have for our big winner today, fred? */
-
-	if (((100 * win->p_damage) / win->p_ship.s_maxdamage) > 50 ||
-	    ((100 * win->p_shield) / win->p_ship.s_maxshield) < 50) {
-	    win->p_damage = 0;
-	    win->p_shield = win->p_ship.s_maxshield;
-	    strcat(buf, " You win free repairs!");
-	}
-	else if (((100 * win->p_fuel) / win->p_ship.s_maxfuel) < 50) {
-	    win->p_fuel = win->p_ship.s_maxfuel;
-	    strcat(buf, " You win free fuel!");
-	}
-	else if (((100 * win->p_etemp) / win->p_ship.s_maxegntemp) > 60) {
-	    win->p_etemp = 0;
-	    strcat(buf, " You win free engine cooling!");
-	}
-	else if (((100 * win->p_wtemp) / win->p_ship.s_maxwpntemp) > 60) {
-	    win->p_wtemp = 0;
-	    strcat(buf, " You win free weapons cooling!");
-	}
-	else {
-	    win->p_damage = 0;
-	    win->p_shield = win->p_ship.s_maxshield;
-	    win->p_fuel = win->p_ship.s_maxfuel;
-	    win->p_etemp = 0;
-	    win->p_wtemp = 0;
-	    strcat(buf, " You feel healthy!");
-	}
-
-	/* ... */
-
-	sprintf(addrbuf, "%s->%c%c", SERVNAME,
-		teams[win->p_team].letter, shipnos[win->p_no]);
-	pmessage2(buf, win->p_no, MINDIV, addrbuf, 255);
-    }
-    sprintf(buf, "%s (%c%c) slew the vile space serpent!",
-	    win->p_name, teams[win->p_team].letter, shipnos[win->p_no]);
-    pmessage(buf, 0, MALL | MKILLA, MSERVA, 255);
-
-    /* and get .5 kills */
-
-    win->p_kills += 0.5;
-    if (win->p_ship.s_type == STARBASE) {
-	if (win->p_stats.st_sbmaxkills < win->p_kills) {
-	    win->p_stats.st_sbmaxkills = win->p_kills;
-	}
-    }
-    else if (win->p_stats.st_tmaxkills < win->p_kills) {
-	win->p_stats.st_tmaxkills = win->p_kills;
-    }
-}
-
-static int
-bombcheck(int team1, int team2)
-{
-    register i;
-    register struct player *j;
-    struct planet *p;
-
-    for (i = 0, j = players; i < MAXPLAYER; i++, j++) {
-	if (j->p_status == PALIVE) {
-	    if ((j->p_flags & PFBOMB) && (j->p_flags & PFORBIT)) {
-		p = &planets[j->p_planet];
-		if (!((j->p_swar | j->p_hostile) & p->pl_owner))
-		    continue;
-
-		if (defenders[p->pl_owner] >= configvals->tournplayers)
-		    continue;
-
-		if (!team1 && !team2) {
-		    /* any planet */
-		    printf("snake found bomber: targeting %c%c\n",
-			   teams[j->p_team].letter, shipnos[j->p_no]);
-		    fflush(stdout);
-		    make_war(j, p->pl_owner);
-		    return j->p_no;
-		}
-		else {
-		    if (team1) {
-			if (p->pl_owner == team1) {
-			    printf("found bomber: targeting %c%c\n",
-				 teams[j->p_team].letter, shipnos[j->p_no]);
-			    fflush(stdout);
-			    make_war(j, p->pl_owner);
-			    return j->p_no;
-			}
-		    }
-		    if (team2) {
-			if (p->pl_owner == team2) {
-			    printf("found bomber: targeting %c%c\n",
-				 teams[j->p_team].letter, shipnos[j->p_no]);
-			    fflush(stdout);
-			    make_war(j, p->pl_owner);
-			    return j->p_no;
-			}
-		    }
-		}
-	    }
-	}
-    }
-    return -1;
-}
-
-static void
-make_war(struct player *p, int plteam)
-{
-    register int i;
-    register struct player *j;
-    register struct torp *k;
-
-    perfs[0]->p_team = plteam;
-    perfs[0]->p_swar = 0;
-    perfs[0]->p_hostile = 0;
-    perfs[1]->p_team = plteam;
-    perfs[1]->p_swar = 0;
-    perfs[1]->p_hostile = 0;
-
-    perfs[0]->p_swar |= p->p_team;
-    perfs[0]->p_hostile |= p->p_team;
-    perfs[1]->p_swar |= p->p_team;
-    perfs[1]->p_hostile |= p->p_team;
-
-    /* update our torps war status */
-    for (j = perfs[0]; j; j = (j == perfs[1] ? NULL : perfs[1])) {
-	for (i = j->p_no * MAXTORP, k = &torps[i];
-	     i < j->p_no * MAXTORP + length; i++, k++) {
-
-	    k->t_war = perfs[0]->p_swar | perfs[0]->p_hostile;
-	}
-    }
-}
-
-
-
-/*
- * start planet areas are places where people will likely enter the game
- * (only considers 1 start planet at this time)
- */
-
-static int
-sp_area(int x, int y)
-{
-    register i,  px, py;
-
-    for (i = 0; i < NUMPLANETS; i++) {
-	struct planet *pl = &planets[i];
-	if (!(pl->pl_flags & (PLSHIPYARD | PLHOME)))
-	    continue;
-	px = pl->pl_x;
-	py = pl->pl_y;
-	/* printf("checking %s (%d,%d)\n", pl->pl_name, i*10,j); */
-
-	if (!(x < px - 5300 || x > px + 5300 ||
-	      y < py - 5300 || y > py + 5300)) {
-	    return 1;
-	}
-    }
-
-    return 0;
-}
 
 static 
 int _move(void)
@@ -832,44 +876,4 @@ int _move(void)
 	    exitSnake(0);
     }
     return 1;
-}
-
-RETSIGTYPE
-exitSnake(int sig)
-{
-    register int i;
-    register struct player *j;
-    register struct torp *k;
-    register struct plasmatorp *f;
-
-    r_signal(SIGALRM, SIG_DFL);
-
-    if (debug)
-	fprintf(stderr, "snake exiting\n");
-
-    for (j = perfs[0]; j; j = (j == perfs[1] ? NULL : perfs[1])) {
-	for (i = j->p_no * MAXTORP, k = &torps[i];
-	     i < j->p_no * MAXTORP + length; i++, k++) {
-	    /* torps are free here */
-	    if (k->t_status != TFREE)
-		k->t_status = TOFF;
-	}
-	f = &plasmatorps[j->p_no * MAXPLASMA];
-	f->pt_status = PTFREE;
-	/* plasma */
-    }
-
-    memset(perfs[0], 0, sizeof(struct player));
-    memset(perfs[1], 0, sizeof(struct player));
-    perfs[0]->p_stats.st_tticks = 1;
-    perfs[1]->p_stats.st_tticks = 1;
-
-    /*
-       note: if we had a segmentation violation or bus error we want a core
-       file to debug
-    */
-    if (sig == SIGBUS || sig == SIGSEGV)
-	abort();
-    else
-	exit(0);
 }

@@ -48,7 +48,7 @@ clean:
 	-rm -f rsa.a $(AUTH_OBJS) $(AUTH_PROG)
 
 install:
-	$(INSTALL) $(AUTH_PROG) $(bindir)
+	$(INSTALL) $(AUTH_PROG) $(prefix)/bin
 
-distclean: clean
+distclean:
 	-rm -f Makefile

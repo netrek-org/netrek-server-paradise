@@ -31,8 +31,11 @@ notice appear in all copies.
   This is probably broken in anything but the default config
 */
 
+#include <sys/stat.h>
 #include "config.h"
 #include "proto.h"
+#include "tool-util.h"
+#include "data.h"
 
 static int     topn = 1;
 static char    name[40] = "";	/* if we want stats for a particular name */
@@ -136,8 +139,10 @@ brag(char *title, char *descr, int offset)
 
 #define COMPARE(STN) \
 int \
-cmp_raw ## STN(struct highscore *a, struct highscore *b) \
+cmp_raw ## STN(const void *aa, const void *bb) \
 { \
+  const struct highscore *a = (const struct highscore *)aa; \
+  const struct highscore *b = (const struct highscore *)bb; \
   int	diff = a->STN - b->STN; \
  \
   if (diff<0) \
@@ -149,8 +154,10 @@ cmp_raw ## STN(struct highscore *a, struct highscore *b) \
 } \
  \
 int \
-cmp_per ## STN(struct highscore *a, struct highscore *b) \
+cmp_per ## STN(const void *aa, const void *bb) \
 { \
+  const struct highscore *a = (const struct highscore *)aa; \
+  const struct highscore *b = (const struct highscore *)bb; \
   double	diff = a->STN/(double)a->ticks - b->STN/(double)b->ticks; \
  \
   if (diff<0) \
@@ -170,8 +177,10 @@ cmp_per ## STN(struct highscore *a, struct highscore *b) \
 
 #define COMPARE(STN) \
 int \
-cmp_raw/**/STN(struct highscore *a, struct highscore *b) \
+cmp_raw/**/STN(const void *aa, const void *bb) \
 { \
+  const struct highscore *a = (const struct highscore *)aa; \
+  const struct highscore *b = (const struct highscore *)bb; \
   int	diff = a->STN - b->STN; \
  \
   if (diff<0) \
@@ -183,8 +192,10 @@ cmp_raw/**/STN(struct highscore *a, struct highscore *b) \
 } \
  \
 int \
-cmp_per/**/STN(struct highscore *a, struct highscore *b) \
+cmp_per/**/STN(const void *aa, const void *bb) \
 { \
+  const struct highscore *a = (const struct highscore *)aa; \
+  const struct highscore *b = (const struct highscore *)bb; \
   double	diff = a->STN/(double)a->ticks - b->STN/(double)b->ticks; \
  \
   if (diff<0) \
@@ -205,8 +216,10 @@ COMPARE(tdooshes)
 COMPARE(tplanets)
 
 int
-cmp_ticks(struct highscore *a, struct highscore *b)
+cmp_ticks(const void *aa, const void *bb)
 {
+    const struct highscore *a = (const struct highscore *)aa;
+    const struct highscore *b = (const struct highscore *)bb;
     int     diff = a->ticks - b->ticks;
 
     if (diff < 0)
@@ -320,7 +333,6 @@ main(int argc, char **argv)
     nscores = 0;
 
     while (1) {
-	int     delta;
 	int     dt;
 	struct statentry *prevplayer;
 	struct highscore *currscore;

@@ -75,8 +75,8 @@ clean:
 install:
 # unless we're installing loadable galaxy modules
 #	for i in $(GALAXYGEN_GEN_MODULES); do
-#	  $(INSTALL) $$i $(libdir)
+#	  $(INSTALL) $$i $(prefix)/lib
 #	done
 
-distclean: clean
+distclean:
 	-rm -f Makefile

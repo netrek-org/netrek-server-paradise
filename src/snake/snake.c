@@ -27,8 +27,12 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
+#include <ctype.h>
+#include <signal.h>
 #include "config.h"
 #include "proto.h"
+#include "data.h"
+#include "shmem.h"
 
 /* from snakemove.c */
 RETSIGTYPE snakemove();
@@ -104,6 +108,13 @@ printsnakeUsage(void)
 }
 
 /*--------------------------[ printsnakeUsage ]--------------------------*/
+
+/* likewise as in robotII.c, we don't need ntserv/warning() but don't
+   want to drag in the entirety of ntserv.  Declare null function here. */
+void
+warning(char *t)
+{
+}
 
 int main(int argc, char **argv)
 {

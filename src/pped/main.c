@@ -2,10 +2,13 @@
  * main.c
  */
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <errno.h>
+#define PLAYER_EDITOR	/* this gets us a non-status2 version of PLAYERFILE */
+#include "config.h"
 #include "common.h"
 #include "main.h"
 #include "db.h"
@@ -14,6 +17,7 @@
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
+#include "proto.h"
 
 static char *myname;
 char *playerFile;
@@ -32,7 +36,7 @@ main(int argc, char *argv[])
 
 	signal(SIGWINCH, getTTYinfo);
 
-	rf = build_path(RANKS_FILENAME);
+	rf = build_path(RANKS_FILE);
 	init_data(rf);
 
 	if(argc == 2)

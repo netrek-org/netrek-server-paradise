@@ -53,5 +53,5 @@ clean:
 # nothing to do for install
 install:
 
-distclean: clean
+distclean:
 	-rm -f Makefile

@@ -118,7 +118,7 @@ parse_ranks(char *filename)
   mode = RANK_MODE;
   f = fopen(filename, "r");
 
-  while(line = get_rank_line(f))
+  while((line = get_rank_line(f)))
   {
     int in_name;
 

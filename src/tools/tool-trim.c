@@ -36,11 +36,10 @@ notice appear in all copies.
 
 #include "config.h"
 #include "proto.h"
+#include "tool-util.h"
+#include "data.h"
 
 static struct statentry kplayer;
-/* struct status globals; */
-static struct rawdesc *output = NULL;
-static char    mode;
 
 /* prototypes */
 void trimblanks2 P((char *));
@@ -50,13 +49,10 @@ void usage P((char *));
 int
 main(int argc, char **argv)
 {
-    int     fd;
     struct statentry plstats;
     int     i;
-    char    buf[512];
     int     harsh = 10;        /* How strict we will be with player trimming */
     char   *me;
-    char   *path;
     FILE   *infile = stdin;   /* these used to actually read in from the
                                  actual file, Rob changed them to stdin/out,
                                  and I don't mind them that way (it actually

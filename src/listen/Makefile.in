@@ -45,7 +45,7 @@ clean:
 	-rm -f listen $(LISTEN_OBJS)
 
 install:
-	$(INSTALL) listen $(bindir)
+	$(INSTALL) listen $(prefix)/bin
 
-distclean: clean
+distclean:
 	-rm -f Makefile

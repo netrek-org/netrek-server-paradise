@@ -79,7 +79,7 @@ install:
 	  cd rsa && $(MAKE) install; \
 	fi
 
-distclean: clean
+distclean:
 	@for dir in $(L_DIRS) $(S_DIRS) $(P_DIRS); do \
 	  (cd $${dir} && $(MAKE) distclean); \
 	done

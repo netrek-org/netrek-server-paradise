@@ -10,12 +10,15 @@
 #include <sys/ioctl.h>
 #include <time.h>
 #include <curses.h>
+#include <term.h>
+#include "config.h"
 #include "common.h"
 #include "db.h"
 #include "interface.h"
 #include "intfdesc.h"
 #include "file.h"
 #include "ppeddata.h"
+#include "main.h"
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
@@ -116,7 +119,7 @@ getTTYinfo(void)
 	numLines = ws.ws_row;
 
 	/* find terminal sequence to clear the screen */
-	if(name = getenv("TERM"))
+	if((name = getenv("TERM")))
 		if(tgetent(bp, name) > 0)
 			clrStr = tgetstr("cl", &ap);
 }
@@ -130,14 +133,17 @@ cls(void)
 void
 Interface(void)
 {
-	struct plnode *p, *pn;
-	int lines, top, i, num;
+	struct plnode *p;
+	int nlines;
+	int top;
+	int i;
+	int num;
 	char buf[18], *c;
 
 	top = 0;
 	for(;;) {
-		lines = numLines - 4;
-		if(lines < 5) err_fatal("not enough tty lines!");
+		nlines = numLines - 4;
+		if(nlines < 5) err_fatal("not enough tty lines!");
 
 		cls();
 		printf("\
@@ -145,7 +151,7 @@ Interface(void)
 		printf("\
  - --- ---- ---- -----------------     - --- ---- ---- -----------------\n");
 
-		for(i = 0; i < lines; i++) {
+		for(i = 0; i < nlines; i++) {
 			if(top + i > numDBentries - 1) {
 				printf("\n");
 				continue;
@@ -163,11 +169,11 @@ Interface(void)
 				short_royal(p->player.stats.st_royal),
 				Strip(buf));
 
-			if(top + i + lines > numDBentries - 1) {
+			if(top + i + nlines > numDBentries - 1) {
 				printf("\n");
 				continue;
 			}
-			p = GetNode(top + i + lines);
+			p = GetNode(top + i + nlines);
 			if(!p) {
 				printf("\n");
 				continue;
@@ -175,7 +181,7 @@ Interface(void)
 			strncpy(buf, p->player.name, 16);
 			strcat(buf, "_");
 			printf(" %c%4d %-4s %-4s %s\n",
-				p->status ? '*':' ', top + i + lines,
+				p->status ? '*':' ', top + i + nlines,
 				short_rank(p->player.stats.st_rank),
 				short_royal(p->player.stats.st_royal),
 				Strip(buf));
@@ -187,18 +193,18 @@ Interface(void)
 		switch(buf[0]) {
 			case '\n':
 			case 'n':
-				top += (lines * 2);
+				top += (nlines * 2);
 				if(top >= numDBentries)
 					top = 0;
 				break;
 			case 'p':
 				if(!top) {
-					if(numDBentries - 2 * lines > 0)
-						top = numDBentries - 2 * lines;
+					if(numDBentries - 2 * nlines > 0)
+						top = numDBentries - 2 * nlines;
 					else
 						top = 0;
 				} else {
-					top -= (lines * 2);
+					top -= (nlines * 2);
 					if(top < 0) top = 0;
 				}
 				break;
@@ -213,7 +219,7 @@ Interface(void)
 				fflush(stdout);
 				if(fgets(buf, 18, stdin) == NULL)
 					break;
-				if(c = strrchr(buf, '\n'))
+				if((c = strrchr(buf, '\n')))
 					*c = (char)0;
 				num = GetByName(buf);
 				if(num < 0) {
@@ -246,7 +252,7 @@ Edit(int pnum)
 {
 	struct plnode *p, player;
 	char buf[18], txt[80];
-	int i, num, lines, top;
+	int i, num, nlines, top;
 
 	p = GetNode(pnum);
 	if(!p) return;
@@ -256,9 +262,9 @@ Edit(int pnum)
 	top = 0;
 
 	for(;;) {
-		lines = numLines - 2;
+		nlines = numLines - 2;
 		cls();
-		Display(&player, top, top+lines);
+		Display(&player, top, top+nlines);
 
 		printf("\nEdit: Command (? for help) -->"); fflush(stdout);
 		if(fgets(buf, 18, stdin) == NULL)
@@ -280,12 +286,12 @@ Edit(int pnum)
 				break;
 
 			case 'n':  /* page forward */
-				top += lines;
+				top += nlines;
 				if(top > NUMDESC + 1) top = 0;
 				continue;
 
 			case 'p':  /* page backward */
-				top -= lines;
+				top -= nlines;
 				if(top < 0) top = 0;
 				continue;
 
@@ -392,10 +398,10 @@ Change(int num, struct plnode *p)
 	struct inter_desc *it;
 	void *ptr;
 	char str16[16], *c;
-	char pwd[PASSWORD_SIZE];
 	char buffer[80];
 	int intnum, i, col;
 	float floatnum;
+	char pwd[16];
 
 	if(num < 0 || num >= NUMDESC) return;
 	it = &idesc_tab[num];
@@ -408,7 +414,7 @@ Change(int num, struct plnode *p)
 			printf("Enter new value -->"); fflush(stdout);
 			str16[0] = 0;
 			fgets(str16, 16, stdin);
-			if(c = strrchr(str16, '\n'))
+			if((c = strrchr(str16, '\n')))
 				*c = (char)0;
 
 			sprintf(buffer, "\"%s\" as new value for %s.", str16, it->name);
@@ -424,14 +430,14 @@ Change(int num, struct plnode *p)
 			printf("Current value for %s: \"%s\"\n", it->name, (char *)ptr);
 			printf("Enter new value -->"); fflush(stdout);
 			pwd[0] = 0;
-			fgets(pwd, PASSWORD_SIZE, stdin);
-			if(c = strrchr(pwd, '\n'))
+			fgets(pwd, 16, stdin);
+			if((c = strrchr(pwd, '\n')))
 				*c = (char)0;
 
 			sprintf(buffer, "\"%s\" as new value for %s.", pwd, it->name);
 			if(Verify(buffer)) {
-				if(strncmp((char *)ptr, pwd, PASSWORD_SIZE)) {
-					strncpy((char *)ptr, pwd, PASSWORD_SIZE);
+				if(strncmp((char *)ptr, pwd, 16)) {
+					strncpy((char *)ptr, pwd, 16);
 					p->status = 1; /* something changed */
 				}
 			}

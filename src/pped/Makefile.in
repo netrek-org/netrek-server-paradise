@@ -36,7 +36,7 @@ VPATH=../common:../rsa
 
 ####
 
-PPED_OBJS=ppeddata.o db.o file.o interface.o main.o
+PPED_OBJS=ppeddata.o db.o file.o pped-interface.o main.o
 
 all: pped
 
@@ -47,7 +47,7 @@ clean:
 	-rm -f pped $(PPED_OBJS)
 
 install:
-	$(INSTALL) pped $(bindir)
+	$(INSTALL) pped $(prefix)/bin
 
-distclean: clean
+distclean:
 	-rm -f Makefile

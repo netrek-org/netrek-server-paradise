@@ -29,6 +29,9 @@ notice appear in all copies.
 
 #include "config.h"
 #include "proto.h"
+#include "tool-util.h"
+#include "data.h"
+#include "shmem.h"
 
 #define STEP 10
 static char   *myname;
@@ -72,9 +75,8 @@ int
 main(int argc, char **argv)
 {
     int     i;
-    int     player;
     char    buf[1000];
-    int     c, seconds, part;
+    int     seconds, part;
 
     myname = argv[0];
 
@@ -91,20 +93,20 @@ main(int argc, char **argv)
     else {
 	seconds = 10;
     }
-    openmem(0);
+    openmem(0, 0);
 
     part = seconds % STEP;
     if (part)
 	sleep(part);
 
     for (seconds -= part; seconds > 0; seconds -= STEP) {
-	sprintf(buf, "%s->ALL  ** Attention: The galaxy will be reset in %d seconds.", SERVNAME, seconds);
-	pmessage(buf, 0, MALL);
+	sprintf(buf, "->ALL  ** Attention: The galaxy will be reset in %d seconds.", seconds);
+	pmessage(buf, 0, MALL, SERVNAME);
 	sleep(STEP);
     }
 
     sprintf(buf, "%s->ALL  ** Manual galaxy reset **", SERVNAME);
-    pmessage(buf, 0, MALL);
+    pmessage(buf, 0, MALL, SERVNAME);
 
     zap();
 

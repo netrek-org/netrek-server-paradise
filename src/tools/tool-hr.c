@@ -27,8 +27,13 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
+#include <errno.h>
+#include <sys/stat.h>
 #include "config.h"
 #include "proto.h"
+#include "tool-util.h"
+#include "data.h"
+#include "shmem.h"
 
 #ifdef sparc
 extern char *sys_errlist[];
@@ -65,8 +70,10 @@ printUsage(char *me)
 }
 
 int 
-cmp_func(struct statentry **a, struct statentry **b)
+cmp_func(const void *aa, const void *bb)
 {
+    const struct statentry **a = (const struct statentry **)aa;
+    const struct statentry **b = (const struct statentry **)bb;
     float     di_diff = (*a)->stats.st_di - (*b)->stats.st_di;
     int     rk_diff = (*a)->stats.st_rank - (*b)->stats.st_rank;
 

@@ -15,7 +15,6 @@ void
 initDB(void)
 {
 	struct plnode *p, *pn;
-	int i;
 
 	/* deallocate previous db */
 	p = firstEnt;

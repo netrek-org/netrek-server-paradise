@@ -29,6 +29,9 @@ notice appear in all copies.
 
 #include "config.h"
 #include "proto.h"
+#include "tool-util.h"
+#include "data.h"
+#include "shmem.h"
 
 /* ------------------------------------------------------------------- */
 static char *statnames[] = {"F", "O", "A", "E", "D", "Q"};
@@ -55,7 +58,6 @@ int
 main(int argc, char **argv)
 {
     int     mode;
-    char    monitor[17];
     char    fh[33];
     int     teams[9];
     int     i, count;
@@ -114,7 +116,7 @@ main(int argc, char **argv)
     rf = build_path(RANKS_FILE);
     init_data(rf);
 
-    openmem(0);
+    openmem(0, 0);
 
     for (count = 0, i = 0, j = players; i < MAXPLAYER; i++, j++) {
         if (j->p_status == PFREE)
@@ -236,6 +238,8 @@ main(int argc, char **argv)
     }
 
     printf("--==[ NetrekII (Paradise), %s ]%s--\n", PARAVERS, fillcH((63 - strlen(PARAVERS)), '='));
+
+    exit(0);
 }
 
 /* ---------------------------[ Functions ]--------------------------- */
@@ -270,7 +274,7 @@ mapshiptype(struct player *p)
 char *
 mapname(char *s)
 {
-    char    newname[17];
+    static char    newname[17];
 
     if (*s == ' ') {
         strncpy(newname, s, 16);
@@ -284,11 +288,15 @@ mapname(char *s)
 char *
 fillcH(int width, char fchar)
 {
-    char buf[width];
+    static char *buf = NULL;
     int i;
 
+    if(buf)
+      free(buf);
+    buf = (char *)malloc(width + 1);
     for (i=0; i < width; i++)
         buf[i] = fchar;
+    buf[i] = 0;
 
     return buf;
 }
@@ -296,7 +304,7 @@ fillcH(int width, char fchar)
 char *
 typestat(struct player *p)
 {
-    char    str[3];
+    static char    str[3];
 
     switch (p->p_status) {
       case PALIVE:

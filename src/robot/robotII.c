@@ -150,6 +150,16 @@ do_robot_login(void)
   }
 }
 
+/* yes, there is a warning() in ntserv/warning.c.  However, pulling
+   in that version of warning() results in pulling in almost ALL of
+   ntserv, which would hose things up pretty good.  Since the robot isn't
+   interested in warnings from the server, we define a null function
+   here instead. */
+void
+warning(char *t)
+{
+}
+
 void 
 save_robot(void)
 {
@@ -303,7 +313,8 @@ config(void)
     }
 }
 
-int main(int argc, char **argv)
+int
+main(int argc, char **argv)
 {
     register int i;
     int     team = -1;

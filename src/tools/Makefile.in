@@ -105,7 +105,7 @@ clean:
 
 install:
 	@for tool in $(TOOLS); do \
-	  $(INSTALL) $${tool} $(bindir); \
+	  $(INSTALL) $${tool} $(prefix)/bin; \
 	done
 
 distclean:

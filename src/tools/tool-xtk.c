@@ -29,6 +29,9 @@ notice appear in all copies.
 
 #include "config.h"
 #include "proto.h"
+#include "tool-util.h"
+#include "data.h"
+#include "shmem.h"
 
 static char *names[] = {"Neutral", "Fed", "Rom", "", "Kli", "", "", "", "Ori"};
 
@@ -37,7 +40,7 @@ Usage(char *myname)
 {
     printf("-- NetrekII (Paradise), %s --\n", PARAVERS);
     printf("\
-\n\t%'s [0-9a-j] <mode><mode option>'\n\
+\n\t'%s [0-9a-j] <mode><mode option>'\n\
 \n\
 Where <mode> is one of :\n\
       e(ject from game)             (simulates self-destruct)\n\
@@ -58,13 +61,11 @@ Where <mode> is one of :\n\
 }
 
 int
-main(int argc, char *argv)
+main(int argc, char **argv)
 {
-    int     i;
     int     pno;
     char    buf[1000];
     char   *myname;
-    int     c;
     struct player	*victim;
 
     myname = *argv;
@@ -81,14 +82,14 @@ main(int argc, char *argv)
 	exit(1);
     }
 
-    openmem(0);
+    openmem(0, 0);
 
     victim = &players[pno];
 
     if (victim->p_status != PALIVE) {
 	if (argc > 2 && strcmp(argv[2], "F") == 0) {
             memset(victim, 0, sizeof(struct player));
-/*	    bzero(victim, sizeof(struct player));	/* confusion 8/5/91 TC */
+/*	    bzero(victim, sizeof(struct player));	confusion 8/5/91 TC */
 	    /* victim->p_status = PFREE; */
 	    exit(0);
 	}
@@ -104,7 +105,7 @@ main(int argc, char *argv)
 	victim->p_explode = 10;
 	victim->p_status = 3;
 	victim->p_whodead = 0;
-	pmessage(buf, 0, MALL);
+	pmessage(buf, 0, MALL, "GOD->ALL");
 	exit(0);
     }
     switch (*argv[2]) {
@@ -115,7 +116,7 @@ main(int argc, char *argv)
 	victim->p_explode = 10;
 	victim->p_status = 3;
 	victim->p_whodead = 0;
-	pmessage(buf, 0, MALL);
+	pmessage(buf, 0, MALL, "GOD->ALL");
 	break;
     case 's':
 	{
@@ -188,14 +189,14 @@ main(int argc, char *argv)
 	    victim->p_swar &= ~team;
 	    sprintf(buf, "%2s has been changed to a %s.",
 		    twoletters(victim), names[team]);
-	    pmessage(buf, 0, MALL);
+	    pmessage(buf, 0, MALL, "GOD->ALL");
 	}
 	break;
     case 'D':			/* demote */
 	--victim->p_stats.st_rank;
 	sprintf(buf, "%2s was (temporarily) demoted for \
 		rank normalization purposes.", twoletters(victim));
-	pmessage(buf, 0, MALL);
+	pmessage(buf, 0, MALL, "GOD->ALL");
 	break;
     case 'P':
 	++victim->p_stats.st_rank;

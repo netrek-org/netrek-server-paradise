@@ -179,7 +179,11 @@ notice appear in all copies.
 
 /* Data files to make the game play across daemon restarts. */
 
+#ifdef PLAYER_EDITOR
+#define PLAYERFILE      "etc/db.players"
+#else
 #define PLAYERFILE	(status2->league ? "/tmp/tourney.players":"etc/db.players")
+#endif
 #define GLOBAL		"etc/db.global"
 #define PLFILE		"etc/planets"
 #define MOTD		"etc/motd"

@@ -29,6 +29,7 @@ notice appear in all copies.
 
 #include "config.h"
 #include "proto.h"
+#include "tool-util.h"
 
 int
 main(int argc, char **argv)
@@ -66,8 +67,9 @@ main(int argc, char **argv)
 	printf("WB time: %f\n", (float) s.stats.st_wbticks / 36000.0);
 	printf("WB maxkills: %f\n", s.stats.st_wbmaxkills);
 
-	printf("JS planets: %f\n", s.stats.st_jsplanets);
+	printf("JS planets: %d\n", s.stats.st_jsplanets);
 	printf("JS time: %f\n", (float) s.stats.st_jsticks / 36000.0);
     }
     fclose(f);
+    exit(0);
 }

@@ -2,6 +2,8 @@
 #define DB_H
 
 #include "config.h"
+#include "defs.h"
+#include "struct.h"
 
 struct plnode {
 	struct statentry player;

@@ -9,6 +9,8 @@
 # the dbbackup script gzips it.
 #
 
+NETREKDIR=@NETREKDIR@
+
 if [ $# -eq 0 ]; then
 	echo "Syntax: '$0 <old player file> [NETREKDIR]'"
 	exit 1
@@ -18,14 +20,9 @@ fi
 
 if [ X$2 != X ]; then
         NETREKDIR=$2
-elif [ X${NETREKDIR} = X ]; then
-        if [ -f "../etc/conf.netrekdir" ]; then
-                NETREKDIR=`cat "../etc/conf.netrekdir"`
-        else
-                echo "No NETREKDIR variable found, exiting."
-                exit 1
-        fi
 fi
+
+export NETREKDIR
 
 if [ ! -f ${NETREKDIR}/bin/hs ]; then
 	echo "$0: Highscores program not found, exiting."

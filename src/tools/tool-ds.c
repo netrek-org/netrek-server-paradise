@@ -29,6 +29,10 @@ notice appear in all copies.
 
 #include "config.h"
 #include "proto.h"
+#include "tool-util.h"
+#include "data.h"
+#include "shmem.h"
+#include "structdesc.h"
 
 extern struct field_desc *ship_fields;
 
@@ -178,6 +182,8 @@ main(int argc, char **argv)
             break;   /* for old times sake */
         } /* case 4 (Braces on this one because it looks nice, thats all */
     } /* switch */
+
+    exit(0);
 }
 
 /* ------------------[ Print ship stats in sysdef format ]------------------ */
@@ -231,7 +237,7 @@ dump_ship_Ccode(void)
 void
 dump_ships_to_table(void)
 {
-    int x, j, i;
+    int j, i;
 
     /* we have to find the max element of the ship fields, this is the
        only way I know of so far (BG) */

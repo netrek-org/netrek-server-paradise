@@ -35,7 +35,8 @@ notice appear in all copies.
 
 #include "config.h"
 #include "proto.h"
-
+#include "tool-util.h"
+#include "data.h"
 
 struct person {
   int	royal;
@@ -53,7 +54,7 @@ compare_people(struct person *a, struct person *b)
 }
 
 int
-main(int argc, char *argv)
+main(int argc, char **argv)
 {
     struct statentry plstats;
     struct person	*head=0;

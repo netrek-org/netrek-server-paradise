@@ -1,5 +1,5 @@
-#ifndef DATA_H
-#define DATA_H
+#ifndef PPEDDATA_H
+#define PPEDDATA_H
 
 #include "db.h"
 

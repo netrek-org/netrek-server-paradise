@@ -2,8 +2,7 @@
  * file.c
  */
 
-#include <stdio.h>
-#include <string.h>
+#include "config.h"
 
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>

@@ -38,14 +38,14 @@ ROBOT_OBJS=robotII.o rmove.o
 
 all: robotII
 
-robotII: common.a robotII.o $(ROBOT_OBJS)
-	$(CC) $(CFLAGS) -o robotII $(ROBOT_OBJS) ../common/common.a ../common/robot.a $(LDFLAGS) $(LIBS)
+robotII: robot.a common.a $(ROBOT_OBJS)
+	$(CC) $(CFLAGS) -o robotII $(ROBOT_OBJS) ../common/robot.a ../common/common.a $(LDFLAGS) $(LIBS)
 
 clean:
 	-rm -f robotII $(ROBOT_OBJS)
 
 install:
-	$(INSTALL) robotII $(bindir)
+	$(INSTALL) robotII $(prefix)/bin
 
-distclean: clean
+distclean:
 	-rm -f Makefile
