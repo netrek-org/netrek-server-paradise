@@ -74,6 +74,7 @@ install:
 
 distclean: clean
 	@cd src && $(MAKE) distclean
+	-rm -f $(INSTALL_SCRIPTS)
 	-rm -f config.*
 	-rm -f Makefile
 
