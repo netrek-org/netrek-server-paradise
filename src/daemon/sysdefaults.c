@@ -154,7 +154,8 @@ static void
 read_longflags(long *flagp, char *str, void *names)
 {
     char    buf[80];
-    struct  longflags_desc *fld = (struct longflags_desc *)names;
+    struct  longflags *lfd = (struct longflags *)names;
+    struct  longflags_desc *fld = lfd->lfd;
 
     *flagp = 0;
 

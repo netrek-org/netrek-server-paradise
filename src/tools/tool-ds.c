@@ -35,7 +35,7 @@ notice appear in all copies.
 #include "shmem.h"
 #include "structdesc.h"
 
-extern struct field_desc *ship_fields;
+extern struct field_desc ship_fields[];
 
 /* ----------------[ prototypes because I like main first ]---------------- */
 void dump_ship_sysdef P((void));
@@ -44,80 +44,77 @@ void dump_ships_to_table P((void));
 void describe_ship P((int ship));
 void usage P((char *name));
 
+#define IS_SINGLE_BIT_FLAG(x) ( ((((x) - 1) ^ (x)) + 1) == ((x) << 1) )
+
 /* --[ rather than duplicate it 3 times make the macro from hell (shrug) ]-- */
-#define Print_value(place) { \
-    switch (ship_fields[place].type) { \
-        case FT_CHAR: \
-            printf("%c", *(char *) temp); \
-            break; \
-        case FT_SHORT: \
-            printf("%d", *(short *) temp); \
-            break; \
-        case FT_INT: \
-            printf("%d", *(int *) temp); \
-            break; \
-        case FT_LONG: \
-            printf("%ld", *(long *) temp); \
-            break; \
-        case FT_FLOAT: \
-            printf("%g", *(float *) temp); \
-            break; \
-        case FT_STRING: \
-            printf("%s", (char *) temp); \
-            break; \
-        case FT_LONGFLAGS: \
-            { \
-                int     zz = 0; \
-                char  **names = (char **) ship_fields[place].aux; \
-                long    flag = *(long *) temp; \
-                int     first = 1; \
-                for (zz = 0; names[zz]; zz++) { \
-                    if (flag & (1 << zz)) { \
-                        printf("%s%s", first ? "" : ",", names[zz]); \
-                        first = 0; \
-                    } \
-                } \
-            } \
-            break; \
-        default: \
-            printf("unknown type"); \
-            break; \
-    } \
+/* or what the hell make it a function as long as we're calling it
+   from three difference places */
+void Print_value(int place, void *temp, int emit_C_code)
+{
+    switch (ship_fields[place].type) {
+        case FT_CHAR:
+            printf("%c", *(char *) temp);
+            break;
+        case FT_SHORT:
+            printf("%d", *(short *) temp);
+            break;
+        case FT_INT:
+            printf("%d", *(int *) temp);
+            break;
+        case FT_LONG:
+            printf("%ld", *(long *) temp);
+            break;
+        case FT_FLOAT:
+            printf("%g", *(float *) temp);
+            break;
+        case FT_STRING:
+            printf("%s", (char *) temp);
+            break;
+        case FT_LONGFLAGS:
+            {
+                int     zz = 0;
+		struct longflags *lfd;
+                long    flag = *(long *) temp;
+                int     first = 1;
+		int     equal = 0;
+		char   *sep = (emit_C_code ? " | " : ", ");
+		char   *pref = "";
+		
+		lfd = (struct longflags *)ship_fields[place].aux;
+
+		if(emit_C_code) pref = lfd->prefix;
+		
+                for (zz = 0; lfd->lfd[zz].name; zz++)
+		{
+                    if (flag == lfd->lfd[zz].bitvalue)
+		    {
+                        printf("%s%s%s", first ? "" : sep, pref,
+			       lfd->lfd[zz].name);
+			equal = 1;
+                        first = 0;
+                    }
+                }
+		if(!equal)
+		{
+		    for (zz = 0; 
+		         lfd->lfd[zz].name &&
+		           IS_SINGLE_BIT_FLAG(lfd->lfd[zz].bitvalue); zz++)
+		    {
+		        if(flag & lfd->lfd[zz].bitvalue)
+			{
+			    printf("%s%s%s", first ? "" : sep, pref,
+			           lfd->lfd[zz].name);
+			    first = 0;
+			}
+		    }
+		}
+            }
+            break;
+        default:
+            printf("unknown type");
+            break;
+    }
 }
-
-static char *shipTYPES[] = {
-    "SCOUT",
-    "DESTROYER",
-    "CRUISER",
-    "BATTLESHIP",
-    "ASSAULT",
-    "STARBASE",
-    "ATT",
-    "JUMPSHIP",
-    "FRIGATE",
-    "WARBASE",
-    "LIGHTCRUISER",
-    "CARRIER"
-};
-
-static struct nflags_desc_ {
-    int     flag;
-    char   *meaning;
-} nflags_desc[] = {
-    {SFNUNDOCKABLE,     "can not dock with another ship"},
-    {SFNCANORBIT,       "can orbit hostile worlds"},
-    {SFNCANWARP,        "has warp engines"},
-    {SFNCANFUEL,        "can transfer fuel to docked ships"},
-    {SFNCANREPAIR,      "can speed repair of docked ships"},
-    {SFNCANREFIT,       "can let docked ships refit"},
-    {SFNARMYNEEDKILL,   "needs kills to carry armies"},
-    {SFNHASPHASERS,     "is armed with phasers"},
-    {SFNPLASMASTYLE,    "360 arc of fire for plasmas"},
-    {SFNPLASMAARMED,    "is armed with plasmas by default"},
-    {SFNHASMISSILE,     "is armed with missiles by default"},
-    {SFNHASFIGHTERS,    "has a fighter bay"},
-    {0, 0}
-};
 
 /* ==============================[ Functions ]============================== */
 
@@ -201,7 +198,7 @@ dump_ship_sysdef(void)
 
             printf("%c%c %-24s",
                    shp->s_desig1, shp->s_desig2, ship_fields[j].name);
-            Print_value(j);
+            Print_value(j, temp, 0);
             printf("\n");
         }
         printf("end\n");
@@ -213,20 +210,26 @@ void
 dump_ship_Ccode(void)
 {
     int     j, i;
+    static char *st[] =
+    {
+      "SCOUT", "DESTROYER", "CRUISER", "BATTLESHIP", "ASSAULT", "STARBASE",
+      "ATT", "JUMPSHIP", "FRIGATE", "WARBASE", "LIGHTCRUISER", "CARRIER",
+      "UTILITY", "PATROL"
+    };
 
     for (i = 0; i < NUM_TYPES; i++) {
         struct ship *shp = &shipvals[i];
-        printf("  /* comprehensive definition of %s */\n", shipTYPES[i]);
+        printf("  /* comprehensive definition of %s */\n", shp->s_name);
         for (j = 0; ship_fields[j].name; j++) {
             void   *temp = ship_fields[j].offset + (char *) shp;
 
             if (ship_fields[j].type == FT_STRING) {
-                printf("  strcpy(shipvals[%s].s_%s, \"%s\")", shipTYPES[i],
+                printf("  strcpy(shipvals[%s].s_%s, \"%s\")", st[i],
                    ship_fields[j].name, (char *) temp);
             } else {
                 printf("  shipvals[%s].s_%s = ",
-                       shipTYPES[i], ship_fields[j].name);
-                Print_value(j);
+                       st[i], ship_fields[j].name);
+                Print_value(j, temp, 1);
             }
             printf(";\n");
         }
@@ -284,13 +287,40 @@ void
 describe_ship(int s_no)
 {
     struct ship *sp = &shipvals[s_no];
-    int     i;
+    int     i, j, init = 0, equal;
+    struct longflags *lfd;
 
-    printf("The %s\n", sp->s_name);
-    for (i = 0; nflags_desc[i].flag; i++) {
-        if ((sp->s_nflags & nflags_desc[i].flag) != nflags_desc[i].flag)
-            continue;
-        printf("\t%s\n", nflags_desc[i].meaning);
+    for(j = 0; ship_fields[i].name; j++)
+    {
+      if(ship_fields[i].type == FT_LONGFLAGS)
+      {
+        long flags = *(long *) ((char *)(sp) + ship_fields[i].offset);
+
+	if(!init)
+	{
+	  printf("The %s\n", sp->s_name);
+	  init = 1;
+	}
+
+        equal = 0;
+	lfd = (struct longflags *)ship_fields[i].aux;
+
+	for(i = 0; lfd->lfd[i].name; i++)
+	{
+	  if(flags == lfd->lfd[i].bitvalue)
+	  {
+	    equal = 1;
+	    printf("\t%s\n", lfd->lfd[i].help);
+	    break;
+	  }
+	}
+
+	for(i = 0; lfd->lfd[i].name && !equal; i++)
+	{
+	  if(flags & lfd->lfd[i].bitvalue)
+	    printf("\t%s\n", lfd->lfd[i].help);
+	}
+      }
     }
 }
 

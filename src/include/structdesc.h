@@ -46,7 +46,13 @@ struct field_desc {
 
 struct longflags_desc {
     char *name;
-    long  bitvalue;
+    long bitvalue;
+    char *help;
+};
+
+struct longflags {
+    char *prefix;
+    struct longflags_desc *lfd;
 };
 
 /*-------------------------------------------------------------------------*/

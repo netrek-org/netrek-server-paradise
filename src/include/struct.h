@@ -156,6 +156,7 @@ struct ship {
 };
 
 /* for s_bombflags */
+#define SBOMB_NONE     0
 #define SBOMB_ARMIES   (1 << 0)
 #define SBOMB_FUEL     (1 << 1)
 #define SBOMB_AGRI     (1 << 2)

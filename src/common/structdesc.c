@@ -34,36 +34,49 @@ notice appear in all copies.
 #define OFFSET_OF(field)	( (char*)(&((struct ship*)0)->field) -\
  			  (char*)0)
 
-/* char *name, long bitvalue */
+#define DEF_LF(prefix,name) #name, prefix##name
+/* char *name, long bitvalue, char *help */
 static struct longflags_desc all_ship_flag_names[] =
 {
-    { "UNDOCKABLE", SFNUNDOCKABLE },
-    { "CANORBIT",   SFNCANORBIT },
-    { "CANWARP",    SFNCANWARP },
-    { "CANFUEL",    SFNCANFUEL },
-    { "CANREPAIR",  SFNCANREPAIR },
-    { "CANREFIT",   SFNCANREFIT },
-    { "ARMYNEEDKILL", SFNARMYNEEDKILL },
-    { "HASPHASERS", SFNHASPHASERS },
-    { "PLASMASTYLE", SFNPLASMASTYLE },
-    { "MASSPRODUCED", SFNMASSPRODUCED },
-    { "PLASMAARMED", SFNPLASMAARMED },
-    { "HASMISSILE",  SFNHASMISSILE },
-    { "HASFIGHTERS", SFNHASFIGHTERS },
-    { 0, 0 }
+    { DEF_LF(SFN, UNDOCKABLE),   "cannot dock with another ship" },
+    { DEF_LF(SFN, CANORBIT),     "can orbit hostile worlds" },
+    { DEF_LF(SFN, CANWARP),      "has warp engines" },
+    { DEF_LF(SFN, CANFUEL),      "can transfer fuel to docked ships" },
+    { DEF_LF(SFN, CANREPAIR),    "can speed repair of docked ships" },
+    { DEF_LF(SFN, CANREFIT),     "can let docked ships refit" },
+    { DEF_LF(SFN, ARMYNEEDKILL), "needs kills to carry armies" },
+    { DEF_LF(SFN, HASPHASERS),   "is armed with phasers" },
+    { DEF_LF(SFN, PLASMASTYLE),  "360 arc of fire for plasmas" },
+    { DEF_LF(SFN, MASSPRODUCED), "is mass produced" },
+    { DEF_LF(SFN, PLASMAARMED),  "is armed with plasmas by default" },
+    { DEF_LF(SFN, HASMISSILE),   "is armed with missiles by default" },
+    { DEF_LF(SFN, HASFIGHTERS),  "has a fighter bay" },
+    { 0, 0, 0 }
+};
+
+static struct longflags all_ship_longflags =
+{
+  "SFN",
+  all_ship_flag_names,
 };
 
 static struct longflags_desc ship_bombflag_names[] = 
 {
-  { "NONE", 0 },
-  { "ARMIES", SBOMB_ARMIES },
-  { "FUEL",   SBOMB_FUEL },
-  { "AGRI",   SBOMB_AGRI },
-  { "REPAIR", SBOMB_REPAIR },
-  { "SHIPYARD", SBOMB_SHIPYARD },
-  { "FACILITIES", SBOMB_FACILITIES },
-  { "ALL",    SBOMB_ALL },
-  { 0, 0 }
+  { DEF_LF(SBOMB_, NONE),       "cannot bomb anything" },
+  { DEF_LF(SBOMB_, ARMIES),     "can bomb armies" },
+  { DEF_LF(SBOMB_, FUEL),       "can bomb fueling facility" },
+  { DEF_LF(SBOMB_, AGRI),       "can bomb AGRI facility" },
+  { DEF_LF(SBOMB_, REPAIR),     "can bomb repair facility" },
+  { DEF_LF(SBOMB_, SHIPYARD),   "can bomb shipyard" },
+  { DEF_LF(SBOMB_, FACILITIES), "can bomb all facilities" },
+  { DEF_LF(SBOMB_, ALL),        "can bomb everything" },
+  { 0, 0, 0 }
+};
+
+static struct longflags ship_bombflag_longflags =
+{
+  "SBOMB_",
+  ship_bombflag_names
 };
 
 struct field_desc ship_fields[] = {
@@ -149,7 +162,7 @@ struct field_desc ship_fields[] = {
     {"armyperkill", FT_FLOAT, OFFSET_OF(s_armyperkill)},
     {"maxarmies", FT_SHORT, OFFSET_OF(s_maxarmies)},
     {"bomb", FT_INT, OFFSET_OF(s_bomb)},
-    {"bombflags", FT_LONGFLAGS, OFFSET_OF(s_bombflags), (void *) ship_bombflag_names},
+    {"bombflags", FT_LONGFLAGS, OFFSET_OF(s_bombflags), (void *) &ship_bombflag_longflags},
 
     {"repair", FT_SHORT, OFFSET_OF(s_repair)},
     {"maxdamage", FT_INT, OFFSET_OF(s_maxdamage)},
@@ -178,7 +191,7 @@ struct field_desc ship_fields[] = {
     {"numdefn", FT_INT, OFFSET_OF(s_numdefn)},
     {"numplan", FT_INT, OFFSET_OF(s_numplan)},
 
-    {"nflags", FT_LONGFLAGS, OFFSET_OF(s_nflags), (void *) all_ship_flag_names},
+    {"nflags", FT_LONGFLAGS, OFFSET_OF(s_nflags), (void *) &all_ship_longflags},
 
     {0},
 };

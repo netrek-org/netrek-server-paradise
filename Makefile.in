@@ -77,6 +77,3 @@ distclean: clean
 	-rm -f $(INSTALL_SCRIPTS)
 	-rm -f config.*
 	-rm -f Makefile
-
-cvsclean: distclean
-	-rm -f configure
