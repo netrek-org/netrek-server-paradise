@@ -3625,6 +3625,9 @@ sendShipCap(void)
 	temppack.s_width = htons(ship.s_width);
 	temppack.s_height = htons(ship.s_height);
 	temppack.s_maxarmies = htons(ship.s_maxarmies);
+	temppack.s_armies = ((int)(10 * ship.s_armyperkill)) & 0x7f;
+	if(ship.s_nflags & SFNARMYNEEDKILL)
+	  temppack.s_armies |= 0x80;
 	temppack.s_letter = ship.s_letter;
 	temppack.s_desig1 = ship.s_desig1;
 	temppack.s_desig2 = ship.s_desig2;

@@ -86,6 +86,7 @@ unsigned char F_terrain_minor;	/* Minor terrain version client can handle */
 int F_gz_motd = 0;		/* Client can't handle GZipped MOTD packets */
 unsigned char F_gz_motd_major;	/* Major gzipped format client can handle */
 unsigned char F_gz_motd_minor;	/* Minor gzipped format client can handle */
+int F_armies_shipcap = 1;	/* Client can handle this by default */
 
 double  oldmax = 0.0;
 

@@ -517,7 +517,7 @@ struct ship_cap_spacket {	/* Server configuration of client */
     INT16   s_height;
     INT16   s_maxarmies;
     INT8    s_letter;
-    INT8    pad2;
+    INT8    s_armies;
     INT8    s_name[16];
     INT8    s_desig1;
     INT8    s_desig2;

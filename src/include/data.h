@@ -89,6 +89,7 @@ extern unsigned char F_terrain_minor;	/* Minor terrain version client can handle
 extern int F_gz_motd;		/* Client can't handle GZipped MOTD packets */
 extern unsigned char F_gz_motd_major;	/* Major gzipped format client can handle */
 extern unsigned char F_gz_motd_minor;	/* Minor gzipped format client can handle */
+extern int F_armies_shipcap;
 
 extern int chaos;
 extern int topgun;		/* added 12/9/90 TC */
