@@ -54,6 +54,7 @@ compute_ratings(struct player *p, struct rating *r)
 
     t2 = t * (float) status->kills;	/* get expected kills */
     t2 /= 2;				/* lower expectation */
+    if(t2 == 0.0) t2 = 1.0;
     printf("ticks %f timeprod %lu %f %f %ld\n",
            (float)s->st_tticks,
            status->timeprod,
@@ -61,36 +62,42 @@ compute_ratings(struct player *p, struct rating *r)
     r->offrat = s->st_tkills / t2;	/* calc offense rating */
 
     t2 = t * (float) status->dooshes;	/* expected armies dooshed */
+    if(t2 == 0.0) t2 = 1.0;
     r->dooshrat = (float) s->st_tdooshes / t2;	/* doosh rating */
 
     r->battle = r->offrat + r->dooshrat;	/* get battle rating */
 
     t2 = t * (float) status->armsbomb;	/* expected armies bombed */
+    if(t2 == 0.0) t2 = 1.0;
     r->bombrat = (float) s->st_tarmsbomb / t2;	/* bomb rating */
 
     t2 = t * (float) status->resbomb;	/* expected resources bombed */
+    if(t2 == 0.0) t2 = 1.0;
     r->resrat = (float) s->st_tresbomb / t2;	/* resource bombed rating */
 
     t2 = t * (float) status->planets;	/* expected planets */
+    if(t2 == 0.0) t2 = 1.0;
     r->planetrat = (float) s->st_tplanets / t2;	/* get planet rating */
 
 printf("planetrat %f tplanets %f t2 %f\n", (float)r->planetrat, (float)s->st_tplanets, (float)t2);
 
     r->strategy = r->bombrat + r->resrat + r->planetrat;	/* strategy rating */
 
-    t2 = (float) status->sbkills / (float) status->sblosses;
+    t2 = (float) status->sbkills / (float) (status->sblosses ? status->sblosses : 1);
+    if(t2 == 0.0) t2 = 1.0;
     if (s->st_sblosses == 0)
 	r->sbrat = (float) s->st_sbkills / t2;
     else
 	r->sbrat = ((float) s->st_sbkills / (float) s->st_sblosses) / t2;
 
-    t2 = (float) status->wbkills / (float) status->wblosses;
+    t2 = (float) status->wbkills / (float) (status->wblosses ? status->wblosses : 1);
+    if(t2 == 0.0) t2 = 1.0;
     if (s->st_wblosses == 0)
 	r->wbrat = (float) s->st_wbkills / t2;
     else
 	r->wbrat = ((float) s->st_wbkills / (float) s->st_wblosses) / t2;
 
-    t = (float) s->st_jsticks / (float) status->jstime;
+    t = (float) s->st_jsticks / (float) (status->jstime ? status->jstime : 1);
     t2 = t * (float) status->jsplanets;	/* get expected js planets */
     if (t2 == 0.0)
 	r->jsrat = 0.0;
