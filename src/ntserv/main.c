@@ -865,6 +865,11 @@ sendSysDefs(void)
       sprintf(buf, "Shipyards can only be built by Starbases.");
       sendMotdLine(buf);
     }
+    if(configvals->can_bomb_own_shipyard)
+    {
+      sprintf(buf, "Players can bomb their own shipyard.");
+      sendMotdLine(buf);
+    }
 }
 
 void 

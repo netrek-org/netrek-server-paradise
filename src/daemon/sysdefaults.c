@@ -395,6 +395,7 @@ static struct field_desc config_fields[] = {
     {"REVOLT_WITH_FACILITIES", FT_BYTE, OFFSET_OF(revolt_with_facilities)},
     {"KILL_CARRIED_ARMIES", FT_FLOAT, OFFSET_OF(kill_carried_armies)},
     {"SHIPYARD_BUILT_BY_SB_ONLY", FT_BYTE, OFFSET_OF(shipyard_built_by_sb_only)},
+    {"CAN_BOMB_OWN_SHIPYARD", FT_BYTE, OFFSET_OF(can_bomb_own_shipyard)},
     {"SURRSTART", FT_INT, OFFSET_OF(surrstart)},
     {"SURREND", FT_INT, OFFSET_OF(surrend)},
     {"SURRLENGTH", FT_INT, OFFSET_OF(surrlength)},
@@ -600,6 +601,7 @@ readsysdefaults(void)
 
     configvals->kill_carried_armies = 0.0;	/* original Paradise */
     configvals->shipyard_built_by_sb_only = 0;	/* original Paradise */
+    configvals->can_bomb_own_shipyard = 0;	/* original Paradise */
 
     configvals->surrstart = 4;
     configvals->surrend = 7;

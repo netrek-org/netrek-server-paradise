@@ -231,6 +231,7 @@ struct configuration {
                                            carried armies when damaged beyond
 					   50%? */
     char    shipyard_built_by_sb_only;	/* can only SB build a shipyard? */
+    char    can_bomb_own_shipyard;	/* Players can bomb their own SYS? */
 
     int     surrstart;			/* # planets where surrender starts */
     int     surrend;			/* # planets where surrender stops */
