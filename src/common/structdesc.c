@@ -34,30 +34,36 @@ notice appear in all copies.
 #define OFFSET_OF(field)	( (char*)(&((struct ship*)0)->field) -\
  			  (char*)0)
 
-static char *all_ship_flag_names[] = {
-    "UNDOCKABLE",
-    "CANORBIT",
-    "CANWARP",
-    "CANFUEL",
-    "CANREPAIR",
-    "CANREFIT",
-    "ARMYNEEDKILL",
-    "HASPHASERS",
-    "PLASMASTYLE",
-    "HASPLASMA",		/* obsolete */
-    "PLASMAARMED",
-    "HASMISSILE",
-    "HASFIGHTERS",
-    0
+/* char *name, long bitvalue */
+static struct longflags_desc all_ship_flag_names[] =
+{
+    { "UNDOCKABLE", SFNUNDOCKABLE },
+    { "CANORBIT",   SFNCANORBIT },
+    { "CANWARP",    SFNCANWARP },
+    { "CANFUEL",    SFNCANFUEL },
+    { "CANREPAIR",  SFNCANREPAIR },
+    { "CANREFIT",   SFNCANREFIT },
+    { "ARMYNEEDKILL", SFNARMYNEEDKILL },
+    { "HASPHASERS", SFNHASPHASERS },
+    { "PLASMASTYLE", SFNPLASMASTYLE },
+    { "MASSPRODUCED", SFNMASSPRODUCED },
+    { "PLASMAARMED", SFNPLASMAARMED },
+    { "HASMISSILE",  SFNHASMISSILE },
+    { "HASFIGHTERS", SFNHASFIGHTERS },
+    { 0, 0 }
 };
 
-static char *ship_bombflag_names[] = {
-  "ARMIES",
-  "FUEL",
-  "AGRI",
-  "REPAIR",
-  "SHIPYARD",
-  0
+static struct longflags_desc ship_bombflag_names[] = 
+{
+  { "NONE", 0 },
+  { "ARMIES", SBOMB_ARMIES },
+  { "FUEL",   SBOMB_FUEL },
+  { "AGRI",   SBOMB_AGRI },
+  { "REPAIR", SBOMB_REPAIR },
+  { "SHIPYARD", SBOMB_SHIPYARD },
+  { "FACILITIES", SBOMB_FACILITIES },
+  { "ALL",    SBOMB_ALL },
+  { 0, 0 }
 };
 
 struct field_desc ship_fields[] = {

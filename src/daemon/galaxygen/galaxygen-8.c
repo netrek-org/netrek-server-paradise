@@ -54,17 +54,6 @@ notice appear in all copies.
 #define HOMEARMIES 30		/* number of armies on home planets */
 #define COLONYARMIES 10		/* number of armies for colony planet */
 
-
- /* defines dealing with growth timers */
-#define PLGFUEL		configvals->plgrow.fuel	/* time for growth of fuel
-						   depot */
-#define PLGAGRI		configvals->plgrow.agri	/* time for growth of agri */
-#define PLGREPAIR	configvals->plgrow.repair	/* time for growth of
-							   repair */
-#define PLGSHIP		configvals->plgrow.shipyard	/* time for growth of
-							   shipyard */
-
-
 /*-------------------------------INITBRONCO------------------------------*/
 /*  Initializes the planet array the way normaltrek did it -- not much
    variety, but some people dig playing chess from the same setup over

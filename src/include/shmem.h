@@ -205,6 +205,13 @@ struct configuration {
     struct plgrow_ {
 	int     fuel, agri, repair, shipyard;
     }       plgrow;
+
+#define PLGFUEL configvals->plgrow.fuel
+#define PLGAGRI configvals->plgrow.agri
+#define PLGREPAIR configvals->plgrow.repair
+#define PLGSHIP configvals->plgrow.shipyard
+#define PLGSHIPYARD PLGSHIP
+
     int     helpfulplanets;	/* planets help fuel/etmep */
 
     char    wb_bombing_credit;	/* double stats for WB bombing? */

@@ -239,13 +239,20 @@ notice appear in all copies.
 #define friendlyPhaser(p)	(me->p_team == players[(p) - phasers].p_team)
 #define myPlayer(p)		(me == (p))
 #define myPlanet(p)		(me->p_team == (p)->pl_owner)
+#define friendly(fred,bart) \
+                       (!(fred->p_team & (bart->p_swar|bart->p_hostile)) && \
+                        !(bart->p_team & (fred->p_swar|fred->p_hostile)))
+#define friendlyPlayer(p)       friendly(me, (p))
+#if 0
 #define friendlyPlayer(p)	((!(me->p_team & \
 				    ((p)->p_swar | (p)->p_hostile))) && \
 				    (!((p)->p_team & \
 				    (me->p_swar | me->p_hostile))))
+#endif
 #define isAlive(p)		((p)->p_status == PALIVE)
 #define friendlyPlanet(p)	((p)->pl_info & me->p_team && \
 			     !((p)->pl_owner & (me->p_swar | me->p_hostile)))
+#define CAN_BOMB(pl,t) (pl->p_ship.s_bombflags & SBOMB_##t)
 
 #if 0
 #define torpColor(t)		\

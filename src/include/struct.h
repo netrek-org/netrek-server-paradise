@@ -60,7 +60,7 @@ struct weaponstat {
     short   wtemp_factor;	/* Penalty Factor 1-16 of wtemp caused */
     short   count;		/* how many we can have airborne */
     short   aux;		/* aux field */
-    /* aux is turn rate for torps and plasmas. */
+    /* aux is turn rate for torps, plasmas, and missiles */
 };
 
 struct ship {
@@ -156,12 +156,13 @@ struct ship {
 };
 
 /* for s_bombflags */
-#define SBOMB_ARMIES (1 << 0)
-#define SBOMB_FUEL (1 << 1)
-#define SBOMB_AGRI (1 << 2)
-#define SBOMB_REPAIR (1 << 3)
+#define SBOMB_ARMIES   (1 << 0)
+#define SBOMB_FUEL     (1 << 1)
+#define SBOMB_AGRI     (1 << 2)
+#define SBOMB_REPAIR   (1 << 3)
 #define SBOMB_SHIPYARD (1 << 4)
 #define SBOMB_FACILITIES (SBOMB_FUEL | SBOMB_AGRI | SBOMB_REPAIR | SBOMB_SHIPYARD)
+#define SBOMB_ALL (SBOMB_FACILITIES | SBOMB_ARMIES)
 
 /* ATTENTION!!!
    Changes to these flags should be mirrored in structdesc.c

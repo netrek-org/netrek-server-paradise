@@ -262,16 +262,26 @@ bombing_info(void)
 	return;
 
     if (planets[me->p_planet].pl_armies < 5) {
-	if (configvals->facilitygrowth)
-	    imm_warning("Weapons Officer: Bombing resources off planet, sir.");
+	if (configvals->facilitygrowth && configvals->resource_bombing &&
+	    planets[me->p_planet].pl_flags & (PLRESMASK | PLORESMASK))
+	{
+	    if(CAN_BOMB(me, FACILITIES))
+  	      imm_warning("Weapons Officer: "
+	                  "Bombing resources off planet, sir.");
+	    else
+	      imm_warning("Weapons Officer: "
+	                  "We are not equipped to bomb facilities, sir.");
+	}
 	else {
-	    sprintf(buf, "Weapons Officer: Bombing is ineffective. Sensor read %d armies left.",
+	    sprintf(buf, "Weapons Officer: "
+	                 "Bombing is ineffective. Sensor read %d armies left.",
 		    planets[me->p_planet].pl_armies);
 	    imm_warning(buf);
 	}
     }
     else {
-	sprintf(buf, "Weapons Officer: Bombarding %s...  Sensors read %d armies left.",
+	sprintf(buf, "Weapons Officer: "
+	             "Bombing %s...  Sensors read %d armies left.",
 		planets[me->p_planet].pl_name,
 		planets[me->p_planet].pl_armies);
 	imm_warning(buf);

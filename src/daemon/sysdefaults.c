@@ -151,9 +151,10 @@ readstrings(char *type, char *string, char **keys, int *array, int max)
 
 /* modifies flagp to return result */
 static void 
-read_longflags(long *flagp, char *str, char **names)
+read_longflags(long *flagp, char *str, void *names)
 {
     char    buf[80];
+    struct  longflags_desc *fld = (struct longflags_desc *)names;
 
     *flagp = 0;
 
@@ -166,15 +167,15 @@ read_longflags(long *flagp, char *str, char **names)
 	    str++;
 	buf[i] = 0;
 
-	for (i = 0; names[i]; i++)
-	    if (0 == strcasecmp(buf, names[i]))
+	for (i = 0; fld[i].name; i++)
+	    if (0 == strcasecmp(buf, fld[i].name))
 		break;
 
-	if (!names[i]) {
+	if (!fld[i].name) {
 	    fprintf(stderr, "unknown flag %s\n", buf);
 	    continue;
 	}
-	*flagp |= 1 << i;
+	*flagp |= fld[i].bitvalue;
     }
 }
 
@@ -253,7 +254,7 @@ shipdefs(int s, FILE *f)
 	    break;
 	case FT_LONGFLAGS:
 	    read_longflags((long *) (offset + (char *) currship), value,
-			   (char **) ship_fields[i].aux);
+			   ship_fields[i].aux);
 	    break;
 	default:
 	    fprintf(stderr, "Internal error, unknown field type %d\n",
@@ -697,7 +698,7 @@ readsysdefaults(void)
 		    break;
 		case FT_LONGFLAGS:
 		    read_longflags((long *) (offset + curr), s,
-				   (char **) config_fields[i].aux);
+				   config_fields[i].aux);
 		    break;
 		default:
 		    fprintf(stderr, "Internal error, unknown config field type %d\n",

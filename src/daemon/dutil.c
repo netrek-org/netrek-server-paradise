@@ -33,10 +33,6 @@ notice appear in all copies.
 #include "data.h"
 #include "shmem.h"
 
-#define	friendly(fred, bart) \
-	(!(fred->p_team & (bart->p_swar|bart->p_hostile)) && \
-	 !(bart->p_team & (fred->p_swar|fred->p_hostile)))
-
 /*--------------------------------KILLMESS--------------------------------*/
 
 /*  This function prints to the messages who killed who.  This function

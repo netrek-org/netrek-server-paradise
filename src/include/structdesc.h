@@ -44,6 +44,11 @@ struct field_desc {
     void   *aux;
 };
 
+struct longflags_desc {
+    char *name;
+    long  bitvalue;
+};
+
 /*-------------------------------------------------------------------------*/
 
 #endif /* STRUCTDESC_H */

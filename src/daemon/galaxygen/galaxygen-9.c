@@ -57,11 +57,6 @@ notice appear in all copies.
 #define HOME_BARREN_ARMIES 5
 #define MAX_INDEP_ARMIES 3
 
-#define PLGFUEL configvals->plgrow.fuel
-#define PLGAGRI configvals->plgrow.agri
-#define PLGREPAIR configvals->plgrow.repair
-#define PLGSHIPYARD configvals->plgrow.shipyard
-
 typedef void (*planet_function)(struct planet *);
 
 /* helper functions to populate independent's planets */

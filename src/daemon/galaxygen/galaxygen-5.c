@@ -80,15 +80,6 @@ notice appear in all copies.
 #define COLONYARMIES 10		/* number of armies for colony planet */
 
 
- /* defines dealing with growth timers */
-#define PLGFUEL		configvals->plgrow.fuel	/* time for growth of fuel
-						   depot */
-#define PLGAGRI		configvals->plgrow.agri	/* time for growth of agri */
-#define PLGREPAIR	configvals->plgrow.repair	/* time for growth of
-							   repair */
-#define PLGSHIP		configvals->plgrow.shipyard	/* time for growth of
-							   shipyard */
-
 /*-----------------------------PLACESYSTEMS------------------------------*/
 /*  This function places the planets in each star's system.  The function
 will return the index of the first planet that was not placed in a system.

@@ -42,20 +42,6 @@ notice appear in all copies.
 #include "data.h"
 #include "shmem.h"
 
-#define	friendly(fred, bart) \
-	(!(fred->p_team & (bart->p_swar|bart->p_hostile)) && \
-	 !(bart->p_team & (fred->p_swar|fred->p_hostile)))
-
-
- /* defines dealing with growth timers */
-#define PLGFUEL		configvals->plgrow.fuel	/* time for growth of fuel
-						   depot */
-#define PLGAGRI		configvals->plgrow.agri	/* time for growth of agri */
-#define PLGREPAIR	configvals->plgrow.repair	/* time for growth of
-							   repair */
-#define PLGSHIP		configvals->plgrow.shipyard	/* time for growth of
-							   shipyard */
-
  /* other defines */
 #define UCVISIBLE 40000		/* dist for uncloaked visibility */
 #define CVISMIN 12000		/* cloakers always visible distance */
@@ -527,7 +513,14 @@ pbomb(void)
 		p->p_flags &= ~PFBOMB;
 		continue;
 	    }
-	    if ((l->pl_warning <= 0) && (l->pl_owner != NOBODY)) {	/* warning? */
+
+	    if ((l->pl_warning <= 0) && (l->pl_owner != NOBODY) &&
+	        ((CAN_BOMB(p,ARMIES) && (l->pl_armies > 4)) ||
+		 (CAN_BOMB(p,FUEL) && (l->pl_flags & PLFUEL)) ||
+		 (CAN_BOMB(p,REPAIR) && (l->pl_flags & PLREPAIR)) ||
+		 (CAN_BOMB(p,SHIPYARD) && (l->pl_flags & PLSHIPYARD)) ||
+		 (CAN_BOMB(p,AGRI) && (l->pl_flags & PLAGRI))))
+            {
 		l->pl_warning = 50 / PLFIGHTFUSE;	/* reset warning timer */
 		sprintf(buf, "We are being attacked by %s %s who is %d%% damaged.",
 			p->p_name, twoletters(p),
@@ -541,32 +534,33 @@ pbomb(void)
 		}
 	    }
 
-#define CAN_BOMB(pl,t) (pl->p_ship.s_bombflags & SBOMB_##t)
-
 	    p->p_swar |= l->pl_owner;	/* set player at war w/ owner */
-	    rnd = (lrand48() % 50) + p->p_ship.s_bomb;	/* pick random number */
-	    rnd = (int) ((float) rnd / 33.0 + 0.5);	/* calc armies bombed */
-	    if (rnd <= 0 || !CAN_BOMB(p, ARMIES))
-		continue;	/* can't bomb negative armies */
-	    if (l->pl_armies > 4) {	/* if armies to bomb then */
-		l->pl_armies -= rnd;	/* kill off armies */
-		tlog_bomb(l, p, rnd);
-		l->pl_armies = (l->pl_armies < 1) ? 1 : l->pl_armies;
-		l->pl_tinfo[l->pl_owner].armies = l->pl_armies;
-		l->pl_tinfo[l->pl_owner].timestamp = status->clock;
-		l->pl_tinfo[p->p_team].armies = l->pl_armies;
-		l->pl_tinfo[p->p_team].timestamp = status->clock;
-		if (l->pl_armies < 5)	/* if planet needs to be redrawn */
-		    l->pl_flags |= PLREDRAW;	/* schedule planet for redraw */
-		if (l->pl_owner != NOBODY) {
-		    credit_armiesbombed(p, rnd, l);
-		}
-	    }			/* now do the resource bombing */
-	    if ((l->pl_armies > 4) ||
-		(!configvals->resource_bombing))	/* no bombing resources
-							   if armies */
-		continue;	/* on planet or in bronco-mode */
 
+	    if(CAN_BOMB(p, ARMIES))
+	    {
+	      rnd = (lrand48() % 50) + p->p_ship.s_bomb;/* pick random number */
+	      rnd = (int) ((float) rnd / 33.0 + 0.5);	/* calc armies bombed */
+	      if (rnd > 0 && l->pl_armies > 4)	/* can't bomb negative armies */
+	      {
+		    l->pl_armies -= rnd;	/* kill off armies */
+		    tlog_bomb(l, p, rnd);
+		    l->pl_armies = (l->pl_armies < 1) ? 1 : l->pl_armies;
+		    l->pl_tinfo[l->pl_owner].armies = l->pl_armies;
+		    l->pl_tinfo[l->pl_owner].timestamp = status->clock;
+		    l->pl_tinfo[p->p_team].armies = l->pl_armies;
+		    l->pl_tinfo[p->p_team].timestamp = status->clock;
+		    if (l->pl_armies < 5)  /* if planet needs to be redrawn */
+			l->pl_flags |= PLREDRAW; /* schedule planet for redrw */
+		    if (l->pl_owner != NOBODY) {
+			credit_armiesbombed(p, rnd, l);
+		    }
+	      }
+	      if (l->pl_armies > 4)	/* no resources bomb if > 4 armies */
+		  continue;	/* on planet or in bronco-mode */
+	    }
+
+            if(!configvals->resource_bombing)
+	      continue;
             
 	    if(CAN_BOMB(p, FUEL))
 	    {

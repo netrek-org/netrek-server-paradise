@@ -100,7 +100,7 @@ SHIP=1
 DD warp.cost 60
 DD warp.maxspeed 18
 DD maxarmies 0
-DD bomb 0
+DD bombflags NONE
 DD plasma.damage -1
 DD torp.damage 30
 DD torp.speed 14
@@ -123,7 +123,7 @@ SHIP=2
 CA warp.cost 75
 CA warp.maxspeed 16
 CA maxarmies 0
-CA bomb 0
+CA bombflags NONE
 CA plasma.damage -1
 CA torp.damage 40
 CA torp.speed 12
@@ -147,7 +147,7 @@ BB warp.cost 85
 BB warp.maxspeed 14
 BB maxarmies 0
 BB bomb 30
-BB bombflags ARMIES,FUEL,AGRI,REPAIR,SHIPYARD
+BB bombflags ALL
 BB torp.damage 40
 BB torp.speed 12
 BB torp.cost 300
@@ -189,7 +189,7 @@ AS plasma.damage -1
 AS armyperkill 4
 AS maxarmies 10
 AS bomb 10
-AS bombflags ARMIES,FUEL,AGRI,REPAIR,SHIPYARD
+AS bombflags ALL
 AS nflags UNDOCKABLE,CANORBIT,CANWARP,HASPHASERS
 AS maxfuel 6000
 AS recharge 20
@@ -220,7 +220,7 @@ SB plasma.cost 6000
 SB plasma.fuse 40
 SB plasma.wtemp 500
 SB maxarmies 50
-SB bomb 0
+SB bombflags NONE
 SB numdefn 3
 SB numplan 5
 SB rank 2
@@ -253,7 +253,7 @@ WB plasma.fuse 35
 WB plasma.wtemp 300
 WB maxarmies 0
 WB bomb 100
-WB bombflags ARMIES,FUEL,AGRI,REPAIR,SHIPYARD
+WB bombflags ALL
 WB numdefn 2
 WB numplan 3
 WB rank 1
