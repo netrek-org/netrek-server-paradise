@@ -314,9 +314,7 @@ isTractoringMe(struct Enemy *enemy_buf)
 
 static struct Enemy ebuf;
 
-static struct Enemy *
-get_nearest(void)
-{
+static struct Enemy * get_nearest(void) {
     int     pcount = 0;
     register int i;
     register struct player *j;
@@ -351,9 +349,8 @@ get_nearest(void)
 	    ebuf.e_dist = tdist;
 	    ebuf.e_flags &= ~(E_INTRUDER);
 	}
-	/* need a loop to find hostile ships */
-	/* within tactical range */
 
+	/* need a loop to find hostile ships within tactical range */
 	for (i = 0, j = &players[i]; i < MAXPLAYER; i++, j++) {
 	    if ((j->p_status != PALIVE) || (j == me) ||
 		((j->p_flags & PFROBOT) && (!hostile)))
