@@ -1,0 +1,124 @@
+/*
+ * robot_functions.h
+ */
+
+#ifndef ROBOT_FUNCTIONS_H
+#define ROBOT_FUNCTIONS_H
+
+/* System includes that we need */
+#include <errno.h>
+#include <fcntl.h>
+#include <math.h>
+#include <signal.h>
+#include <sys/stat.h>
+
+/* Netrek includes that we need */
+#include "config.h"
+#include "data.h"
+#include "defs.h"
+#include "proto.h"
+#include "shmem.h"
+#include "weapons.h"
+
+/* This is for go_home() */
+#define GUARDDIST 8000
+
+/* For get_nearest() */
+#define E_INTRUDER 0x01
+#define E_PSHOT    0x04
+#define E_TRACT    0x08
+#define E_TSHOT    0x02
+#define NOENEMY    (struct Enemy *) -1
+
+
+/* Robot flags */
+extern int debug;
+extern int hostile;
+extern int nofuel;
+extern int polymorphic;
+/*
+extern int berserk;
+extern int fleet;
+extern int level;
+extern int practice;
+extern int sticky;
+*/
+
+/* Robot variables */
+extern int phrange;
+extern int trrange;
+extern int startplanet;
+extern int target;
+
+/* Robot speeds */
+extern int dogslow;
+extern int dogfast;
+extern int runslow;
+extern int runfast;
+extern int closeslow;
+extern int closefast;
+
+
+/* The enemy */
+struct Enemy  {
+   int     e_info;
+   int     e_dist;
+   unsigned char e_course;     /* course to enemy */
+   unsigned char e_edir;       /* enemy's current heading */
+   unsigned char e_tcourse;    /* torpedo intercept course to enemy */
+   unsigned int e_flags;
+   int     e_tractor;          /* who he's tractoring/pressoring */
+   int     e_phrange;          /* his phaser range */
+   unsigned int e_hisflags;    /* his pflags. bug fix: 6/24/92 TC */
+};
+
+/* This function logs the robot in */
+static void do_robot_login(void);
+
+/* This function saves the robot's stats */
+void save_robot(void);
+
+/* Calculates class-specific stuff */
+void config(void);
+
+/* This function means that the robot has nothing better to do.
+ * If there are hostile players in the game, it will try to get
+ * as close to them as it can, while staying in its own space.
+ * Otherwise, it will head to the center of its own space.
+ * CRD feature: robots now hover near their start planet - MAK,  2-Jun-93
+ */
+static void go_home(struct Enemy*);
+
+/* 
+ * This function is pretty self-explanitory.  The 'bot scans through all
+ * of the plasma torps in the game, and phasers any hostile ones in its
+ * phaser range.  It returns TRUE if it phasored a plasma, FALSE otherwise.
+ */
+static int phaser_plasmas(void);
+
+/* Not quite sure what this does */
+static int projectDamage(int, int*);
+
+/* Figures out if someone is tractoring or pressing the 'bot */
+static int isTractoringMe(struct Enemy*);
+
+/* Finds the nearest enemy and returns him */
+static struct Enemy* get_nearest(void);
+
+/* Returns the nearest planet */
+static struct planet * get_nearest_planet(void);
+
+/* This function will seek out a nearby repair planet if nearby, otherwise
+ * it will just repair.
+ */
+static int do_repair(void);
+
+/* Sends a message to everyone */
+static void messAll(char*);
+
+/* This function destroys the robot gracefully */
+static void exitRobot(void);
+
+#endif
+
+/* end robot_functions.h */
