@@ -108,6 +108,14 @@ void nplasmatorp P((unsigned char, int));
 void intrupt P((void));
 void auto_features P((void));
 
+/* ntserv/reserved.c */
+void makeReservedPacket P((struct reserved_spacket *));
+void encryptReservedPacket P((struct reserved_spacket *, struct reserved_cpacket *, char *, int));
+
+/* ntserv/rsa-server.c */
+void makeRSAPacket P((struct rsa_key_spacket *packet));
+int  decryptRSAPacket P((struct rsa_key_spacket *, struct rsa_key_cpacket *, char *));
+
 /* ntserv/socket.c */
 int connectToClient P((char *, int));
 void checkSocket P((void));

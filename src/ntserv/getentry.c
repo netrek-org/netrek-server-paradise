@@ -27,6 +27,7 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
+#include <sys/types.h>
 #include <sys/socket.h>
 #include "config.h"
 #include "proto.h"

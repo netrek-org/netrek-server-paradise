@@ -41,7 +41,7 @@ L_DIRS=common
 S_DIRS=daemon listen ntserv robot snake
 P_DIRS=tools $(PLAYER_EDITOR)
 
-all: libs authlib server progs
+all: authlib libs server progs
 
 libs:
 	@for dir in $(L_DIRS); do \
@@ -50,7 +50,7 @@ libs:
 
 authlib:
 	@if test "x$(AUTH_PROG)" = xkeycomp; then \
-	  cd rsa && $(MAKE); \
+	  cd res-rsa && $(MAKE); \
 	fi
 
 server:
@@ -68,7 +68,7 @@ clean:
 	  (cd $${dir} && $(MAKE) clean); \
 	done
 	@if test "x$(AUTH_PROG)" = xkeycomp; then \
-	  cd rsa && $(MAKE) clean; \
+	  cd res-rsa && $(MAKE) clean; \
         fi
 
 install:
@@ -76,7 +76,7 @@ install:
 	  (cd $${dir} && $(MAKE) install); \
 	done
 	@if test "x$(AUTH_PROG)" = xkeycomp; then \
-	  cd rsa && $(MAKE) install; \
+	  cd res-rsa && $(MAKE) install; \
 	fi
 
 distclean:
@@ -84,6 +84,6 @@ distclean:
 	  (cd $${dir} && $(MAKE) distclean); \
 	done
 	@if test "x$(AUTH_PROG)" = xkeycomp; then \
-	  cd rsa && $(MAKE) distclean; \
+	  cd res-rsa && $(MAKE) distclean; \
 	fi
 	-rm -f Makefile include/config.h

@@ -21,8 +21,7 @@ CC=@CC@
 CPP=@CPP@
 
 CFLAGS=@CFLAGS@
-CPPFLAGS=@CPPFLAGS@ -I../include
-DEFS=@AUTH_DEFS@ @DEFS@
+CPPFLAGS=@CPPFLAGS@ -I../include @AUTH_DEFS@ @DEFS@
 LDFLAGS=@LDFLAGS@
 LIBS=@LIBS@ -lm
 
@@ -30,7 +29,10 @@ INSTALL=@INSTALL@
 INSTALL_SCRIPT=@INSTALL_SCRIPT@
 INSTALL_DATA=@INSTALL_DATA@
 
-VPATH=../common:../rsa
+VPATH=../common:../res-rsa
+
+AUTH_PROG=@AUTH_PROG@
+AUTH_PROG_OBJS=@AUTH_PROG_OBJS@
 
 ####
 
@@ -47,7 +49,8 @@ DS_OBJS=tool-ds.o
 TRIM_OBJS=tool-trim.o
 GETSTATS_OBJS=getstats.o
 
-OBJS=$(MES_OBJS) \
+OBJS=$(AUTH_PROG_OBJS) \
+     $(MES_OBJS) \
      $(XTK_OBJS) \
      $(WM_OBJS) \
      $(RESET_OBJS) \
@@ -60,9 +63,12 @@ OBJS=$(MES_OBJS) \
      $(TRIM_OBJS) \
      $(GETSTATS_OBJS)
 
-TOOLS=mes xtk wm reset pl promo hr hs heraldry ds trim getstats
+TOOLS=$(AUTH_PROG) mes xtk wm reset pl promo hr hs heraldry ds trim getstats
 
 all: $(TOOLS)
+
+$(AUTH_PROG): $(AUTH_PROG_OBJS)
+	$(CC) $(CFLAGS) -o $(AUTH_PROG) $(AUTH_PROG_OBJS) $(LDFLAGS) $(LIBS)
 
 mes: common.a $(MES_OBJS)
 	$(CC) $(CFLAGS) -o mes $(MES_OBJS) ../common/common.a $(LDFLAGS) $(LIBS)
