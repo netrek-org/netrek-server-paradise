@@ -290,11 +290,11 @@ describe_ship(int s_no)
     int     i, j, init = 0, equal;
     struct longflags *lfd;
 
-    for(j = 0; ship_fields[i].name; j++)
+    for(j = 0; ship_fields[j].name; j++)
     {
-      if(ship_fields[i].type == FT_LONGFLAGS)
+      if(ship_fields[j].type == FT_LONGFLAGS)
       {
-        long flags = *(long *) ((char *)(sp) + ship_fields[i].offset);
+        long flags = *(long *) ((char *)(sp) + ship_fields[j].offset);
 
 	if(!init)
 	{
@@ -303,7 +303,7 @@ describe_ship(int s_no)
 	}
 
         equal = 0;
-	lfd = (struct longflags *)ship_fields[i].aux;
+	lfd = (struct longflags *)ship_fields[j].aux;
 
 	for(i = 0; lfd->lfd[i].name; i++)
 	{

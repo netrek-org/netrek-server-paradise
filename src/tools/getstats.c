@@ -37,9 +37,14 @@ main(int argc, char **argv)
     FILE   *f;
     struct statentry s;
 
+    if (argc != 2) {
+        printf("Usage: %s <player file>\n", argv[0]);
+	exit(1);
+    }
+
     f = fopen(argv[1], "r");
     if (f == NULL) {
-	printf("Cannot open players file\n");
+	printf("Cannot open players file (%s)\n", argv[1]);
 	exit(1);
     }
     while (fread(&s, sizeof(struct statentry), 1, f) == 1) {

@@ -40,7 +40,6 @@ echo "PORT=${PORT}" >> "${LOGS}/startup.log"
 echo "PLPORT=${PLPORT}" >> "${LOGS}/startup.log"
 
 # Startup listen
-${NETREKDIR}/bin/listen -p ${PLPORT}
 ${NETREKDIR}/bin/listen -p ${PORT}
 
 # Startup the connected players port

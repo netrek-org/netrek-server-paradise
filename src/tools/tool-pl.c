@@ -50,7 +50,6 @@ static char *oldshiptypes[] = {"SC", "DD", "CA", "BB", "AS", "SB"};
 char *maprank P((struct player *));
 char *mapshiptype P((struct player *));
 char *mapname P((char *));
-char *fillcH P((int, char));
 char *typestat P((struct player *));
 
 /* -------------------------------[ Main ]----------------------------- */
@@ -237,7 +236,7 @@ main(int argc, char **argv)
         }
     }
 
-    printf("--==[ NetrekII (Paradise), %s ]%s--\n", PARAVERS, fillcH((63 - strlen(PARAVERS)), '='));
+    printf("--==[ NetrekII (Paradise), %s ]==--\n", PARAVERS);
 
     exit(0);
 }
@@ -282,23 +281,6 @@ mapname(char *s)
         return newname;
     } else
         return s;
-}
-
-/* fills with fchar up to width (width must be less than 255) */
-char *
-fillcH(int width, char fchar)
-{
-    static char *buf = NULL;
-    int i;
-
-    if(buf)
-      free(buf);
-    buf = (char *)malloc(width + 1);
-    for (i=0; i < width; i++)
-        buf[i] = fchar;
-    buf[i] = 0;
-
-    return buf;
 }
 
 char *

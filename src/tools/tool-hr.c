@@ -29,6 +29,8 @@ notice appear in all copies.
 
 #include <errno.h>
 #include <sys/stat.h>
+
+#define PLAYER_EDITOR	/* this gets us a non-status2 version of PLAYERFILE */
 #include "config.h"
 #include "proto.h"
 #include "tool-util.h"

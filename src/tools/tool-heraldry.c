@@ -59,6 +59,10 @@ main(int argc, char **argv)
     struct statentry plstats;
     struct person	*head=0;
     int	royalty;
+    char *fn;
+
+    fn = build_path(RANKS_FILE);
+    init_data(fn);
 
     printf("Reading players file from stdin...");
     while (1 == fread(&plstats, sizeof(plstats), 1, stdin)) {

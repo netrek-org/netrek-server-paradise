@@ -2011,7 +2011,11 @@ if test -r $srcdir/src/res-rsa/configure; then
   AUTH_LIBS="\`egrep '^GMP_LIB' ../res-rsa/Makefile | awk -F= '{print \$\$2}'\`"
 fi
 
- NETREKDIR=${prefix} 
+if test "x$prefix" = xNONE; then
+  prefix="$ac_default_prefix"
+fi
+
+NETREKDIR=${prefix}
 
 
 
