@@ -9,6 +9,16 @@
 	and now gets issued on any command errors.  I also added 'snake'
 	to the set of available god commands.
 
+	Files: snake/snake.c, snake/snakemove.c, ntserv/message.c,
+	include/defs.h
+
+	Added the first pass of the new "newbie" robot, RobotServ.  This
+	robot is the modified base practice robot ("Smack") from Bronco.
+	Thanks to Jeffrey Nowakowski for the mods that allow it to be
+	used for our purposes.
+
+	Files: robot/robot_newbie.c, robot/robot_newbie.h
+
 2000-04-18	Jeffrey Watts <watts@users.sourceforge.net>
 
 	Tweaked galaxygen-9.c to diminish variance in the placement of
@@ -16,4 +26,4 @@
 
 
 ########################################################################
-	$Id: ChangeLog,v 1.3 2000/04/26 08:53:19 watts Exp $
+	$Id: ChangeLog,v 1.4 2000/04/26 09:09:16 watts Exp $
