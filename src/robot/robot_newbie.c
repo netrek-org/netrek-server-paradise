@@ -57,8 +57,6 @@ static void obliterate(int wflag, char kreason) {
       else if (wflag == 2) {
          j->p_hostile = 0;  /* otherwise make all peaceful */
       }
-
-      j->p_war = (j->p_swar | j->p_hostile);
    }  /* end for */
 }  /* end obliterate() */
 
@@ -166,45 +164,7 @@ static void cleanup(int unused) {
    obliterate(1, KPROVIDENCE);
    status->gameup = 0;
    exitRobot();
-}
-
-
-/* Not sure what this does */
-static void start_internal(char *type) {
-   char *argv[6];
-   u_int argc = 0;
-
-   argv[argc++] = "robot";
-
-   if ((strncmp(type, "iggy", 2) == 0) ||
-      (strncmp(type, "hunterkiller", 2) == 0)) {
-      argv[argc++] = "-Ti";
-      argv[argc++] = "-P";
-      argv[argc++] = "-f";    /* Allow more than one */
-   }
-   else if (strncmp (type, "cloaker", 2) == 0) {
-      argv[argc++] = "-Ti";
-      argv[argc++] = "-C";    /* Never uncloak */
-      argv[argc++] = "-F";    /* Needs no fuel */
-      argv[argc++] = "-f";
-   }
-   else if (strncmp (type, "hoser", 2) == 0) {
-      argv[argc++] = "-p";
-      argv[argc++] = "-f";
-   }
-   else {
-      return;
-   }
-
-   argv[argc] = NULL;
-
-   if (fork() == 0) {
-      SIGNAL(SIGALRM, SIG_DFL);
-      execv(Robot,argv);
-      perror(Robot);
-      _exit(1);
-   }
-}  /* end start_internal() */
+}  /* end cleanup() */
 
 
 /* Not sure what this does */
@@ -242,8 +202,9 @@ static char* namearg(void) {
 static void start_a_robot(char *team) {
    char command[256];
 
-   sprintf(command, "%s %s %s %s -h %s -p %d -n '%s' -X robot! -b -O -i",
-      RCMD, robot_host, OROBOT, team, hostname, PORT, namearg() );
+/*   sprintf(command, "%s %s %s %s -h %s -p %d -n '%s' -X robot! -b -O -i",
+      RCMD, REMOTEHOST, OROBOT, team, TREKSERVER, PORT, namearg() ); */
+   sprintf(command, "%s -T%s", RCMD, team);
 
    if (fork() == 0) {
       SIGNAL(SIGALRM, SIG_DFL);
@@ -315,6 +276,7 @@ static int is_robots_only(void) {
  */
 void checkmess(int unused) {
    static int no_humans = 0;
+   int PKEY = 128;
    int shmemKey = PKEY;
    int i;
 
@@ -327,7 +289,7 @@ void checkmess(int unused) {
    }
 
    /* make sure shared memory is still valid */
-   if (shmget(shmemKey, SHMFLAG, 0) < 0) {
+   if (shmget(shmemKey, 0, 0) < 0) {
       exit(1);
       fprintf(stderr, "ERROR: Invalid shared memory.\n");
    }
@@ -360,17 +322,19 @@ void checkmess(int unused) {
          if (next_team == FED) {
             start_a_robot("-Tf");
          }
-         else {
+         else if (next_team == ROM) {
             start_a_robot("-Tr");
+         }
+         else if (next_team == KLI) {
+            start_a_robot("-Tk");
+         }
+         else {  /* Orion */
+            start_a_robot("-To");
          }
       }
    }
 
    if ((ticks % SENDINFO) == 0) {
-      static int alternate = 0;
-
-      alternate++;
-
       /* emit a message periodically */
       messAll("Welcome to Paradise!  This is a newbie server");
       messAll("Go to http://paradise.netrek.org for more info");
@@ -392,21 +356,19 @@ static void reaper(int sig) {
 /* This is where the magic happens - Praise Bob! */
 int main(int argc, char *argv[]) {
    enum HomeAway homeaway = NEITHER;
-   static char hostname[64];
+   int oldmctl;
    int overload = 0;
    int team = 4;
    int pno;
    int class;
    int i;
 
-   strcpy(hostname, TREKSERVER);  
    srandom(time(NULL));
    getpath();
 
-   SIGNAL(SIGCHILD, reaper);
+   SIGNAL(SIGCHLD, reaper);
 
    openmem(1, 0);
-   strcpy(robot_host,REMOTEHOST);
    readsysdefaults();
 
    SIGNAL(SIGALRM, checkmess);
@@ -432,7 +394,7 @@ int main(int argc, char *argv[]) {
    robonameset(me);
 
    /* Enter the game */
-   enter(team, 0, pno, class, mastername);
+   enter(team, 0, pno, class, -1);
 
    me->p_pos = -1;           /* So robot stats don't get saved */
    me->p_flags |= PFROBOT;   /* Mark as a robot */
@@ -440,18 +402,11 @@ int main(int argc, char *argv[]) {
    me->p_y = GWIDTH/2;       /* maybe we should just make it fight? */
    me->p_hostile = 0;
    me->p_swar = 0;
-   me->p_war = 0;
    me->p_team = 0;           /* independent */
 
    oldmctl = mctl->mc_current;
 
    status->gameup = 1;
-
-   /* Robot is signalled by the Daemon */
-   fprintf(stderr, "Robot Using Daemon Synchronization Timing\n");
-
-   me->p_process = getpid();
-   me->p_timerdelay = HOWOFTEN;
 
    /* allows robots to be forked by the daemon on some systems */
    {
