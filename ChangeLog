@@ -1,0 +1,11 @@
+$Id: ChangeLog,v 1.1 2000/04/18 21:17:09 watts Exp $
+
+	------ Netrek II: Paradise - Server ChangeLog ------
+
+2000-04-18	Jeffrey Watts <watts@users.sourceforge.net>
+
+	* Tweaked galaxygen-9.c to diminish variance in the placement of
+	race and independent systems.  Added this ChangeLog.
+
+
+# End of ChangeLog
