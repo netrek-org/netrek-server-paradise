@@ -34,22 +34,17 @@ notice appear in all copies.
 #include "shmem.h"
 
 #define STEP 10
-static char   *myname;
 
 static void
-Usage(void)
+usage(char *name)
 {
-    int x;
-    char message[][255] = {
-	"\n\t'%s [n]'\n\n",
+    char *message = 
+	"\n\t'%s [-n seconds]'\n\n"
         "Where n is the seconds until the galaxy is reset (default: 10)\n"
-        "\nThis tool resets the galaxy.\n",
-        ""
-    };
+        "\nThis tool resets the galaxy.\n";
 
     fprintf(stderr, "-- NetrekII (Paradise), %s --\n", PARAVERS);
-    for (x=0; *message[x] != '\0'; x++)
-        fprintf(stderr, message[x], myname);
+    fprintf(stderr, message, name);
 
     exit(1);
 }
@@ -76,23 +71,24 @@ main(int argc, char **argv)
 {
     int     i;
     char    buf[1000];
-    int     seconds, part;
+    int     seconds = 10, part;
+    int     c;
 
-    myname = argv[0];
-
-    if (argc > 3)
-	Usage();
-
-    if (argc == 2) {
-	i = sscanf(argv[1], "%d", &seconds);
-	if (i != 1)
-	    Usage();
-	if (seconds < 0)
-	    Usage();
+    while((c = getopt(argc, argv, "n:")) != -1)
+    {
+      switch(c)
+      {
+        case 'n':
+	  seconds = atoi(optarg);
+	  if(seconds < 0)
+	    usage(argv[0]);
+	  break;
+        default:
+	  usage(argv[0]);
+          break;
+      }
     }
-    else {
-	seconds = 10;
-    }
+
     openmem(0, 0);
 
     part = seconds % STEP;

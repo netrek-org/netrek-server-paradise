@@ -1101,7 +1101,7 @@ updatePlanets(void)
     char   *name;
 
     for (i = 0, pl = clientPlanets2, plan = planets, pll = clientPlanetLocs;
-	 i < MAXPLANETS;
+	 i < NUMPLANETS;
 	 i++, pl++, plan++, pll++) {
 	/*
 	   Send him info about him not having info if he doesn't but thinks

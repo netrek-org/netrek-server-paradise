@@ -44,6 +44,14 @@ void dump_ships_to_table P((void));
 void describe_ship P((int ship));
 void usage P((char *name));
 
+/* internal data */
+static char *st[] =
+{
+  "SCOUT", "DESTROYER", "CRUISER", "BATTLESHIP", "ASSAULT", "STARBASE",
+  "ATT", "JUMPSHIP", "FRIGATE", "WARBASE", "LIGHTCRUISER", "CARRIER",
+  "UTILITY", "PATROL", NULL
+};
+
 #define IS_SINGLE_BIT_FLAG(x) ( ((((x) - 1) ^ (x)) + 1) == ((x) << 1) )
 
 /* --[ rather than duplicate it 3 times make the macro from hell (shrug) ]-- */
@@ -121,65 +129,75 @@ void Print_value(int place, void *temp, int emit_C_code)
 int
 main(int argc, char **argv)
 {
-    int     i, droutine = 0;
+    int     i, droutine = 0, c;
+    int     opened = 0;
     char *name;
 
-    name = *argv++;
-    argc--;
+    name = argv[0];
 
-    if (argc != 1)
-        usage(name);
+/* the below is NOT an error - it does not need the braces */
+#define OPENMEM if(!opened) openmem(1, 0); opened = 1
 
-    while (*argv) {
-        if (**argv == '-')
-            ++*argv;
-        else
-            break;
-        switch (**argv) {
-            case 's':   /* sysdef */
-                droutine = 1;
-                break;
-            case 'c':   /* C Code */
-                droutine = 2;
-                break;
-            case 't':   /* table */
-                droutine = 3;
-                break;
-            case 'v':   /* verbose */
-                droutine = 4;
-                break;
-            default:
-                printf("!  %s: Unknown option '-%c'\n", name, **argv);
-                usage(name);
-        }
+    while((c = getopt(argc, argv, "sctv:V")) != -1)
+    {
+      switch(c)
+      {
+        case 's':
+	    OPENMEM;
+	    dump_ship_sysdef();
+	    break;
+	case 'c':
+	    OPENMEM;
+	    dump_ship_Ccode();
+	    break;
+	case 't':
+	    OPENMEM;
+            dump_ships_to_table();
+	    break;
+	case 'v':
+	    /* check for full ship name first */
+	    OPENMEM;
+	    for(i = 0; st[i] && strcasecmp(st[i], optarg); i++)
+	      ;
+	    if(!st[i] && (strlen(optarg) == 2))
+	    {
+	      int j;
+
+	      for(j = 0; j < NUM_TYPES; j++)
+	      {
+	        struct ship *shp = &shipvals[j];
+
+	        if(shp->s_desig1 == optarg[0] &&
+		   shp->s_desig2 == optarg[1])
+		{
+		  i = j;
+		  break;
+		}
+	      }
+	    }
+	    if(!st[i] && isdigit(optarg[0]))
+	      i = atoi(optarg);
+	    if(i >= 0 && i < NUM_TYPES)
+	      describe_ship(i);
+	    break;
+	case 'V':
+	    OPENMEM;
+	    for(i = 0; i < NUM_TYPES; i++)
+	      describe_ship(i);
+	    break;
+        default:
+	    printf("  %s: Unknown option '-%c'\n", name, c);
+	    usage(name);
+	    break;
+      }
     }
 
-    /* start up a daemon if we need to */
-    openmem(1, 0);
-
-    /* do this with two switches because we don't want to fire up the daemon
-       if we don't need to */
-    switch (droutine) {
-        case 1:                   /* Sysdef */
-            dump_ship_sysdef();
-            break;
-        case 2:                   /* C Code */
-            dump_ship_Ccode();
-            break;
-        case 3:                   /* Table */
-            dump_ships_to_table();
-            break;
-        case 4: {                  /* Verbose */
-            ++*argv;
-            if (!**argv) {
-                for (i = 0; i < NUM_TYPES; i++)
-                    describe_ship(i);
-            } else {
-                describe_ship(atoi(*argv));
-            }
-            break;   /* for old times sake */
-        } /* case 4 (Braces on this one because it looks nice, thats all */
-    } /* switch */
+    /* default to .sysdef option */
+    if(!opened)
+    {
+      OPENMEM;
+      dump_ship_sysdef();
+    }
 
     exit(0);
 }
@@ -210,12 +228,6 @@ void
 dump_ship_Ccode(void)
 {
     int     j, i;
-    static char *st[] =
-    {
-      "SCOUT", "DESTROYER", "CRUISER", "BATTLESHIP", "ASSAULT", "STARBASE",
-      "ATT", "JUMPSHIP", "FRIGATE", "WARBASE", "LIGHTCRUISER", "CARRIER",
-      "UTILITY", "PATROL"
-    };
 
     for (i = 0; i < NUM_TYPES; i++) {
         struct ship *shp = &shipvals[i];
@@ -331,19 +343,18 @@ usage(char *name)
 {
     int x;
 
-    char errmsg[][255] = {
-        "\n\t'%s <format option>'\n\n",
-        "This tool will dump all ship values, configurable to 3 formats:\n",
-        "\t-s     -- .sysdef Format\n",
-        "\t-c     -- C code Format\n",
-        "\t-t     -- Table Format (best printed with 8 point font)\n",
-        "\t-v#    -- Verbose Format (optional ship number)\n",
-        ""
-    };
+    char *errmsg = 
+        "\n\t'%s [format options]'\n\n"
+        "This tool will dump all ship values:\n"
+        "\t-s       -- .sysdef format (default)\n"
+        "\t-c       -- C code format\n"
+        "\t-t       -- table format\n"
+        "\t-v SHIP  -- verbose format - specify SHIP by name, abbr. or no.\n"
+	"                               (e.g. -v SCOUT, -v DD, -v 4)\n"
+	"\t-V       -- verbose format, all ships\n";
 
-    printf("-- NetrekII (Paradise), %s --\n", PARAVERS);
-    for (x=0; *errmsg[x] != NULL; x++)
-        printf(errmsg[x], name);
+    fprintf(stderr, "-- NetrekII (Paradise), %s --\n", PARAVERS);
+    fprintf(stderr, errmsg, name);
 
     exit(1);
 }

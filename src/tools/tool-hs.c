@@ -32,13 +32,14 @@ notice appear in all copies.
 */
 
 #include <sys/stat.h>
+#define PLAYER_EDITOR
 #include "config.h"
 #include "proto.h"
 #include "tool-util.h"
 #include "data.h"
 
 static int     topn = 1;
-static char    name[40] = "";	/* if we want stats for a particular name */
+static char  **names = NULL;	/* if we want stats for a set of names */
 static int     nplayers;
 static struct statentry *database;
 
@@ -107,14 +108,17 @@ subbrag(char *name, int stuff, int time, char *title, char *descr, int num)
 void 
 brag(char *title, char *descr, int offset)
 {
-    int     i;
-    if (name[0] != 0) {
+    int     i, j;
+
+    if (names) {
 	for (i = 0; i < nscores; i++) {
-	    if (0 == strcmp(scores[i].name, name)) {
-		printf("#%5d: ", i + 1);
-		subbrag("", *(int *) (offset + (char *) &scores[i]),
-			scores[i].ticks, title, descr, i);
-		break;
+	    for (j = 0; names[j]; j++) {
+	        if(!strcmp(scores[i].name, names[j])) {
+                    printf("#%5d: ", i + 1);
+		    subbrag("", *(int *) (offset + (char *) &scores[i]),
+		            scores[i].ticks, title, descr, i);
+		    break;	/* out of j loop */
+		}
 	    }
 	}
     }
@@ -238,59 +242,75 @@ different(struct highscore *one, struct highscore *two)
     return 0 != strcmp(one->name, two->name);
 }
 
+void
+usage(char *name)
+{
+    char *message = 
+	"\nHigh Scores, created by comparing two databases.\n"
+	"\n\t'%s -n <num> -c <num> [-name <name>] <old db> [new db]'\n\n"
+	"Options:\n"
+	"\t-n num        How many high scores to print (default 10)\n"
+	"\t-c num        Which category (0 is all (default), max available is 15)\n"
+	"\t-p string     print ranking for a particular player\n"
+	"\nExample:\t'%1$s -n 5 -c 1 etc/players.db.old '\n\n";
+
+    fprintf(stderr, "--- NetrekII (Paradise), %s ---\n", PARAVERS);
+    fprintf(stderr, message, name);
+
+    exit(1);
+}
+
 int 
 main(int argc, char **argv)
 {
     struct stat fstats;
     FILE   *fp;
-    int     i;
+    int     i, c, pn = 0;
     int     code = 0;
     struct statentry currplayer;
     char  **av;
-    int     usage = 0;
     float mintime=30.0;
 
-    for (av = &argv[1]; *av && (*av)[0] == '-'; av++) {
-	if (0 == strcmp(*av, "-n") && av[1]) {
-	    topn = atoi(*++av);
-	}
-	else if (0 == strcmp(*av, "-c") && av[1]) {
-	    code = atoi(*++av);
-	}
-	else if (0 == strcmp(*av, "-name") && av[1]) {
-	    strcpy(name, *++av);
-	}
-	else if (0 == strcmp(*av, "-time") && av[1]) {
-	    mintime=atof(*++av);
-	}
-	else {
-	    usage = 1;
-	    break;
-	}
-    }
-    if (argc - (av - argv) != 2) {
-	usage = 1;
+    while((c = getopt(argc, argv, "n:c:p:")))
+    {
+      switch(c)
+      {
+        case 'n':
+	  topn = atoi(optarg);
+	  if(topn < 1)
+	    topn = 10;
+	  break;
+	case 'c':
+	  code = atoi(optarg);
+	  if(code < 0 || code > 15)
+	    usage(argv[0]);
+	  break;
+        case 'p':
+	  pn++;
+	  break;
+	default:
+	  usage(argv[0]);
+	  break;
+      }
     }
 
-    if (usage) {
-        int x;
-        char message[][255] = {
-            "\nHigh Scores, created by comparing two databases.\n",
-            "\n\t'%s -n <num> -c <num> [-name <name>] <old db> <new db>'\n\n",
-            "Options:\n",
-            "\t-n num        How many high scores to print\n",
-            "\t-c num        Which category (0 is all, max available is 15)\n",
-            "\t-name string  print ranking for a particular player\n",
-            "\nExample:\t'%s -n 5 -c 1 .players.bak .players'\n\n",
-            "\0"
-        };
+    if((optind == argc) || (argc - optind > 2))
+      usage(argv[0]);
 
-        fprintf(stderr, "--- %s ---\n", PARAVERS);
-        for (x=0; *message[x] != '\0'; x++)
-            fprintf(stderr, message[x], argv[0]);
-
-	exit(1);
+    if(pn > 0)
+    {
+      names = (char **)malloc(sizeof(char *) * (pn + 1));
+      pn = 0;
+      getoptreset();
+      while((c = getopt(argc, argv, "n:c:p:")))
+      {
+        if(c == 'p')
+	  names[pn++] = optarg;
+      }
+      names[pn] = NULL;
     }
+
+    av = argv + optind;
 
     fp = fopen(av[0], "r");
     if (fp == 0) {
@@ -321,13 +341,12 @@ main(int argc, char **argv)
 
     fclose(fp);
 
-    fp = fopen(av[1], "r");
+    fp = fopen((argc - optind == 2 ? av[1] : build_path(PLAYERFILE)), "r");
     if (fp == 0) {
 	fprintf(stderr, "Couldn't open file %s for read", av[1]);
 	perror("");
 	exit(1);
     }
-
 
     scores = (struct highscore *) malloc(sizeof(*scores) * (scoresize = 256));
     nscores = 0;
@@ -490,6 +509,7 @@ main(int argc, char **argv)
     if (!code && topn > 5)
 	printf("\t@@b\n");
 
+#if 0
     if (!code || code == 15) {
 	qsort(scores, nscores, sizeof(*scores), cmp_ticks);
 	if (name[0] != 0) {
@@ -512,6 +532,7 @@ main(int argc, char **argv)
 	    printf("Addict: %s with %1.2f hours\n", scores[0].name, scores[0].ticks / 36000.0);
 	}
     }
+#endif
 
     exit(0);
 }

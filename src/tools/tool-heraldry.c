@@ -33,6 +33,7 @@ notice appear in all copies.
  * Scans the score file for royalty.
  */
 
+#define PLAYER_EDITOR
 #include "config.h"
 #include "proto.h"
 #include "tool-util.h"
@@ -43,6 +44,20 @@ struct person {
   char	name[16];
   struct person *next;
 };
+
+void
+usage(char *name)
+{
+    char *errmsg =
+        "\n\t'%s [options]'\n\n"
+	"This tool will scan & dump royalty in the player database:\n"
+	"\t-f FILE   -- use FILE as the player datbase\n";
+    
+    fprintf(stderr, "-- NetrekII (Paradise), %s --\n", PARAVERS);
+    fprintf(stderr, errmsg, name);
+
+    exit(1);
+}
 
 int
 compare_people(struct person *a, struct person *b)
@@ -58,14 +73,38 @@ main(int argc, char **argv)
 {
     struct statentry plstats;
     struct person	*head=0;
-    int	royalty;
-    char *fn;
+    int	royalty, c;
+    char *fn, *pfs = NULL;
+    FILE *pf;
+
+    while((c = getopt(argc, argv, "f:")) != -1)
+    {
+      switch(c)
+      {
+        case 'f':
+	  pfs = optarg;
+	  break;
+	default:
+	  usage(argv[0]);
+	  break;
+      }
+    }
 
     fn = build_path(RANKS_FILE);
     init_data(fn);
 
-    printf("Reading players file from stdin...");
-    while (1 == fread(&plstats, sizeof(plstats), 1, stdin)) {
+    fn = (pfs ? pfs : build_path(PLAYERFILE));
+    pf = fopen(fn, "r");
+    if(!pf)
+    {
+      char buf[512];
+
+      sprintf(buf, "Cannot open player file %s", fn);
+      perror(buf);
+      exit(1);
+    }
+
+    while (1 == fread(&plstats, sizeof(plstats), 1, pf)) {
 	if (plstats.stats.st_royal>0) {
 	    /* royalty!  insert into linked list. */
 	    struct person **scan;
@@ -81,7 +120,7 @@ main(int argc, char **argv)
 	    *scan = dude;
 	}
     }
-    printf("done.\n");
+    fclose(pf);
 
 
     royalty = -1;

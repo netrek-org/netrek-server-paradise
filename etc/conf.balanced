@@ -1,5 +1,5 @@
 TOURN=4
-SHIPS=SC,DD,CA,AS,BB,SB,WB
+SHIPS=SC,DD,CA,AS,BB,SB,WB,TN
 WEAPONS=PLASMA,TRACTOR
 PLKILLS=2
 #MSKILLS=2
@@ -180,17 +180,12 @@ AS torp.speed 8
 AS torp.cost 550
 AS torp.fuse 10
 AS torp.wtemp 40
-AS phaser.damage 20
-AS phaser.range 2000
-AS phaser.cost 1100
-AS phaser.fuse 40
-AS phaser.wtemp 80
 AS plasma.damage -1
 AS armyperkill 4
 AS maxarmies 10
 AS bomb 10
 AS bombflags ALL
-AS nflags UNDOCKABLE,CANORBIT,CANWARP,HASPHASERS
+AS nflags UNDOCKABLE,CANORBIT,CANWARP
 AS maxfuel 6000
 AS recharge 20
 AS repair 40
@@ -233,6 +228,45 @@ SB shieldcost 10
 SB detcost 100
 SB detdist 1800
 SB cloakcost 750
+end
+
+# definition of a fuel tanker
+SHIP=8
+TN warp.cost 200
+TN warp.maxspeed 8
+TN torp.damage 2
+TN torp.speed 8
+TN torp.cost 10
+TN torp.fuse 5
+TN nflags CANWARP,CANFUEL
+TN bombflags NONE
+TN plasma.damage -1
+TN scanrange -1
+TN maxarmies 0
+TN numdefn 1
+TN numplan 1
+TN rank 1
+TN maxfuel 100000
+TN recharge 30
+TN repair 30
+TN maxdamage 150
+TN maxshield 50
+TN detcost 10
+TN detdist 1800
+TN shieldcost 4
+TN cloakcost 2000
+TN name Transport
+TN imp.maxspeed 6
+TN warp.cost 100
+TN warpinitcost 1000
+TN warpinittime 75
+TN letter t
+TN desig1 T
+TN desig2 N
+TN timer 10
+TN maxnum 1
+# use the carrier ship.
+TN bitmap 11
 end
 
 SHIP=9

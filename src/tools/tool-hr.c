@@ -37,16 +37,11 @@ notice appear in all copies.
 #include "data.h"
 #include "shmem.h"
 
-#ifdef sparc
-extern char *sys_errlist[];
-#define strerror(EN)	sys_errlist[(EN)]
-#endif
-
 #define LINESPERPAGE 38
 
 static struct statentry *database;
 static struct statentry **playertab;
-static int     topn, motd = 0;
+static int     topn = 10, motd = 0;
 
 void header P((void));
 
@@ -54,19 +49,17 @@ void
 printUsage(char *me)
 {
     int x;
-    char message[][255] = {
-        "\nHonor Roll of players in the current database.\n",
-        "\n\t'%s n [options]'\n\n",
-        "Where n is the number of scores to print (top n)\n",
-        "\nOptions:\n",
-        "\t-f file   Use \"file\" as player file (default: $NETREKDIR/etc/db.players)\n",
-        "\t-m        Format output for use in server MOTD\n\n",
-        ""
-    };
+    char *message =
+        "\nHonor Roll of players in the current database.\n"
+        "\n\t'%s [options]'\n\n"
+        "Where n is the number of scores to print (top n)\n"
+        "\nOptions:\n"
+	"\t-n number Number of scores to print (top n, default: 10)"
+        "\t-f file   Use \"file\" as player file (default: $NETREKDIR/etc/db.players)\n"
+        "\t-m        Format output for use in server MOTD\n\n";
 
     fprintf(stderr, "--- Netrek II (Paradise), %s ---\n", PARAVERS);
-    for (x=0; *message[x] != '\0'; x++)
-        fprintf(stderr, message[x], me);
+    fprintf(stderr, message, me);
 
     exit(1);
 }
@@ -93,68 +86,55 @@ cmp_func(const void *aa, const void *bb)
     return strcmp((*a)->name, (*b)->name);
 }
 
-#if 0
-static char *rankh[] = {
-    "Recruits:",
-    "Specialists:",
-    "Cadets:",
-    "Midshipmen:",
-    "Ensigns, Junior Grade:",
-    "Ensigns:",
-    "Lieutenants, Junior Grade:",
-    "Lieutenants:",
-    "Lieutenant Commanders:",
-    "Commanders:",
-    "Captains:",
-    "Fleet Captains:",
-    "Commodores:",
-    "Moffs:",
-    "Grand Moffs:",
-    "Rear Admirals:",
-    "Admirals:",
-    "Grand Admirals:",
-};
-#endif
-
 int 
 main(int argc, char *argv[])
 {
-    int     i, nplayers, j, count = 0;
+    int     i, nplayers, j, count = 0, c;
     FILE   *fp;
     struct stat fstats;
-    char   *fn;
+    char   *fn, *pf = NULL;
     struct stats *s;
 
-    if (argc < 2)
-	printUsage(argv[0]);
-
-    if (!(topn = atoi(argv[1])))
-	printUsage(argv[0]);
+    while((c = getopt(argc, argv, "n:f:m:")) != -1)
+    {
+      switch(c)
+      {
+        case 'n':
+	  topn = atoi(optarg);
+	  if(topn < 1)
+	    topn = 10;
+	  break;
+	case 'f':
+	  pf = optarg;
+	  break;
+	case 'm':
+	  motd = 1;
+	  break;
+	default:
+	  printUsage(argv[0]);
+	  break;
+      }
+    }
 
     /* initialize ranks/royals variables first */
     fn = build_path(RANKS_FILE);
     init_data(fn);
 
-    fn = build_path(PLAYERFILE);
-
-    for (i = 2; i < argc; i++) {
-	if (!strcmp(argv[i], "-f")) {
-	    if (i + 1 == argc)
-		printUsage(argv[0]);
-	    fn = argv[++i];
-	}
-	else if (!strcmp(argv[i], "-m")) {
-	    motd = 1;
-	}
-    }
+    fn = (pf ? pf : build_path(PLAYERFILE));
 
     if (!(fp = fopen(fn, "r"))) {
-	fprintf(stderr, "Couldn't open file %s: %s\n", fn, strerror(errno));
+        char buf[512];
+
+	sprintf(buf, "Couldn't open file %s", fn);
+	perror(buf);
 	exit(1);
     }
 
     if (fstat(fileno(fp), &fstats) < 0) {
-	fprintf(stderr, "Couldn't fstat file %s: %s\n", fn, strerror(errno));
+        char buf[512];
+
+        sprintf(buf, "Couldn't fstat file %s", fn);
+	perror(buf);
 	exit(1);
     }
 
