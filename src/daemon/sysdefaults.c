@@ -398,6 +398,8 @@ static struct field_desc config_fields[] = {
     {"SURRSTART", FT_INT, OFFSET_OF(surrstart)},
     {"SURREND", FT_INT, OFFSET_OF(surrend)},
     {"SURRLENGTH", FT_INT, OFFSET_OF(surrlength)},
+    {"ARMY_DEFEND_FACILITIES", FT_FLOAT, OFFSET_OF(army_defend_facilities)},
+    {"ARMY_DEFEND_BARE", FT_FLOAT, OFFSET_OF(army_defend_bare)},
     {0}
 };
 
@@ -602,6 +604,9 @@ readsysdefaults(void)
     configvals->surrstart = 4;
     configvals->surrend = 7;
     configvals->surrlength = 25;
+
+    configvals->army_defend_facilities = 0.0;	/* original Paradise */
+    configvals->army_defend_bare = 0.0;		/* original Paradise */
 
     getshipdefaults();
     initteamvals();

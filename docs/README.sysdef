@@ -426,3 +426,15 @@ Default is 7 planets.
 SURRLENGTH=%d
   This is the number of minutes after the surrender counter starts to
 surrender; default is 25 minutes.
+
+ARMY_DEFEND_FACILITIES=%f
+ARMY_DEFEND_BARE=%f
+  These are the chances that an army will destroy an incoming enemy army
+on a planet with facilities and on a planet without facilities, respectively.
+*Example: if ARMY_DEFEND_FACILITIES=0.5 and ARMY_DEFEND_BARE=0.15, if an
+enemy tries to beam down an army to a planet with a RPR, FUEL, SY, or AGRI
+facility, there will be a 50% chance that army will be destroyed (with
+no loss of armies on the planet).  Likewise there is a 15% chance that
+the incoming army will be destroyed on a planet without any facilities.
+Code default is 0% for both (old-style Paradise); new sysdef defaults
+are 50% and 15%, respectively.

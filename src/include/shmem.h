@@ -235,6 +235,11 @@ struct configuration {
     int     surrstart;			/* # planets where surrender starts */
     int     surrend;			/* # planets where surrender stops */
     int     surrlength;			/* # minutes to achive surrend */
+
+    float   army_defend_facilities;	/* chance army beats off enemy if
+    					   defending facilities */
+    float   army_defend_bare;		/* chance army beats off enemy if
+    					   defending without facilities */
 };
 
 #ifndef SHMEM_C

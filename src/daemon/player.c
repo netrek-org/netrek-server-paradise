@@ -187,8 +187,23 @@ beamdown(struct player *j)	/* the player beaming */
 	}
 	else {			/* else beaming to foreign planet */
 	    j->p_swar |= l->pl_owner;	/* start war if necessay */
-	    j->p_armies--;	/* beam on army down */
-	    l->pl_armies--;
+	    j->p_armies--;	/* beam an army down */
+	    /* the defender might get a chance to destroy beamed-down
+	       army.  Check configvals. */
+	    if(l->pl_armies > 0 && (l->pl_flags & PLRESMASK) && 
+	       configvals->army_defend_facilities > 0.0)
+	    {
+	      if(drand48() > configvals->army_defend_facilities)
+	        l->pl_armies--;
+	    }
+	    else if(l->pl_armies > 0 && !(l->pl_flags & PLRESMASK) &&
+	            configvals->army_defend_bare > 0.0)
+	    {
+	      if(drand48() > configvals->army_defend_bare)
+	        l->pl_armies--;
+	    }
+	    else
+	      l->pl_armies--;
 	    l->pl_tinfo[j->p_team].armies = l->pl_armies;
 	    l->pl_tinfo[j->p_team].timestamp = status->clock;
 	    l->pl_tinfo[l->pl_owner].armies = l->pl_armies;

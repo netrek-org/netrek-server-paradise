@@ -66,6 +66,17 @@ SURRSTART=3
 SURREND=5
 # # of minutes to acheive SURREND
 SURRLENGTH=15
+#
+# Armies on a planet can now (sometimes) defend themselves against beaming-
+# down armies.
+#
+# If we are defending facilities, we have a 50% chance of destroying an
+# incoming army without losing one ourselves.
+ARMY_DEFEND_FACILITIES=0.5
+#
+# If we are defending & have no facilities, we have a 15% chance of destroying
+# an incoming army without losing one ourselves.
+ARMY_DEFEND_BARE=0.15
 
 ## bronco style
 #WARPDRIVE=0

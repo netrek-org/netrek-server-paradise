@@ -45,24 +45,6 @@ static struct itimerval udt;
 extern int redrawall;		/* maint: missing "extern" 6/22/92 TC */
 extern int lastm;		/* maint: missing "extern" 6/22/92 TC */
 
-/* This lets you specify which ships a robot is allowed to choose */
-static int robotships[NUM_TYPES] = {
-    1,				/* SCOUT */
-    1,				/* DESTROYER */
-    1,				/* CRUISER */
-    1,				/* BATTLESHIP */
-    1,				/* ASSAULT */
-    0,				/* STARBASE */
-    0,				/* ATT */
-    0,				/* JUMPSHIP */
-    1,				/* FRIGATE */
-    0,				/* WARBASE */
-    1,				/* LIGHTCRUISER */
-    0,				/* CARRIER */
-    0,				/* UTILITY */
-    1				/* PATROL */
-};
-
 /* lots of neat flags */
 int     hostile;
 int     debug;
@@ -328,9 +310,11 @@ main(int argc, char **argv)
 
     openmem(0, 0);
 
+    /* Pick a ship for the robot.  Don't allow robot to be invincible (AT),
+       a sysconf-disallowed type, or any ship that has a timer requirement. */
     for (;;) {
 	class = lrand48() % NUM_TYPES;	/* pick a ship type */
-	if (robotships[class] && shipsallowed[class])
+	if (class != ATT && shipsallowed[class] && shipvals[class].s_timer <= 0)
 	    break;
     }
 
