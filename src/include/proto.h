@@ -179,6 +179,24 @@ void beam P((void));
 void udcloak P((void));
 void udplayers P((void));
 
+/* daemon/pl_gen/pl_gen*.c */
+int place_stars P((struct planet *, int, int, int, int, struct planet *, int));
+void zero_pflags P((struct planet *, int));
+void randomize_atmospheres P((struct planet *, int, int, int, int, int));
+void randomize_resources P((struct planet *, int, int, int, int));
+void justify_galaxy P((int));
+
+#ifndef LOADABLE_PLGEN
+void gen_galaxy_1 P((void));
+void gen_galaxy_2 P((void));
+void gen_galaxy_3 P((void));
+void gen_galaxy_4 P((void));
+void gen_galaxy_5 P((void));
+void gen_galaxy_6 P((void));
+void gen_galaxy_7 P((void));
+void gen_galaxy_8 P((void));
+#endif
+
 /* daemon/shipvals.c */
 void getshipdefaults P((void));
 

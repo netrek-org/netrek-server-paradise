@@ -15,7 +15,6 @@ suitability of this software for any purpose.  This software is provided
                                                     Kurt Olsen
                                                     Brandon Gillespie
 --------------------------------------------------------------------------*/
-
 #include "config.h"
 #include <math.h>
 
@@ -24,10 +23,11 @@ suitability of this software for any purpose.  This software is provided
 #include "data.h"
 #include "shmem.h"
 #include "planets.h"
+#include "imath.h"
 
 #define SYSWIDTH	(GWIDTH/5.9)	/* width of a system */
 
-#define SYSTEMS		9	/* number of planetary systems */
+#define SYSTEMS		7	/* number of planetary systems */
 
 /*atmosphere chances form a cascade win rand()%100*/
 #define PATMOS1		40	/* chance for normal atmosphere */
@@ -36,25 +36,29 @@ suitability of this software for any purpose.  This software is provided
 #define PPOISON		100	/* chance for poison atmos */
 
 /*defines that deal with planets resources and types*/
-#define NMETAL		13	/* number of metal deposits */
-#define NDILYTH		10	/* number of dilythium deposits */
-#define NARABLE		15	/* number of arable land planets */
+#define NMETAL		10	/* number of metal deposits */
+#define NDILYTH		8	/* number of dilythium deposits */
+#define NARABLE		12	/* number of arable land planets */
  /* defines that deal with star placement */
 
 #define GW	((float)GWIDTH)	/* size of galaxy in floating point */
-#define	STARBORD	(GW*0.27)
-#define TEAMBORD	(GW*0.32)
-#define STARMIN		(GW/5.6)/* min dist between stars */
+#define	STARBORD	((GW/5.2)*1.3)
+#define TEAMBORD	((GW/5.2)/1.1)
+#define STARMIN		(GW/5.0)/* min dist between stars */
+#define STARMIN2	(STARMIN*STARMIN)	/* min star dist squared */
 #define STARMAX		GW
+#define STARMAX2	(GW*GW)
 #define TEAMMIN		(GW/2.8)/* min dist between team stars */
-#define TEAMMAX		(GW/1.8)/* max dist between team stars */
+#define TEAMMIN2	(TEAMMIN*TEAMMIN)
+#define TEAMMAX		(GW/1.4)/* max dist between team stars */
+#define TEAMMAX2	(TEAMMAX*TEAMMAX)
 
  /* defines that deal with systems and their planets */
 #define SYSADD		2	/* number possible above min number */
-#define SYSBORD		(7000.0 + (float)GWIDTH/200)	/* min distance from
+#define SYSBORD		(4000.0 + (float)GWIDTH/200)	/* min distance from
 							   border wall */
-#define INDBORD		(GW*0.23)
-#define SYSMIN		(5500.0 + (float)GWIDTH/200)	/* min distance between
+#define INDBORD		(GW * 0.1)
+#define SYSMIN		(6000.0 + (float)GWIDTH/200)	/* min distance between
 							   objects */
 #define SYSMIN2		(SYSMIN*SYSMIN)	/* square of sysmin distance */
 #define SYSPLMIN	5	/* min number of planets for system */
@@ -76,147 +80,13 @@ suitability of this software for any purpose.  This software is provided
 #define PLGSHIP		configvals->plgrow.shipyard	/* time for growth of
 							   shipyard */
 
-
-#if 0
-/*-------------------------------GENRESOURCES----------------------------*/
-/*  This function goes through the planets structure and determines what
-kind of atmosphere and what kind of surface the planets have.  It generates
-the stars that will be used as system centers ans then places atmospheres
-on the other planets.  It then distributes the resources on the planet
-surfaces.  */
-
-static void 
-genresources()
-{
-    int     i;			/* looping vars */
-    int     t;			/* temp var */
-
-    for (i = 0; i < SYSTEMS; i++)	/* first planets are stars */
-	planets[i].pl_flags |= PLSTAR;	/* or in star flag */
-    for (i = SYSTEMS; i < NUMPLANETS; i++) {	/* generate atmospheres */
-	t = lrand48() % 100;	/* random # 0-99 */
-	if (t < PATMOS1)	/* is it atmosphere type 1 */
-	    planets[i].pl_flags |= PLATYPE1;
-	else if (t < PATMOS2)	/* is it atmosphere type 2 */
-	    planets[i].pl_flags |= PLATYPE2;
-	else if (t < PATMOS3)	/* is it atmosphere type 3 */
-	    planets[i].pl_flags |= PLATYPE3;
-	else if (t < PPOISON)	/* is it poison atmosphere */
-	    planets[i].pl_flags |= PLPOISON;
-    }
-    for (i = 0; i < NMETAL; i++) {	/* place the metal deposits */
-	t = lrand48() % (NUMPLANETS - SYSTEMS) + SYSTEMS;	/* random planet */
-	planets[t].pl_flags |= PLMETAL;	/* OR in the metal flag */
-	if (!configvals->resource_bombing)
-	    planets[t].pl_flags |= PLREPAIR;
-    }
-    for (i = 0; i < NDILYTH; i++) {	/* place the metal deposits */
-	t = lrand48() % (NUMPLANETS - SYSTEMS) + SYSTEMS;	/* random planet */
-	planets[t].pl_flags |= PLDILYTH;	/* OR in the dilyth flag */
-	planets[t].pl_flags &= ~(PLATMASK | PLARABLE);	/* zero off previous
-							   atmos */
-	planets[t].pl_flags |= PLPOISON;	/* dilyth poisons atmosphere */
-	if (!configvals->resource_bombing)
-	    planets[t].pl_flags |= PLFUEL;
-    }
-    for (i = 0; i < NARABLE; i++) {	/* place the metal deposits */
-	t = lrand48() % (NUMPLANETS - SYSTEMS) + SYSTEMS;	/* random planet */
-	planets[t].pl_flags |= PLARABLE | PLATYPE1;	/* OR in the arable flag */
-	if (!configvals->resource_bombing)
-	    planets[t].pl_flags |= PLAGRI;
-    }
-}
-#endif
-
-
-
-#if 0
-/*--------------------------------PLACESTARS------------------------------*/
-/*  This function places each system's star.  The stars are expected to be
-in the first SYSTEMS number of planets.  The coordinates of the stars are
-placed in the space grid.  */
-
-static int 
-placestars()
-{
-    int     i, j;		/* looping vars */
-    double  x=0, y=0;		/* to hold star coordinates */
-    int     done;		/* flag to indicate done */
-    double  dx, dy;		/* delta x and y's */
-    int     attempts;
-    double  min, max, dist, bord, nbwidth;
-    double  xoff, yoff;
-
-    for (i = 0; i < SYSTEMS; i++) {	/* star for each system */
-	if (i < 2) {	/* choose optimal position for first two */
-	    min = TEAMMIN2;
-	    max = TEAMMAX2;
-	    bord = TEAMBORD;
-	}
-	else if (i < 4) {
-	    min = TEAMMIN2;
-	    max = STARMAX2;
-	    bord = STARBORD * 0.8;
-	}
-	else {
-	    min = STARMIN2;
-	    max = STARMAX2;
-	    bord = STARBORD;
-	}
-	nbwidth = GW - 2 * bord;
-	x = drand48() * nbwidth + bord;	/* pick intial coords */
-	y = drand48() * nbwidth + bord;
-	xoff = 3574.0 - bord;
-	yoff = 1034.0 - bord;
-	attempts = 0;
-	do {			/* do until location found */
-	    attempts++;
-	    done = 0;		/* not done yet */
-	    x = bord + fmod(x + xoff, nbwidth);	/* offset coords a little */
-	    y = bord + fmod(y + yoff, nbwidth);	/* every loop */
-#if 0
-	    if ((x > GW - bord) || (x < bord)
-		|| (y < bord) || (y > GW - bord))
-		continue;	/* too close to border? */
-#endif
-	    done = 1;		/* assume valid cord found */
-	    for (j = 0; j < i; j++) {	/* go through previous stars */
-		dx = fabs(x - (double) planets[j].pl_x);
-		dy = fabs(y - (double) planets[j].pl_y);
-		dist = dx * dx + dy * dy;
-		if (dist < min || dist > max)	/* if too close or too far
-						   then */
-		    done = 0;	/* we must get another coord */
-	    }
-	} while (!done && attempts < 1000);	/* do until location found */
-
-	if (!done)
-	    return 0;
-
-	planets[i].pl_owner = NOBODY;	/* no team owns a star */
-	planets[i].pl_flags |= PLSTAR;	/* mark planet as a star */
-	move_planet(i, (int) x, (int) y, 0);
-	planets[i].pl_system = i + 1;	/* mark the sytem number */
-	planets[i].pl_hinfo = ALLTEAM;	/* all teams know its a star */
-	for (j = 0; j < MAXTEAM + 1; j++) {	/* go put in info for teams */
-	    planets[i].pl_tinfo[j].owner = NOBODY;	/* nobody owns it */
-	    planets[i].pl_tinfo[j].armies = 0;
-	    planets[i].pl_tinfo[j].flags = planets[i].pl_flags;
-	}
-    }
-    return 1;
-}
-#endif
-
-
-
 /*-----------------------------PLACESYSTEMS------------------------------*/
 /*  This function places the planets in each star's system.  The function
 will return the index of the first planet that was not placed in a system.
 The coordinates of the planets are placed in the space grid.  */
 
 static int 
-placesystems()
+placesystems(void)
 {
     int     i, j, k;		/* looping vars */
     double  x=0, y=0;		/* to hold star coordinates */
@@ -253,6 +123,8 @@ placesystems()
 							   another star */
 			done = 0;	/* we must get another coord */
 		    }
+		    if( ihypot( (int)dx, (int)dy) < 3000 )
+			done = 0;
 		}
 	    } while (!done && attempts < 200);	/* do until location found */
 
@@ -277,8 +149,7 @@ They can appear anywhere in the galaxy as long as they are not too close
 to another planet.  The coords are put in the space grid.  */
 
 static int 
-placeindep(n)
-    int     n;
+placeindep(int n)
  /* number of planet to start with */
 {
     int     i, j;		/* looping vars */
@@ -287,9 +158,9 @@ placeindep(n)
     double  dx, dy;		/* delta x and y's */
     int     attempts;
 
-    for (i = n; i < (NUMPLANETS - (WORMPAIRS*2)); i++) 
-	 {	/* go through rest of planets */
-	x = drand48() * (GW - 2 * INDBORD) + INDBORD;	/* pick initial coords */
+    for (i = n; i < (NUMPLANETS - (WORMPAIRS*2)); i++) {       
+       /* go through rest of planets */
+	x = drand48() * (GW - 2 * INDBORD) + INDBORD;	/* pick intial coords */
 	y = drand48() * (GW - 2 * INDBORD) + INDBORD;
 	attempts = 0;
 	do {			/* do until location found */
@@ -298,11 +169,6 @@ placeindep(n)
 	    x = INDBORD + fmod(x + (3574.0 - INDBORD), GW - 2 * INDBORD);	/* offset coords a
 										   little */
 	    y = INDBORD + fmod(y + (1034.0 - INDBORD), GW - 2 * INDBORD);	/* every loop */
-#if 0
-	    if ((x > GW - INDBORD) || (x < INDBORD)
-		|| (y < INDBORD) || (y > GW - INDBORD))
-		continue;	/* too close to border? */
-#endif
 	    done = 1;		/* assume valid coord */
 	    for (j = 0; j < n; j++) {	/* go through previous planets */
 		dx = fabs(x - (double) planets[j].pl_x);
@@ -330,10 +196,6 @@ placeindep(n)
 	    done = 0;		/* not done yet */
 	    x = fmod(x + 3574.0, GW);	/* offset coords a little */
 	    y = fmod(y + 1034.0, GW);	/* every loop */
-#if 0
-	    if ((x > GW) || (y > GW))
-		continue;	/* too close to border? */
-#endif
 	    done = 1;		/* assume valid coord */
 	    for (j = 0; j < n; j++) {	/* go through previous planets */
 		dx = fabs(x - (double) planets[j].pl_x);
@@ -389,44 +251,30 @@ yard on it and HOMEARMIES.  They are also given a conoly planet with
 dilythium deposits and COLONYARMIES on it.  */
 
 static void 
-placeraces()
+placeraces(void)
 {
     int     i, j, k;		/* looping vars */
     int     p;			/* to hold planet for race */
-    int     r[4], t;
-
-    r[0] = r[1] = lrand48() % 4;/* pick two races at random.  They will be */
-    while(r[0] == r[1])		/*   the races whose systems are 'optimally' */
-	r[1] = lrand48() % 4;	/*   placed. */
-    i = 0;
-    while(i == r[0] || i == r[1])
-	i++;
-    r[2] = i++;
-    while(i == r[0] || i == r[1])
-	i++;
-    r[3] = i;
-    status2->nontteamlock = (1 << r[0]) | (1 << r[1]);	/* only allow these teams */
 
     for (i = 0; i < 4; i++) {	/* go through races */
-	t = r[i];	/* which team */
+	/* find home planet */
 	p = lrand48() % NUMPLANETS;	/* pick random planet */
 	while ((planets[p].pl_system != i + 1)
 	       || (PL_TYPE(planets[p]) == PLSTAR)
 	       || (planets[p].pl_owner != NOBODY))
 	    p = (p + 1) % NUMPLANETS;	/* go on to next planet */
-
 	planets[p].pl_flags &= ~PLSURMASK;	/* make sure no dilithium */
 	planets[p].pl_flags |= (PLMETAL | PLARABLE);	/* metal and arable */
 	planets[p].pl_flags |= PLATYPE1;	/* good atmosphere */
 	planets[p].pl_flags |= (PLAGRI | PLSHIPYARD | PLREPAIR);
 	planets[p].pl_tagri = PLGAGRI;	/* set timers for resources */
 	planets[p].pl_tshiprepair = PLGSHIP;
-	planets[p].pl_owner = 1 << t;	/* make race the owner */
+	planets[p].pl_owner = 1 << i;	/* make race the owner */
 	planets[p].pl_armies = HOMEARMIES;	/* set the armies */
-	planets[p].pl_hinfo = 1 << t;	/* race has info on planet */
-	planets[p].pl_tinfo[1 << t].owner = 1 << t;	/* know about owner */
-	planets[p].pl_tinfo[1 << t].armies = planets[p].pl_armies;
-	planets[p].pl_tinfo[1 << t].flags = planets[p].pl_flags;
+	planets[p].pl_hinfo = 1 << i;	/* race has info on planet */
+	planets[p].pl_tinfo[1 << i].owner = 1 << i;	/* know about owner */
+	planets[p].pl_tinfo[1 << i].armies = planets[p].pl_armies;
+	planets[p].pl_tinfo[1 << i].flags = planets[p].pl_flags;
 	/* find colony planet */
 	p = lrand48() % NUMPLANETS;	/* pick random planet */
 	while ((planets[p].pl_system != i + 1)
@@ -438,23 +286,23 @@ placeraces()
 	planets[p].pl_flags &= ~PLATMASK;	/* take off previous atmos */
 	planets[p].pl_flags |= PLPOISON;	/* poison atmosphere */
 	planets[p].pl_flags |= PLDILYTH;	/* dilythium deposits */
-	planets[p].pl_owner = 1 << t;	/* make race the owner */
+	planets[p].pl_owner = 1 << i;	/* make race the owner */
 	planets[p].pl_armies = COLONYARMIES;	/* set the armies */
-	planets[p].pl_hinfo = 1 << t;	/* race knows about */
-	planets[p].pl_tinfo[1 << t].owner = 1 << t;	/* know about owner */
-	planets[p].pl_tinfo[1 << t].armies = planets[p].pl_armies;
-	planets[p].pl_tinfo[1 << t].flags = planets[p].pl_flags;
+	planets[p].pl_hinfo = 1 << i;	/* race knows about */
+	planets[p].pl_tinfo[1 << i].owner = 1 << i;	/* know about owner */
+	planets[p].pl_tinfo[1 << i].armies = planets[p].pl_armies;
+	planets[p].pl_tinfo[1 << i].flags = planets[p].pl_flags;
 	for (j = 0; j < NUMPLANETS; j++) {
 	    if ((planets[j].pl_system == i + 1) && (PL_TYPE(planets[j]) != PLSTAR)) {
-		for (k = (status2->league ? 0 : t);
-		     k < (status2->league ? 4 : t + 1);
+		for (k = (status2->league ? 0 : i);
+		     k < (status2->league ? 4 : i + 1);
 		     k++)
-		{
-		    planets[j].pl_owner = 1 << t;
+		  {
+		    planets[j].pl_owner = 1 << i;
 		    planets[j].pl_hinfo =
 		      status2->league ? (1 << 4) - 1 :
-		      (1 << t);
-		    planets[j].pl_tinfo[1 << k].owner = 1 << t;
+			(1 << i);
+		    planets[j].pl_tinfo[1 << k].owner = 1 << i;
 		    planets[j].pl_tinfo[1 << k].armies = planets[j].pl_armies;
 		    planets[j].pl_tinfo[1 << k].flags = planets[j].pl_flags;
 		}
@@ -463,18 +311,23 @@ placeraces()
     }
 }
 
-/* Generate a complete galaxy.
-   This variation is similar to gen_galaxy_1; except that it tries
-   to place the races at consistent distances from one another.
-   */
+/* 
+ * Generate a complete galaxy, deepspace style.  We use a 125k^2 grid with
+ * lots of planets for lots of fun.  We're assuming a no-warp environment.
+ */
 
 void 
-gen_galaxy_3()
+#ifdef LOADABLE_PLGEN
+gen_galaxy(void)
+#else
+gen_galaxy_7(void)
+#endif
 {
     int     t;
 
-    NUMPLANETS = 60;            /* planets + wormholes */
-    GWIDTH = 200000;
+    GWIDTH = 125000;
+    NUMPLANETS = 60-WORMPAIRS*2;
+    configvals->warpdrive = 0;
 
     while (1) {
 	initplanets();		/* initialize planet structures */
@@ -487,12 +340,9 @@ gen_galaxy_3()
 			    NMETAL, NDILYTH, NARABLE);
 
 	/* place system centers */
-	t = place_stars(planets, 2,
+	t = place_stars(planets, 4,
 			(int)TEAMBORD, (int)TEAMMIN, (int)TEAMMAX,
 			(struct planet*)0, 0)
-	  && place_stars(planets+2, 2,
-			 (int)(STARBORD * 0.8), (int)TEAMMIN, (int) STARMAX,
-			 planets, 2)
 	  && place_stars(planets+4, SYSTEMS-4,
 			 (int)STARBORD, (int)STARMIN, (int) STARMAX,
 			 planets, 4);
@@ -511,3 +361,11 @@ gen_galaxy_3()
     placeraces();		/* place home planets for races */
 
 }
+
+#ifdef LOADABLE_PLGEN
+int
+galaxy_type(void)
+{
+  return(3);
+}
+#endif

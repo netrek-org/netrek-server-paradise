@@ -24,6 +24,9 @@ suitability of this software for any purpose.  This software is provided
 #include <math.h>
 #include <setjmp.h>
 #include <sys/types.h>
+#ifdef LOADABLE_PLGEN
+#include <dlfcn.h>
+#endif
 
 #include "struct.h"
 #include "data.h"
@@ -863,9 +866,16 @@ gen_planets(void)
 {
     int     i;
     struct planet *pl;
+#ifdef LOADABLE_PLGEN
+    char *so_path = NULL, so_path_build[256];
+    void *dllib = NULL;
+    void (*gen_galaxy)(void) = NULL;
+    int (*galaxy_type)(void) = NULL;
+#endif
 
     status->clock = 0;		/* reset the timestamp clock */
 
+#ifndef LOADABLE_PLGEN
     switch (configvals->galaxygenerator) {
     case 2:
 	gen_galaxy_2();		/* Bob Forsman's compact galaxy generator */
@@ -895,8 +905,41 @@ gen_planets(void)
 	gen_galaxy_1();		/* original paradiseII galaxy generator */
 	break;
     }
+#else
+    /* build_path() */
+    /* PLGEN_PATH */
+    sprintf(so_path_build, "%s%s", PLGEN_PATH, configvals->galaxygenerator);
+    so_path = build_path(so_path_build);
+    dllib = dlopen(so_path, RTLD_LAZY);
+    if(!dllib)
+    {
+      fprintf(stderr, "Daemon cannot open galaxy generator %s: %s\n",
+              so_path, dlerror());
+      exit(1);
+    }
+    gen_galaxy = dlfcn(dllib, "gen_galaxy");
+    if(!gen_galaxy)
+    {
+      fprintf(stderr, "Daemon cannot link gen_galaxy() from %s: %s\n",
+              so_path, dlerror());
+      exit(1);
+    }
+    galaxy_type = dlfcn(dllib, "galaxy_type");
+    (*gen_galaxy)();
+#endif
 
-    if (configvals->galaxygenerator != 4) {
+#ifndef LOADABLE_PLGEN
+    if (configvals->galaxygenerator != 4)
+#else
+    /* the commented part allows future expansion - e.g. if structures
+       change & we bump the version number in here old versions of the
+       galaxy generator can be ruled out.  Right now I'm just appending
+       a simple galaxy_type function to the end of each Paradise galaxy
+       generator & testing for its existence in the .so; the Bronco
+       generator (#4) won't have this function). */
+    if (galaxy_type /* && galaxy_type() == 3 */)
+#endif
+    {
 	/* gotta do this before they are sorted */
 	for (i = 0; i < NUMPLANETS; i++) {
 	    pl = &planets[i];
@@ -918,6 +961,10 @@ gen_planets(void)
 	if (configvals->neworbits) pl_neworbit();
 	generate_terrain();
     }
+
+#ifdef LOADABLE_PLGEN
+    dlclose(dllib);
+#endif
 }
 
 void 

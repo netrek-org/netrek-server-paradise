@@ -23,9 +23,8 @@ suitability of this software for any purpose.  This software is provided
 #include "data.h"
 #include "shmem.h"
 #include "planets.h"
-#include "imath.h"
 
-#define SYSWIDTH	(GWIDTH/5.9)	/* width of a system */
+#define SYSWIDTH	(GWIDTH/5.75)	/* width of a system */
 
 #define SYSTEMS		7	/* number of planetary systems */
 
@@ -80,142 +79,13 @@ suitability of this software for any purpose.  This software is provided
 #define PLGSHIP		configvals->plgrow.shipyard	/* time for growth of
 							   shipyard */
 
-
-#if 0
-/*-------------------------------GENRESOURCES----------------------------*/
-/*  This function goes through the planets structure and determines what
-kind of atmosphere and what kind of surface the planets have.  It generates
-the stars that will be used as system centers ans then places atmospheres
-on the other planets.  It then distributes the resources on the planet
-surfaces.  */
-
-static void 
-genresources()
-{
-    int     i;			/* looping vars */
-    int     t;			/* temp var */
-
-    for (i = 0; i < SYSTEMS; i++)	/* first planets are stars */
-	planets[i].pl_flags |= PLSTAR;	/* or in star flag */
-    for (i = SYSTEMS; i < NUMPLANETS; i++) {	/* generate atmospheres */
-	t = lrand48() % 100;	/* random # 0-99 */
-	if (t < PATMOS1)	/* is it atmosphere type 1 */
-	    planets[i].pl_flags |= PLATYPE1;
-	else if (t < PATMOS2)	/* is it atmosphere type 2 */
-	    planets[i].pl_flags |= PLATYPE2;
-	else if (t < PATMOS3)	/* is it atmosphere type 3 */
-	    planets[i].pl_flags |= PLATYPE3;
-	else if (t < PPOISON)	/* is it poison atmosphere */
-	    planets[i].pl_flags |= PLPOISON;
-    }
-    for (i = 0; i < NMETAL; i++) {	/* place the metal deposits */
-	t = lrand48() % (NUMPLANETS - SYSTEMS) + SYSTEMS;	/* random planet */
-	planets[t].pl_flags |= PLMETAL;	/* OR in the metal flag */
-	if (!configvals->resource_bombing)
-	    planets[t].pl_flags |= PLREPAIR;
-    }
-    for (i = 0; i < NDILYTH; i++) {	/* place the metal deposits */
-	t = lrand48() % (NUMPLANETS - SYSTEMS) + SYSTEMS;	/* random planet */
-	planets[t].pl_flags |= PLDILYTH;	/* OR in the dilyth flag */
-	planets[t].pl_flags &= ~(PLATMASK | PLARABLE);	/* zero off previous
-							   atmos */
-	planets[t].pl_flags |= PLPOISON;	/* dilyth poisons atmosphere */
-	if (!configvals->resource_bombing)
-	    planets[t].pl_flags |= PLFUEL;
-    }
-    for (i = 0; i < NARABLE; i++) {	/* place the metal deposits */
-	t = lrand48() % (NUMPLANETS - SYSTEMS) + SYSTEMS;	/* random planet */
-	planets[t].pl_flags |= PLARABLE | PLATYPE1;	/* OR in the arable flag */
-	if (!configvals->resource_bombing)
-	    planets[t].pl_flags |= PLAGRI;
-    }
-}
-#endif
-
-
-#if 0
-
-/*--------------------------------PLACESTARS------------------------------*/
-/*  This function places each system's star.  The stars are expected to be
-in the first SYSTEMS number of planets.  The coordinates of the stars are
-placed in the space grid.  */
-
-static int 
-placestars()
-{
-    int     i, j;		/* looping vars */
-    double  x=0, y=0;		/* to hold star coordinates */
-    int     done;		/* flag to indicate done */
-    double  dx, dy;		/* delta x and y's */
-    int     attempts;
-    double  min, max, dist, bord, nbwidth;
-    double  xoff, yoff;
-
-    for (i = 0; i < SYSTEMS; i++) {	/* star for each system */
-	if (i < 4) {
-	    min = TEAMMIN2;
-	    max = TEAMMAX2;
-	    bord = TEAMBORD;
-	}
-	else {
-	    min = STARMIN2;
-	    max = STARMAX2;
-	    bord = STARBORD;
-	}
-	nbwidth = GW - 2 * bord;
-	x = drand48() * nbwidth + bord;	/* pick intial coords */
-	y = drand48() * nbwidth + bord;
-	xoff = 3574.0 - bord;
-	yoff = 1034.0 - bord;
-	attempts = 0;
-	do {			/* do until location found */
-	    attempts++;
-	    done = 0;		/* not done yet */
-	    x = bord + fmod(x + xoff, nbwidth);	/* offset coords a little */
-	    y = bord + fmod(y + yoff, nbwidth);	/* every loop */
-#if 0
-	    if ((x > GW - bord) || (x < bord)
-		|| (y < bord) || (y > GW - bord))
-		continue;	/* too close to border? */
-#endif
-	    done = 1;		/* assume valid cord found */
-	    for (j = 0; j < i; j++) {	/* go through previous stars */
-		dx = fabs(x - (double) planets[j].pl_x);
-		dy = fabs(y - (double) planets[j].pl_y);
-		dist = dx * dx + dy * dy;
-		if (dist < min || dist > max)	/* if too close or too far
-						   then */
-		    done = 0;	/* we must get another coord */
-	    }
-	} while (!done && attempts < 1000);	/* do until location found */
-
-	if (!done)
-	    return 0;
-
-	planets[i].pl_owner = NOBODY;	/* no team owns a star */
-	planets[i].pl_flags |= PLSTAR;	/* mark planet as a star */
-	move_planet(i, (int) x, (int) y, 0);
-	planets[i].pl_system = i + 1;	/* mark the sytem number */
-	planets[i].pl_hinfo = ALLTEAM;	/* all teams know its a star */
-	for (j = 0; j < MAXTEAM + 1; j++) {	/* go put in info for teams */
-	    planets[i].pl_tinfo[j].owner = NOBODY;	/* nobody owns it */
-	    planets[i].pl_tinfo[j].armies = 0;
-	    planets[i].pl_tinfo[j].flags = planets[i].pl_flags;
-	}
-    }
-    return 1;
-}
-
-#endif
-
-
 /*-----------------------------PLACESYSTEMS------------------------------*/
 /*  This function places the planets in each star's system.  The function
 will return the index of the first planet that was not placed in a system.
 The coordinates of the planets are placed in the space grid.  */
 
 static int 
-placesystems()
+placesystems(void)
 {
     int     i, j, k;		/* looping vars */
     double  x=0, y=0;		/* to hold star coordinates */
@@ -252,8 +122,6 @@ placesystems()
 							   another star */
 			done = 0;	/* we must get another coord */
 		    }
-		    if( ihypot( (int)dx, (int)dy) < 3000 )
-			done = 0;
 		}
 	    } while (!done && attempts < 200);	/* do until location found */
 
@@ -278,8 +146,7 @@ They can appear anywhere in the galaxy as long as they are not too close
 to another planet.  The coords are put in the space grid.  */
 
 static int 
-placeindep(n)
-    int     n;
+placeindep(int n)
  /* number of planet to start with */
 {
     int     i, j;		/* looping vars */
@@ -299,11 +166,6 @@ placeindep(n)
 	    x = INDBORD + fmod(x + (3574.0 - INDBORD), GW - 2 * INDBORD);	/* offset coords a
 										   little */
 	    y = INDBORD + fmod(y + (1034.0 - INDBORD), GW - 2 * INDBORD);	/* every loop */
-#if 0
-	    if ((x > GW - INDBORD) || (x < INDBORD)
-		|| (y < INDBORD) || (y > GW - INDBORD))
-		continue;	/* too close to border? */
-#endif
 	    done = 1;		/* assume valid coord */
 	    for (j = 0; j < n; j++) {	/* go through previous planets */
 		dx = fabs(x - (double) planets[j].pl_x);
@@ -331,10 +193,6 @@ placeindep(n)
 	    done = 0;		/* not done yet */
 	    x = fmod(x + 3574.0, GW);	/* offset coords a little */
 	    y = fmod(y + 1034.0, GW);	/* every loop */
-#if 0
-	    if ((x > GW) || (y > GW))
-		continue;	/* too close to border? */
-#endif
 	    done = 1;		/* assume valid coord */
 	    for (j = 0; j < n; j++) {	/* go through previous planets */
 		dx = fabs(x - (double) planets[j].pl_x);
@@ -390,7 +248,7 @@ yard on it and HOMEARMIES.  They are also given a conoly planet with
 dilythium deposits and COLONYARMIES on it.  */
 
 static void 
-placeraces()
+placeraces(void)
 {
     int     i, j, k;		/* looping vars */
     int     p;			/* to hold planet for race */
@@ -409,10 +267,6 @@ placeraces()
 	planets[p].pl_tagri = PLGAGRI;	/* set timers for resources */
 	planets[p].pl_tshiprepair = PLGSHIP;
 	planets[p].pl_owner = 1 << i;	/* make race the owner */
-#if 0				/* home planets do not have traditional names */
-	strcpy(planets[p].pl_name, homenames[1 << i]);	/* set name and length */
-	planets[p].pl_namelen = strlen(homenames[1 << i]);
-#endif
 	planets[p].pl_armies = HOMEARMIES;	/* set the armies */
 	planets[p].pl_hinfo = 1 << i;	/* race has info on planet */
 	planets[p].pl_tinfo[1 << i].owner = 1 << i;	/* know about owner */
@@ -454,19 +308,20 @@ placeraces()
     }
 }
 
-/* 
- * Generate a complete galaxy, deepspace style.  We use a 125k^2 grid with
- * lots of planets for lots of fun.  We're assuming a no-warp environment.
- */
+/* Generate a complete galaxy.  Generates like generator 3, only in a smaller
+   environment */
 
 void 
-gen_galaxy_7()
+#ifdef LOADABLE_PLGEN
+gen_galaxy(void)
+#else
+gen_galaxy_5(void)
+#endif
 {
     int     t;
 
-    GWIDTH = 125000;
-    NUMPLANETS = 60-WORMPAIRS*2;
-    configvals->warpdrive = 0;
+    GWIDTH = 100000;
+    NUMPLANETS = 48;
 
     while (1) {
 	initplanets();		/* initialize planet structures */
@@ -500,3 +355,11 @@ gen_galaxy_7()
     placeraces();		/* place home planets for races */
 
 }
+
+#ifdef LOADABLE_PLGEN
+int
+galaxy_type(void)
+{
+  return(3);
+}
+#endif

@@ -79,8 +79,4 @@ pmessage2(char *str, int recip, int group, char *address, unsigned char from)
 /*-------------------------------------------------------------------------*/
 
 
-
-/*----------------------------INVISIBLE FUNCTIONS-------------------------*/
-
-
 /*-------END OF FILE--------*/

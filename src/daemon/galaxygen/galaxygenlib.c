@@ -34,13 +34,9 @@ suitability of this software for any purpose.  This software is provided
 
 /*#define SLOWER*/
 
-int place_stars(first, count, border, minpad, maxpad,
-		othercheck, ocount)
-     struct planet	*first;
-     int	count;
-     int	border, minpad, maxpad;
-     struct planet	*othercheck;
-     int	ocount;
+int
+place_stars(struct planet *first, int count, int border, 
+            int minpad, int maxpad, struct planet *othercheck, int ocount)
 {
     int	i;
     double	x,y;
@@ -107,9 +103,7 @@ int place_stars(first, count, border, minpad, maxpad,
 }
 
 void
-zero_plflags(first, count)
-    struct planet	*first;
-    int	count;
+zero_plflags(struct planet *first, int count)
 {
     int	i;
     for (i=0; i<count; i++) {
@@ -118,10 +112,8 @@ zero_plflags(first, count)
 }
 
 void
-randomize_atmospheres(first, count, p1, p2, p3, p4)
-    struct planet	*first;
-    int	count;
-    int	p1, p2, p3, p4;
+randomize_atmospheres(struct planet *first, int count, 
+                      int p1, int p2, int p3, int p4)
 {
     int	i;
     int	sum=p1+p2+p3+p4;
@@ -154,11 +146,9 @@ randomize_atmospheres(first, count, p1, p2, p3, p4)
    -RF
 
    */
-void
-randomize_resources(first, count, nm, nd, na)
-    struct planet	*first;
-    int	count;
-    int	nm, nd, na;
+static void
+randomize_resources(struct planet *first, int count, 
+                    int nm, int nd, int na)
 {
     for (; count>0; count--, first++) {
 	int	val;
@@ -192,8 +182,7 @@ randomize_resources(first, count, nm, nd, na)
 }
 
 static int
-count_planets_in_system(sysnum)
-    int sysnum;
+count_planets_in_system(int sysnum)
 {
     int       rval=0;
     int       i;
@@ -207,8 +196,7 @@ count_planets_in_system(sysnum)
 }
 
 static int
-pick_metal_planet_from_system(sysnum, nplanets)
-    int       sysnum, nplanets;
+pick_metal_planet_from_system(int sysnum, int nplanets)
 {
     int       i;
 
@@ -225,8 +213,7 @@ pick_metal_planet_from_system(sysnum, nplanets)
 }
 
 static int
-pick_planet_from_system(sysnum, nplanets)
-    int       sysnum, nplanets;
+pick_planet_from_system(int sysnum, int nplanets)
 {
     int       i;
 
@@ -245,12 +232,11 @@ pick_planet_from_system(sysnum, nplanets)
 }
 
 
-void
-justify_galaxy(numsystems)
-   int numsystems;
 /*  Balances the galaxy to be "fair".  Currently ensures that:
        -> One metal planet exists within each system.
 */
+void
+justify_galaxy(int numsystems)
 {
    int i,j;
    int        *metalcount;

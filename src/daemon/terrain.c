@@ -256,6 +256,8 @@ generate_terrain(void)
   if (num_asteroid)  place_asteroids(MAXALTITUDE-(*asteroid_radius));
 }
 
+#define TERRAIN_TYPE(X,Y) terrain_grid[X*TGRID_SIZE + Y].types
+
 /* apply terrain effects to players 
 
    I REALLY wish I could add a "skill" element to many of the effects, but 

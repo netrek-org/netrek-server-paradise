@@ -32,29 +32,4 @@ suitability of this software for any purpose.  This software is provided
 /*--------------------------------------------------------------------------*/
 
 
-
-
-
-
-/*-----------------------------FUNCTION PROTOTYPES-------------------------*/
-void     explode();
-void     pexplode();
-void     udphaser();
-int     weap_near_object();
-int     near();
-int     pnear();
-void     udtorps();
-int     torp_track_target();
-void     udplasmatorps();
-int     plasma_track_target();
-unsigned char get_bearing();
-int     f_land();
-int     fighter_track_target();
-/*-------------------------------------------------------------------------*/
-
-
-
-
-
-
 /*-------END OF FILE--------*/

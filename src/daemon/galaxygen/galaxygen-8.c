@@ -25,10 +25,6 @@ suitability of this software for any purpose.  This software is provided
 #include "shmem.h"
 #include "planets.h"
 
-#if 0
-#define SYSWIDTH	(GWIDTH/5.75)	/* width of a system */
-#endif
-
 #define SYSTEMS		0	/* number of planetary systems */
 
 /*atmosphere chances form a cascade win rand()%100*/
@@ -65,7 +61,7 @@ suitability of this software for any purpose.  This software is provided
    variety, but some people dig playing chess from the same setup over
    and over again too. :) */
 static void 
-initbronco()
+initbronco(void)
 {
     int     i, j;
 
@@ -180,7 +176,7 @@ on the other planets.  It then distributes the resources on the planet
 surfaces.  This version's been bronco-ified. :)*/
 
 static void 
-genresources_bronco()
+genresources_bronco(void)
 {
     int     i, j;		/* looping vars */
     int     t;			/* temp var */
@@ -240,7 +236,11 @@ genresources_bronco()
    */
 
 void 
-gen_galaxy_8()
+#ifdef LOADABLE_PLGEN
+gen_galaxy(void)
+#else
+gen_galaxy_8(void)
+#endif
 {
     GWIDTH = 100000;
     NUMPLANETS = 41;
@@ -249,3 +249,11 @@ gen_galaxy_8()
     return;
 }
 
+
+#ifdef LOADABLE_PLGEN
+int
+galaxy_type(void)
+{
+  return(3);
+}
+#endif

@@ -19,8 +19,6 @@ suitability of this software for any purpose.  This software is provided
 
 
 /*---------------------------FUNCTION PROTOTYPES--------------------------*/
-void    initshipvals();
-int     getship();
 /*------------------------------------------------------------------------*/
 
 

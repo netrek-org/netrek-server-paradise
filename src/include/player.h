@@ -21,14 +21,6 @@ suitability of this software for any purpose.  This software is provided
 
 
 /*----------------------------FUNCTION PROTOTYPES-------------------------*/
-void    fractbomb();		/* do fractional bombing */
-void    loserstats();		/* inc a killed player's losses */
-void    killerstats();		/* inc killers kills */
-void    checkmaxkills();	/* adjust player's maxkills if need be */
-void    blowup();		/* inflict damage on nearby players */
-void    beam();			/* beam up and down for players */
-void    udcloak();		/* inc/dec the cloakphases for players */
-void    udplayers();		/* update the players */
 /*-----------------------------------------------------------------------*/
 
 

@@ -5,6 +5,5 @@
 #ifndef gameconf_h
 #define gameconf_h
 
-void updateGameparams();
 
 #endif

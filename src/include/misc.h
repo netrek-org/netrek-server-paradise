@@ -19,14 +19,6 @@ suitability of this software for any purpose.  This software is provided
 
 
 /*----------------------------FUNCTION PROTOTYPES--------------------------*/
-void    warmessage();		/* print war message */
-void    peacemessage();		/* print peace message */
-int     realNumShips();		/* number of ships on a team */
-int     tournamentMode();	/* are we in tourn mode */
-void    pmessage( /* char *str, int recip, int group, char addr */ );
-void    parse_godmessages();	/* detect and log messages to god */
-void    PlaceLostArmies();	/* places armies from a lost/GB'd player */
-void    god2player(char *, int);
 /*--------------------------------------------------------------------------*/
 
 

@@ -62,7 +62,11 @@ struct configuration {
     int     min_observer_upd_delay;	/* minimum observer update delay */
 
     /* planet things */
+#ifdef LOADABLE_PLGEN
+    char    galaxygenerator[32];	/* which module to gen galaxy with */
+#else
     int     galaxygenerator;	/* which method to generate the galaxy with */
+#endif
     int     numplanets;		/* number of planets */
     float   planupdspd;		/* planet movement speed */
     char    resource_bombing;	/* have growable and bombable resources? */

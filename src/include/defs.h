@@ -188,6 +188,10 @@ suitability of this software for any purpose.  This software is provided
 #define CLUEPHRASEFILE	"etc/cluephrases"
 #define MAILCLUECHECK	"bin/mailcluecheck"
 
+#ifdef LOADABLE_PLGEN
+#define PLGEN_PATH      "lib/galaxygen-"
+#endif
+
 /* If this isn't defined, the "Count: n players" messages will go into
    logfile, as before.  Otherwise, they'll go into this file: */
 /* #define COUNTFILENAME	"logs/countfile" */

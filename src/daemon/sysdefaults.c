@@ -314,7 +314,11 @@ static struct field_desc config_fields[] = {
     {"NEWTURN", FT_INT, OFFSET_OF(newturn)},
     {"HIDDEN", FT_INT, OFFSET_OF(hiddenenemy)},
     {"PLANUPDSPD", FT_FLOAT, OFFSET_OF(planupdspd)},
+#ifdef LOADABLE_PLGEN
+    {"GALAXYGENERATOR", FT_STRING, OFFSET_OF(galaxygenerator)},
+#else
     {"GALAXYGENERATOR", FT_INT, OFFSET_OF(galaxygenerator)},
+#endif
     {"NUMWORMPAIRS", FT_INT, OFFSET_OF(num_wormpairs)},
     {"NUMNEBULA", FT_INT, OFFSET_OF(num_nebula)},
     {"NEBULADENSITY", FT_INT, OFFSET_OF(nebula_density)},
@@ -432,8 +436,13 @@ readsysdefaults(void)
     configvals->planupdspd = 0;
     configvals->justify_galaxy = 1; /* changed 5-Nov-94 by PLC */
 
+#ifdef LOADABLE_PLGEN
+    strcpy(configvals->galaxygenerator, "3");
+#else
     configvals->galaxygenerator = 3;	/* Heath's galaxy generator */
                                         /* changed 5-Nov-94 by PLC */
+#endif
+
     configvals->num_wormpairs = 0;
     configvals->resource_bombing = 1;
     configvals->revolts = 1;

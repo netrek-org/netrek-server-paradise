@@ -5,6 +5,4 @@
 #ifndef orbit_h
 #define orbit_h
 
-void newdock();
-
 #endif
