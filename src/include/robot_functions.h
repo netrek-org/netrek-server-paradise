@@ -34,31 +34,31 @@
 
 
 /* Robot flags */
-extern int debug;
-extern int hostile;
-extern int nofuel;
-extern int polymorphic;
+int debug;
+int hostile;
+int nofuel;
+int polymorphic;
 /*
-extern int berserk;
-extern int fleet;
-extern int level;
-extern int practice;
-extern int sticky;
+int berserk;
+int fleet;
+int level;
+int practice;
+int sticky;
 */
 
 /* Robot variables */
-extern int phrange;
-extern int trrange;
-extern int startplanet;
-extern int target;
+int phrange;
+int trrange;
+int startplanet;
+int target;
 
 /* Robot speeds */
-extern int dogslow;
-extern int dogfast;
-extern int runslow;
-extern int runfast;
-extern int closeslow;
-extern int closefast;
+int dogslow;
+int dogfast;
+int runslow;
+int runfast;
+int closeslow;
+int closefast;
 
 
 /* The enemy */
@@ -75,7 +75,7 @@ struct Enemy  {
 };
 
 /* This function logs the robot in */
-static void do_robot_login(void);
+void do_robot_login(void);
 
 /* This function saves the robot's stats */
 void save_robot(void);
@@ -90,41 +90,41 @@ void config(void);
  * Otherwise, it will head to the center of its own space.
  * CRD feature: robots now hover near their start planet - MAK,  2-Jun-93
  */
-static void go_home(struct Enemy*);
+void go_home(struct Enemy*);
 
 /* 
  * This function is pretty self-explanitory.  The 'bot scans through all
  * of the plasma torps in the game, and phasers any hostile ones in its
  * phaser range.  It returns TRUE if it phasored a plasma, FALSE otherwise.
  */
-static int phaser_plasmas(void);
+int phaser_plasmas(void);
 
 /* Not quite sure what this does */
-static int projectDamage(int, int*);
+int projectDamage(int, int*);
 
 /* Figures out if someone is tractoring or pressing the 'bot */
-static int isTractoringMe(struct Enemy*);
+int isTractoringMe(struct Enemy*);
 
 /* Finds the nearest enemy and returns him */
-static struct Enemy* get_nearest(void);
+struct Enemy* get_nearest(void);
 
 /* Returns the nearest planet */
-static struct planet * get_nearest_planet(void);
+struct planet * get_nearest_planet(void);
 
 /* This routine sets up the robot@nowhere name. */
-void set_robot_name(struct player *myself);
+void set_robot_name(struct player*);
 
 /* 
  * This function will seek out a nearby repair planet if nearby, otherwise
  * it will just repair.
  */
-static int do_repair(void);
+int do_repair(void);
 
 /* Sends a message to everyone */
-static void messAll(char*);
+void messAll(char*);
 
 /* This function destroys the robot gracefully */
-static void exitRobot(void);
+void exitRobot(void);
 
 #endif  /* #ifndef ROBOT_FUNCTIONS_H */
 
