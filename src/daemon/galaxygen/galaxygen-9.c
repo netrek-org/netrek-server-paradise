@@ -40,7 +40,7 @@ notice appear in all copies.
 
 #define GALAXY_WIDTH 200000
 #define RACE_DISTANCE_FROM_CENTER (GWIDTH/2 - GWIDTH/6)
-#define RACE_SYSTEM_VARIANCE (GWIDTH/20)
+#define RACE_SYSTEM_VARIANCE (GWIDTH/200)
 #define MIN_PLANET_ORBIT_DISTANCE 8000
 #define MAX_PLANET_ORBIT_DISTANCE \
   (3 * GWIDTH / 40 <= MIN_PLANET_ORBIT_DISTANCE ? \
@@ -219,7 +219,7 @@ place_ind(int p, int k, int planets_to_populate, int x, int y)
       pl_funcs[j-1] = pl_funcs[j];
   }
 
-  return(planets_to_populate + (k == 2 ? 2 : 1));
+  return(planets_to_populate + k);
 }
 
 /* helper functions to populate race's planets */
@@ -391,31 +391,15 @@ gen_galaxy(void)
 gen_galaxy_9(void)
 #endif
 {
-    int teams[NUMTEAM], i, ang, x, y, tpick, pnum = 1, j;
+    int teams[NUMTEAM], i, ang, x, y, tpick, pnum = 0, j;
     int nindep;
     int sa;
+    int pl_x_ctr, pl_y_ctr;
 
     NUMPLANETS = 4 * 5 + 4 * 1 + 12;            /* planets + stars = 36 */
     GWIDTH = GALAXY_WIDTH;
 
     initplanets();		/* initialize planet structures */
-
-    /* place races */
-    for(i = 0; i < NUMTEAM; i++)
-      teams[i] = i;
-
-    for(i = 0; i < NUMTEAM; i++)
-    {
-      ang = (((256 * i) / NUMTEAM) + 32) % 256;
-      x = (GWIDTH/2) + (int)(Cos[ang] * (double)(RACE_DISTANCE_FROM_CENTER));
-      y = (GWIDTH/2) + (int)(Sin[ang] * (double)(RACE_DISTANCE_FROM_CENTER));
-      tpick = (lrand48() % (NUMTEAM - i));
-      pnum += place_race(pnum, teams[tpick], x, y);
-
-      /* team placed, eliminate them from contention */
-      for(j = tpick + 1; j < (NUMTEAM - i); j++)
-        teams[j-1] = teams[j];
-    }
 
     nindep = (lrand48() % 2) + 2;	/* two or three indep. systems */
     sa = (lrand48() % 256);		/* randomly orient inner systems */
@@ -445,8 +429,33 @@ gen_galaxy_9(void)
       }
     }
 
-    planets[0].pl_x = -1;
-    planets[0].pl_y = -1;
+    /* compute weighted average center */
+    pl_x_ctr = pl_y_ctr = 0;
+    for(i = 0; i < pnum; i++)
+    {
+      pl_x_ctr += planets[i].pl_x;
+      pl_y_ctr += planets[i].pl_y;
+    }
+    pl_x_ctr /= pnum;
+    pl_y_ctr /= pnum;
+
+    /* place races */
+    for(i = 0; i < NUMTEAM; i++)
+      teams[i] = i;
+
+    for(i = 0; i < NUMTEAM; i++)
+    {
+      ang = (((256 * i) / NUMTEAM) + 32) % 256;
+      x = (pl_x_ctr) + (int)(Cos[ang] * (double)(RACE_DISTANCE_FROM_CENTER));
+      y = (pl_y_ctr) + (int)(Sin[ang] * (double)(RACE_DISTANCE_FROM_CENTER));
+      tpick = (lrand48() % (NUMTEAM - i));
+      pnum += place_race(pnum, teams[tpick], x, y);
+
+      /* team placed, eliminate them from contention */
+      for(j = tpick + 1; j < (NUMTEAM - i); j++)
+        teams[j-1] = teams[j];
+    }
+
     for(i = pnum; i < MAXPLANETS; i++)
     {
       planets[i].pl_x = -1;

@@ -34,7 +34,7 @@ INSTALL_BLANKS=etc/db.players etc/db.global etc/rsa-exemption \
                etc/rsa.keys etc/cluephrases logs/server.log logs/conquer \
 	       logs/god.log
 
-INSTALL_COPIES=etc/motd etc/conf.pics etc/ranks.conf etc/conf.sysdef  \
+INSTALL_COPIES=etc/motd etc/conf.pics etc/ranks.conf \
                etc/cluephrases etc/conf.hours pics/cd.xbm pics/Mecha.xbm \
 	       pics/enterprise.xbm pics/info.xbm
 
@@ -76,6 +76,9 @@ install: all
 	    $(INSTALL_DATA) $(srcdir)/$${i} $(prefix)/$${i}; \
           fi \
 	done
+	@if test ! -r $(prefix)/etc/conf.sysdef; then \
+	  $(INSTALL_DATA) $(srcdir)/etc/conf.balanced $(prefix)/etc/conf.sysdef; \
+	fi
 
 distclean: clean
 	@cd src && $(MAKE) distclean
