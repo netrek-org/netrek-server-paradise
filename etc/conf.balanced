@@ -106,6 +106,8 @@ SC maxshield 75
 SC maxdamage 75
 SC shieldcost 2
 SC cloakcost 50
+SC imp.dec 600
+SC warp.dec 600
 end
 
 SHIP=1
@@ -129,6 +131,8 @@ DD maxshield 85
 DD maxdamage 85
 DD shieldcost 3
 DD cloakcost 105
+DD imp.dec 500
+DD warp.dec 500
 end
 
 SHIP=2
@@ -152,6 +156,7 @@ CA maxshield 100
 CA maxdamage 100
 CA shieldcost 4
 CA cloakcost 130
+CA imp.dec 400
 end
 
 SHIP=3
