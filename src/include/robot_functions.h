@@ -83,7 +83,8 @@ void save_robot(void);
 /* Calculates class-specific stuff */
 void config(void);
 
-/* This function means that the robot has nothing better to do.
+/* 
+ * This function means that the robot has nothing better to do.
  * If there are hostile players in the game, it will try to get
  * as close to them as it can, while staying in its own space.
  * Otherwise, it will head to the center of its own space.
@@ -110,7 +111,11 @@ static struct Enemy* get_nearest(void);
 /* Returns the nearest planet */
 static struct planet * get_nearest_planet(void);
 
-/* This function will seek out a nearby repair planet if nearby, otherwise
+/* This routine sets up the robot@nowhere name. */
+void set_robot_name(struct player *myself);
+
+/* 
+ * This function will seek out a nearby repair planet if nearby, otherwise
  * it will just repair.
  */
 static int do_repair(void);
