@@ -1,21 +1,31 @@
-/*--------------------------------------------------------------------------
-NETREK II -- Paradise
+/*------------------------------------------------------------------
+  Copyright 1989		Kevin P. Smith
+				Scott Silvey
 
-Permission to use, copy, modify, and distribute this software and its
-documentation, or any derivative works thereof, for any NON-COMMERCIAL
-purpose and without fee is hereby granted, provided that this copyright
-notice appear in all copies.  No representations are made about the
-suitability of this software for any purpose.  This software is provided
-"as is" without express or implied warranty.
+Permission to use, copy, modify, and distribute this
+software and its documentation for any purpose and without
+fee is hereby granted, provided that the above copyright
+notice appear in all copies.
 
-    Xtrek Copyright 1986                            Chris Guthrie
-    Netrek (Xtrek II) Copyright 1989                Kevin P. Smith
-                                                    Scott Silvey
-    Paradise II (Netrek II) Copyright 1993          Larry Denys
-                                                    Kurt Olsen
-                                                    Brandon Gillespie
---------------------------------------------------------------------------*/
+  NETREK II -- Paradise
 
+  Permission to use, copy, modify, and distribute this software and
+  its documentation, or any derivative works thereof,  for any 
+  NON-COMMERCIAL purpose and without fee is hereby granted, provided
+  that this copyright notice appear in all copies.  No
+  representations are made about the suitability of this software for
+  any purpose.  This software is provided "as is" without express or
+  implied warranty.
+
+	Xtrek Copyright 1986			Chris Guthrie
+	Netrek (Xtrek II) Copyright 1989	Kevin P. Smith
+						Scott Silvey
+	Paradise II (Netrek II) Copyright 1993	Larry Denys
+						Kurt Olsen
+						Brandon Gillespie
+		                Copyright 2000  Bob Glamm
+
+--------------------------------------------------------------------*/
 
 #define PLANETS 1
 #define GRID 0			/* for space grid */
@@ -30,16 +40,9 @@ suitability of this software for any purpose.  This software is provided
 
 #include "struct.h"
 #include "data.h"
+#include "proto.h"
 #include "daemonII.h"
-#include "planets.h"
-#include "misc.h"
-#include "game.h"
-#include "player.h"
-#include "grid.h"
 #include "shmem.h"
-#include "terrain.h"
-#include "imath.h"
-#include "plutil.h"
 
 #define	friendly(fred, bart) \
 	(!(fred->p_team & (bart->p_swar|bart->p_hostile)) && \
@@ -67,14 +70,16 @@ suitability of this software for any purpose.  This software is provided
 /*-------------------------------------------------------------------------*/
 
 
-
-
+/*-----------------------------EXTERNAL GLOBALS----------------------------*/
+/* from daemonII.c */
+extern int plfd;
+extern int glfd;
 
 
 /*-----------------------------MODULE VARIABLES----------------------------*/
 
  /* the list of all possible planet names */
-char   *pnames[] =
+static char *pnames[] =
 {
     /* Federation planets */
     "Rigel", "Canopus", "Beta Crucis", "Organia", "Deneb",
@@ -151,11 +156,13 @@ char   *pnames[] =
 
 #define MAXNAMES (sizeof(pnames)/sizeof(char *))	/* # of planet names */
 
+#if 0	/* these are never used */
 char   *homenames[] =		/* names of the race's home worlds */
 {
     " ", "Earth", "Romulus", " ", "Klingus", " ", " ", " ",
     "Orion"
 };
+#endif
 
 
  /*
@@ -164,7 +171,7 @@ char   *homenames[] =		/* names of the race's home worlds */
     resource bits need to be masked off with PLRESMASK before this table is
     used
  */
-int     restores[16] = {0, 1, 2, 3, 4, 5, 6, 7, 1, 1, 3, 3, 5, 5, 7, 7};
+static int restores[16] = {0, 1, 2, 3, 4, 5, 6, 7, 1, 1, 3, 3, 5, 5, 7, 7};
 
 
  /*
@@ -173,8 +180,9 @@ int     restores[16] = {0, 1, 2, 3, 4, 5, 6, 7, 1, 1, 3, 3, 5, 5, 7, 7};
     the planet's atmosphere type and the resource bits after they have been
     converted to 3 bits with the table above.
  */
-int     popchance[4][8] = {
+static int popchance[4][8] =
 /*000   00Z   0f0   0fZ   a00   a0Z   af0   afZ--the resources flags,  Z=r|s*/
+{
     {2, 3, 2, 2, 5, 7, 4, 8},	/* poison */
     {3, 5, 2, 4, 9, 11, 7, 12},	/* atmos #3 */
     {5, 7, 4, 6, 12, 14, 10, 15},	/* atmos #2 */
@@ -188,8 +196,9 @@ int     popchance[4][8] = {
     number of extra armies that grow.  A negative number indicates negative
     growth.
  */
-float   popmult[4][8] = {
+static float popmult[4][8] =
 /*000      00Z    0f0    0fZ    a00    a0Z    af0   afZ  */
+{
     {-0.08, 0.00, -0.10, -0.03, 0.00, 0.05, -0.05, 0.05},	/* poison */
     {0.03, 0.05, 0.02, 0.04, 0.06, 0.07, 0.06, 0.07},	/* atmos #3 */
     {0.05, 0.07, 0.05, 0.06, 0.10, 0.11, 0.08, 0.10},	/* atmos #2 */
@@ -201,8 +210,9 @@ float   popmult[4][8] = {
     This is a matrix that determines the maximum army capacity of a planet.
     Once this capacity is reached, no other armies can grow there.
  */
-float   popcap[4][8] = {
+static float popcap[4][8] =
 /*000   00Z   0f0   0fZ   a00   a0Z   af0    afZ--the resources flags, Z=r|s*/
+{
     {5, 10, 7, 10, 15, 15, 10, 18},	/* poison */
     {9, 14, 11, 14, 20, 20, 14, 22},	/* atmos #3 */
     {12, 18, 15, 18, 25, 25, 19, 27},	/* atmos #2 */
@@ -783,13 +793,6 @@ void check_revolt(void)
 }
 
 /*-------------------------------------------------------------------------*/
-
-
-
-
-
-
-/* struct planet *stars[NUMPLANETS + 1]; */
 
 static void 
 build_stars_array(void)

@@ -36,7 +36,7 @@ AUTH_PROG=@AUTH_PROG@
 
 L_DIRS=common
 S_DIRS=daemon listen ntserv robot snake
-P_DIRS=tools
+P_DIRS=tools pped
 
 all: libs authlib server progs
 

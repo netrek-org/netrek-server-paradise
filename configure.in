@@ -13,12 +13,14 @@ dnl Allows use of $(MAKE)
 AC_PROG_MAKE_SET
 
 dnl Checks for libraries.
+dnl Replace `main' with a function in -lncurses:
+AC_CHECK_LIB(ncurses, main)
 dnl Replace `main' with a function in -lcurses:
-dnl AC_CHECK_LIB(curses, main)
+AC_CHECK_LIB(curses, main)
 dnl Replace `main' with a function in -lm:
 dnl AC_CHECK_LIB(m, main)
 dnl Replace `main' with a function in -ltermcap:
-dnl AC_CHECK_LIB(termcap, main)
+AC_CHECK_LIB(termcap, main)
 
 ZLIB=""
 
@@ -139,4 +141,4 @@ AC_SUBST(AUTH_PROG_OBJS)
 AC_SUBST(AUTH_DEP_LIB)
 AC_SUBST(AUTH_DEP_VPATH)
 
-AC_OUTPUT(src/Makefile src/common/Makefile src/daemon/Makefile src/daemon/pl_gen/Makefile src/listen/Makefile src/ntserv/Makefile src/robot/Makefile src/snake/Makefile src/tools/Makefile Makefile)
+AC_OUTPUT(src/Makefile src/common/Makefile src/daemon/Makefile src/daemon/pl_gen/Makefile src/listen/Makefile src/ntserv/Makefile src/robot/Makefile src/snake/Makefile src/tools/Makefile src/pped/Makefile Makefile)

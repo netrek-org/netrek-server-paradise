@@ -5,21 +5,18 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef SYSV
 #include <fcntl.h>
-#else
-#include <sys/file.h>
-#endif
 
 #include <struct.h>
 #include "common.h"
 #include "db.h"
 #include "main.h"
 #include "file.h"
-#include "data.h"
+#include "ppeddata.h"
 
 
-int ReadIt(char *fn)
+int
+ReadIt(char *fn)
 {
 	struct statentry player;
 	int plfd;
@@ -40,7 +37,8 @@ int ReadIt(char *fn)
 	return 0;
 }
 
-int SaveIt(char *fn)
+int
+SaveIt(char *fn)
 {
 	struct plnode *p;
 	int plfd, cc;
@@ -63,7 +61,8 @@ int SaveIt(char *fn)
 	return 0;
 }
 
-int DoSave(int mode)
+int
+DoSave(int mode)
 {
 	char name[100], *c;
 	extern char *playerFile;
@@ -91,7 +90,8 @@ int DoSave(int mode)
 	return(0);
 }
 
-int DoLoad(int mode)
+int
+DoLoad(int mode)
 {
 }
 

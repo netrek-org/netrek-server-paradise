@@ -1,57 +1,36 @@
-/*--------------------------------------------------------------------------
-NETREK II -- Paradise
+/*------------------------------------------------------------------
+  Copyright 1989		Kevin P. Smith
+				Scott Silvey
 
-Permission to use, copy, modify, and distribute this software and its
-documentation, or any derivative works thereof, for any NON-COMMERCIAL
-purpose and without fee is hereby granted, provided that this copyright
-notice appear in all copies.  No representations are made about the
-suitability of this software for any purpose.  This software is provided
-"as is" without express or implied warranty.
+Permission to use, copy, modify, and distribute this
+software and its documentation for any purpose and without
+fee is hereby granted, provided that the above copyright
+notice appear in all copies.
 
-    Xtrek Copyright 1986                            Chris Guthrie
-    Netrek (Xtrek II) Copyright 1989                Kevin P. Smith
-                                                    Scott Silvey
-    Paradise II (Netrek II) Copyright 1993          Larry Denys
-                                                    Kurt Olsen
-                                                    Brandon Gillespie
---------------------------------------------------------------------------*/
+  NETREK II -- Paradise
+
+  Permission to use, copy, modify, and distribute this software and
+  its documentation, or any derivative works thereof,  for any 
+  NON-COMMERCIAL purpose and without fee is hereby granted, provided
+  that this copyright notice appear in all copies.  No
+  representations are made about the suitability of this software for
+  any purpose.  This software is provided "as is" without express or
+  implied warranty.
+
+	Xtrek Copyright 1986			Chris Guthrie
+	Netrek (Xtrek II) Copyright 1989	Kevin P. Smith
+						Scott Silvey
+	Paradise II (Netrek II) Copyright 1993	Larry Denys
+						Kurt Olsen
+						Brandon Gillespie
+		                Copyright 2000  Bob Glamm
+
+--------------------------------------------------------------------*/
 
 #include "config.h"
-
-struct stats {
-    int     st_genocides;	/* number of genocides participated in */
-    float   st_tmaxkills;	/* max kills ever */
-    float   st_di;		/* total destruction inflicted for all time */
-    int     st_tkills;		/* Kills in tournament play */
-    int     st_tlosses;		/* Losses in tournament play */
-    int     st_tarmsbomb;	/* Tournament armies bombed */
-    int     st_tresbomb;	/* resources bombed off */
-    int     st_tdooshes;	/* armies killed while being carried */
-    int     st_tplanets;	/* Tournament planets conquered */
-    int     st_tticks;		/* Tournament ticks */
-    /* SB/WB/JS stats are entirely separate */
-    int     st_sbkills;		/* Kills as starbase */
-    int     st_sblosses;	/* Losses as starbase */
-    int     st_sbticks;		/* Time as starbase */
-    float   st_sbmaxkills;	/* Max kills as starbase */
-    int     st_wbkills;		/* Kills as warbase */
-    int     st_wblosses;	/* Losses as warbase */
-    int     st_wbticks;		/* Time as warbase */
-    float   st_wbmaxkills;	/* Max kills as warbase */
-    int     st_jsplanets;	/* planets assisted with in JS */
-    int     st_jsticks;		/* ticks played as a JS */
-    long    st_lastlogin;	/* Last time this player was played */
-    int     st_flags;		/* Misc option flags */
-    char    st_keymap[96];	/* keymap for this player */
-    int     st_rank;		/* Ranking of the player */
-    int     st_royal;		/* royaly, specialty, rank */
-};
-
-struct statentry {
-    char    name[16];		/* player's name */
-    char    password[16];	/* player's password */
-    struct stats stats;		/* player's stats */
-};
+#include "defs.h"
+#include "struct.h"
+#include "proto.h"
 
 int
 main(int argc, char **argv)

@@ -1,32 +1,46 @@
-/*--------------------------------------------------------------------------
-NETREK II -- Paradise
+/*------------------------------------------------------------------
+  Copyright 1989		Kevin P. Smith
+				Scott Silvey
 
-Permission to use, copy, modify, and distribute this software and its
-documentation, or any derivative works thereof, for any NON-COMMERCIAL
-purpose and without fee is hereby granted, provided that this copyright
-notice appear in all copies.  No representations are made about the
-suitability of this software for any purpose.  This software is provided
-"as is" without express or implied warranty.
+Permission to use, copy, modify, and distribute this
+software and its documentation for any purpose and without
+fee is hereby granted, provided that the above copyright
+notice appear in all copies.
 
-    Xtrek Copyright 1986                            Chris Guthrie
-    Netrek (Xtrek II) Copyright 1989                Kevin P. Smith
-                                                    Scott Silvey
-    Paradise II (Netrek II) Copyright 1993          Larry Denys
-                                                    Kurt Olsen
-                                                    Brandon Gillespie
---------------------------------------------------------------------------*/
+  NETREK II -- Paradise
+
+  Permission to use, copy, modify, and distribute this software and
+  its documentation, or any derivative works thereof,  for any 
+  NON-COMMERCIAL purpose and without fee is hereby granted, provided
+  that this copyright notice appear in all copies.  No
+  representations are made about the suitability of this software for
+  any purpose.  This software is provided "as is" without express or
+  implied warranty.
+
+	Xtrek Copyright 1986			Chris Guthrie
+	Netrek (Xtrek II) Copyright 1989	Kevin P. Smith
+						Scott Silvey
+	Paradise II (Netrek II) Copyright 1993	Larry Denys
+						Kurt Olsen
+						Brandon Gillespie
+		                Copyright 2000  Bob Glamm
+
+--------------------------------------------------------------------*/
 
 #include "config.h"
 #include "shmem.h"
 #include "structdesc.h"
 #include "data.h"
+#include "proto.h"
+
+extern struct field_desc *ship_fields;
 
 /* ----------------[ prototypes because I like main first ]---------------- */
-void dump_ship_sysdef(void);
-void dump_ship_Ccode(void);
-void dump_ships_to_table(void);
-void describe_ship(int ship);
-void usage(char *name);
+void dump_ship_sysdef P((void));
+void dump_ship_Ccode P((void));
+void dump_ships_to_table P((void));
+void describe_ship P((int ship));
+void usage P((char *name));
 
 /* --[ rather than duplicate it 3 times make the macro from hell (shrug) ]-- */
 #define Print_value(place) { \
@@ -69,7 +83,7 @@ void usage(char *name);
     } \
 }
 
-char *shipTYPES[] = {
+static char *shipTYPES[] = {
     "SCOUT",
     "DESTROYER",
     "CRUISER",
@@ -84,7 +98,7 @@ char *shipTYPES[] = {
     "CARRIER"
 };
 
-struct nflags_desc_ {
+static struct nflags_desc_ {
     int     flag;
     char   *meaning;
 } nflags_desc[] = {

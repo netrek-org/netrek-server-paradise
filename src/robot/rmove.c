@@ -1,20 +1,31 @@
-/*--------------------------------------------------------------------------
-NETREK II -- Paradise
+/*------------------------------------------------------------------
+  Copyright 1989		Kevin P. Smith
+				Scott Silvey
 
-Permission to use, copy, modify, and distribute this software and its
-documentation, or any derivative works thereof, for any NON-COMMERCIAL
-purpose and without fee is hereby granted, provided that this copyright
-notice appear in all copies.  No representations are made about the
-suitability of this software for any purpose.  This software is provided
-"as is" without express or implied warranty.
+Permission to use, copy, modify, and distribute this
+software and its documentation for any purpose and without
+fee is hereby granted, provided that the above copyright
+notice appear in all copies.
 
-    Xtrek Copyright 1986                            Chris Guthrie
-    Netrek (Xtrek II) Copyright 1989                Kevin P. Smith
-                                                    Scott Silvey
-    Paradise II (Netrek II) Copyright 1993          Larry Denys
-                                                    Kurt Olsen
-                                                    Brandon Gillespie
---------------------------------------------------------------------------*/
+  NETREK II -- Paradise
+
+  Permission to use, copy, modify, and distribute this software and
+  its documentation, or any derivative works thereof,  for any 
+  NON-COMMERCIAL purpose and without fee is hereby granted, provided
+  that this copyright notice appear in all copies.  No
+  representations are made about the suitability of this software for
+  any purpose.  This software is provided "as is" without express or
+  implied warranty.
+
+	Xtrek Copyright 1986			Chris Guthrie
+	Netrek (Xtrek II) Copyright 1989	Kevin P. Smith
+						Scott Silvey
+	Paradise II (Netrek II) Copyright 1993	Larry Denys
+						Kurt Olsen
+						Brandon Gillespie
+		                Copyright 2000  Bob Glamm
+
+--------------------------------------------------------------------*/
 
 #include "config.h"
 #include <signal.h>
@@ -24,7 +35,11 @@ suitability of this software for any purpose.  This software is provided
 #include "data.h"
 #include "weapons.h"
 #include "shmem.h"
-#include "imath.h"
+#include "proto.h"
+
+/* from robot/robotII.c */
+void save_robot P((void));
+void config P((void));
 
 #define SIZEOF(s)		(sizeof (s) / sizeof (*(s)))
 #define AVOID_TIME		4
@@ -105,7 +120,7 @@ static char *rmessages[] = {
     "Happy, Happy, Joy, Joy."
 };
 
-char   *termie_messages[] = {
+static char   *termie_messages[] = {
     "$n:  Hasta la vista, Baby.",
     "Come quietly, or there will be trouble. [thump] [thump]",
     "Make your peace with GOD.",

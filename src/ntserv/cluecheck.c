@@ -1,20 +1,31 @@
-/*--------------------------------------------------------------------------
-NETREK II -- Paradise
+/*------------------------------------------------------------------
+  Copyright 1989		Kevin P. Smith
+				Scott Silvey
 
-Permission to use, copy, modify, and distribute this software and its
-documentation, or any derivative works thereof, for any NON-COMMERCIAL 
-purpose and without fee is hereby granted, provided that this copyright
-notice appear in all copies.  No representations are made about the
-suitability of this software for any purpose.  This software is provided
-"as is" without express or implied warranty.
+Permission to use, copy, modify, and distribute this
+software and its documentation for any purpose and without
+fee is hereby granted, provided that the above copyright
+notice appear in all copies.
 
-    Xtrek Copyright 1986                            Chris Guthrie
-    Netrek (Xtrek II) Copyright 1989                Kevin P. Smith
-                                                    Scott Silvey
-    Paradise II (Netrek II) Copyright 1993          Larry Denys
-                                                    Kurt Olsen
-                                                    Brandon Gillespie
---------------------------------------------------------------------------*/
+  NETREK II -- Paradise
+
+  Permission to use, copy, modify, and distribute this software and
+  its documentation, or any derivative works thereof,  for any 
+  NON-COMMERCIAL purpose and without fee is hereby granted, provided
+  that this copyright notice appear in all copies.  No
+  representations are made about the suitability of this software for
+  any purpose.  This software is provided "as is" without express or
+  implied warranty.
+
+	Xtrek Copyright 1986			Chris Guthrie
+	Netrek (Xtrek II) Copyright 1989	Kevin P. Smith
+						Scott Silvey
+	Paradise II (Netrek II) Copyright 1993	Larry Denys
+						Kurt Olsen
+						Brandon Gillespie
+		                Copyright 2000  Bob Glamm
+
+--------------------------------------------------------------------*/
 
 #include "config.h"
 #include <sys/types.h>
@@ -23,6 +34,8 @@ suitability of this software for any purpose.  This software is provided
 #include "data.h"
 #include "struct.h"
 #include "shmem.h"
+#include "proto.h"
+#include "ntserv.h"
 
 #ifdef CLUECHECK1
 
@@ -336,8 +349,8 @@ parse_motd(void)
 
 /**********************************************************************/
 
-char **phrases=0;
-int	num_phrases=0;
+static char **phrases=0;
+static int  num_phrases=0;
 
 static void
 parse_clue_phrases(void)
@@ -553,9 +566,9 @@ accept_cluecheck(char *word)
                           sizeof(*fallback_cluewords))
 #define CLUE_GETOUTOFIT 7
 
-char           **phrases=0;
-int            num_phrases=0;
-static char    clueword[40];
+static char           **phrases=0;
+static int            num_phrases=0;
+static char           clueword[40];
 
 /*
 // if other methods of getting clue words fail, then we've always got

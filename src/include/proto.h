@@ -1,8 +1,36 @@
+/*------------------------------------------------------------------
+  Copyright 1989		Kevin P. Smith
+				Scott Silvey
+
+Permission to use, copy, modify, and distribute this
+software and its documentation for any purpose and without
+fee is hereby granted, provided that the above copyright
+notice appear in all copies.
+
+  NETREK II -- Paradise
+
+  Permission to use, copy, modify, and distribute this software and
+  its documentation, or any derivative works thereof,  for any 
+  NON-COMMERCIAL purpose and without fee is hereby granted, provided
+  that this copyright notice appear in all copies.  No
+  representations are made about the suitability of this software for
+  any purpose.  This software is provided "as is" without express or
+  implied warranty.
+
+	Xtrek Copyright 1986			Chris Guthrie
+	Netrek (Xtrek II) Copyright 1989	Kevin P. Smith
+						Scott Silvey
+	Paradise II (Netrek II) Copyright 1993	Larry Denys
+						Kurt Olsen
+						Brandon Gillespie
+		                Copyright 2000  Bob Glamm
+
+--------------------------------------------------------------------*/
+
 #ifndef PROTO_H
 #define PROTO_H
 
 #include "config.h"
-
 #include "defs.h"
 #include "struct.h"
 
@@ -128,295 +156,4 @@ int check_fire_warp P((void));
 int check_fire_warpprep P((void));
 int check_fire_docked P((void));
 
-/* *************************************************************************
-   from daemon/
-   ************************************************************************* */
-
-/* daemon/conquer.c */
-void udsurrend P((void));
-void endgame_effects P((int, int, int));
-void checkwin P((int));
-
-/* daemon/daemonII.c */
-void starttimer P((void));
-void stoptimer P((void));
-void ghostmess P((struct player *));
-void saveplayer P((struct player *));
-void rescue P((int, int, int));
-
-/* daemon/dutil.c */
-void killmess P((struct player *, struct player *));
-void cause_kaboom P((struct player *));
-int get_explode_views P((short));
-int inflict_damage P((struct player *, struct player *, struct player *,
-                      int, int));
-int enemy_admiral P((int));
-
-/* daemon/misc.c */
-void warmessage P((void));
-void peacemessage P((void));
-int realNumShips P((void));
-int tournamentMode P((void));
-void pmessage P((char *, int, int, char *));
-void god2player P((char *, int));
-void parse_godmessages P((void));
-
-/* daemon/planets.c */
-void initplanets P((void));
-void growplanets P((void));
-void check_revolt P((void));
-void gen_planets P((void));
-void moveplanets P((void));
-void popplanets P((void));
-void plfight P((void));
-void save_planets P((void));
-
-/* daemon/player.c */
-void loserstats P((int));
-void killerstats P((int, struct player *));
-void checkmaxkills P((int));
-void beam P((void));
-void udcloak P((void));
-void udplayers P((void));
-
-/* daemon/pl_gen/pl_gen*.c */
-int place_stars P((struct planet *, int, int, int, int, struct planet *, int));
-void zero_pflags P((struct planet *, int));
-void randomize_atmospheres P((struct planet *, int, int, int, int, int));
-void randomize_resources P((struct planet *, int, int, int, int));
-void justify_galaxy P((int));
-
-#ifndef LOADABLE_PLGEN
-void gen_galaxy_1 P((void));
-void gen_galaxy_2 P((void));
-void gen_galaxy_3 P((void));
-void gen_galaxy_4 P((void));
-void gen_galaxy_5 P((void));
-void gen_galaxy_6 P((void));
-void gen_galaxy_7 P((void));
-void gen_galaxy_8 P((void));
-#endif
-
-/* daemon/shipvals.c */
-void getshipdefaults P((void));
-
-/* daemon/stats.c */
-void credit_armiesbombed P((struct player *, int, struct planet *));
-
-/* daemon/sysdefaults.c */
-void readsysdefaults P((void));
-int update_sys_defaults P((void));
-
-/* daemon/terrain.c */
-void generate_terrain P((void));
-void doTerrainEffects P((void));
-
-/* daemon/tourny.c */
-void tlog_plkill P((struct player *, struct player *, struct player *));
-void tlog_plquit P((struct player *));
-void tlog_plankill P((struct player *, struct player *, struct player *));
-void tlog_plandest P((struct planet *, struct player *));
-void tlog_plantake P((struct planet *, struct player *));
-void tlog_planaban P((struct planet *, struct player *));
-#ifdef USED
-void tlog_jsassist P((struct player *));
-#endif
-void tlog_beamup P((struct planet *, struct player *));
-void tlog_beamdown P((struct planet *, struct player *));
-void tlog_Bbeamup P((struct player *, struct player *));
-void tlog_Bbeamdown P((struct player *, struct player *));
-void tlog_bomb P((struct planet *, struct player *, int));
-void tlog_bres P((struct planet *, struct player *, char *));
-void tlog_pop P((struct planet *, int));
-void tlog_res P((struct planet *, char *));
-void tlog_revolt P((struct planet *));
-void scan_for_unexpected_tourny_events P((void));
-void tlog_conquerline P((char *));
-void udtourny P((void));
-void starttourn P((void));
-void endtourn P((void));
-
-/* daemon/wander2.c (unused as of now, I believe) */
-#ifdef USED
-void pinit P((void));
-void pmove P((void));
-#endif
-
-/* daemon/weapons.c */
-void udphaser P((void));
-#ifdef USED
-int outofbounds P((int, int));
-#endif
-void udtorps P((void));
-void udmissiles P((void));
-void udplasmatorps P((void));
-
-/* *************************************************************************
-   from listen/
-   ************************************************************************* */
-
-/* listen/listen.c */
-/* most (if not all of these) should be static and declared in listen.c, 
-   as probably only the listen binary uses them */
-#ifdef USED
-char *lasterr P((void));
-#endif
-
-/* *************************************************************************
-   from ntserv/
-   ************************************************************************* */
-
-/* ntserv/cluecheck.c */
-void init_motdbuf P((char *));
-void countdown_clue P((void));
-int accept_cluecheck P((char *));
-
-/* ntserv/death.c */
-void compute_ratings P((struct player *, struct rating *));
-void death P((void));
-
-/* ntserv/fatudp.c */
-void reset_fat_list P((void));
-void updateFat P((struct player_spacket *));
-int fatten P((void));
-void fatMerge P((void));
-
-/* ntserv/feature.c */
-void handleFeature P((struct feature_cpacket *));
-void sendFeature P((char *, int, int, int, int));
-
-/* ntserv/findslot.c */
-int findslot P((int, enum HomeAway));
-
-/* ntserv/gameconf.c */
-void updateGameparams P((void));
-
-/* ntserv/getentry.c */
-void detourneyqueue P((void));
-void getEntry P((int *, int *));
-int realNumShips P((int)); /* duplicated in daemon code? */
-
-/* ntserv/getname.c */
-void getname P((void));
-void savestats P((void));
-
-/* ntserv/input.c */
-void setflag P((void));
-void input P((void));
-int reconnect P((void));
-
-/* ntserv/main.c */
-void stop_interruptor P((void));
-void start_interruptor P((void));
-void exitGame P((void));
-void sendMotd P((void));
-
-/* ntserv/message.c */
-int parse_command_mess P((char *, unsigned char ));
-
-/* ntserv/missile.c */
-void fire_missile_dir P((unsigned char));
-
-/* ntserv/packets.c */
-int size_of_cpacket P((void *));
-int size_of_spacket P((unsigned char *));
-
-/* ntserv/parsexbm.c */
-int ParseXbmFile P((FILE *, int *, int *, char **));
-
-/* ntserv/ping.c */
-void pingResponse P((struct ping_cpacket *packet));
-void sendClientPing P((void));
-
-/* ntserv/plasma.c */
-void nplasmatorp P((unsigned char, int));
-
-/* ntserv/redraw.c */
-void intrupt P((void));
-void auto_features P((void));
-
-/* ntserv/smessage.c */
-void pmessage P((char *, int, int, char *));
-void pmessage2 P((char *, int, int, char *, unsigned char));
-
-/* ntserv/socket.c */
-int connectToClient P((char *, int));
-void checkSocket P((void));
-void initClientData P((void));
-int isClientDead P((void));
-void updateClient P((void));
-void briefUpdateClient P((void));
-void updateStatus P((void));
-void updateSelf P((void));
-void updateShips P((void));
-void updatePlanets P((void));
-void updateTerrain P((void));
-void updateMOTD P((void));
-void sendQueuePacket P((short int));
-void sendClientPacket P((struct player_spacket *));
-int readFromClient P((void));
-void sendPickokPacket P((int));
-void sendMotdLine P((char *));
-void sendMaskPacket P((int));
-int checkVersion P((void));
-void logEntry P((void));
-void logmessage P((char *));
-int connUdpConn P((void));
-int closeUdpConn P((void));
-void printUdpInfo P((void));
-#ifdef DOUBLE_UDP
-void sendSC P((void));
-#endif
-void bounce P((char *, int));
-void sendShipCap P((void));
-void sendMotdPic P((int, int, char *, int, int, int));
-void sendMotdNopic P((int, int, int, int, int));
-void sendMissileNum P((int));
-int site_rsa_exempt P((void));
-
-/* ntserv/sockio.c */
-int buffersEmpty P((void));
-void resetUDPbuffer P((void));
-void resetUDPsequence P((void));
-void flushSockBuf P((void));
-void build_select_masks P((fd_set *, fd_set *));
-int socketPause P((void));
-int socketWait P((void));
-int gwrite P((int, char *, int));
-void sendUDPbuffered P((int, void *, int));
-void sendTCPbuffered P((void *, int));
-void sendTCPdeferred P((void *, int));
-void flushDeferred P((void));
-void undeferDeferred P((void));
-
-/* ntserv/timecheck.c */
-void load_time_access P((void));
-int time_access P((void));
-
-/* ntserv/warning.c */
-void warning P((char *));
-void updateWarnings P((void));
-void imm_warning P((char *));
-
-/* *************************************************************************
-   from robot/
-   ************************************************************************* */
-
-/* robot/rmove.c */
-RETSIGTYPE rmove P((int));
-
-/* robot/robotII.c */
-void save_robot P((void));
-void config P((void));
-
-/* *************************************************************************
-   from snake/
-   ************************************************************************* */
-
-/* snake/snake.c */
-
-/* snake/snakemove.c */
-RETSIGTYPE snakemove P((int));
-RETSIGTYPE exitSnake();
-
-#endif
+#endif /* PROTO_H */

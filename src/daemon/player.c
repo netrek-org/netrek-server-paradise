@@ -1,20 +1,31 @@
-/*--------------------------------------------------------------------------
-NETREK II -- Paradise
+/*------------------------------------------------------------------
+  Copyright 1989		Kevin P. Smith
+				Scott Silvey
 
-Permission to use, copy, modify, and distribute this software and its
-documentation, or any derivative works thereof, for any NON-COMMERCIAL
-purpose and without fee is hereby granted, provided that this copyright
-notice appear in all copies.  No representations are made about the
-suitability of this software for any purpose.  This software is provided
-"as is" without express or implied warranty.
+Permission to use, copy, modify, and distribute this
+software and its documentation for any purpose and without
+fee is hereby granted, provided that the above copyright
+notice appear in all copies.
 
-    Xtrek Copyright 1986                            Chris Guthrie
-    Netrek (Xtrek II) Copyright 1989                Kevin P. Smith
-                                                    Scott Silvey
-    Paradise II (Netrek II) Copyright 1993          Larry Denys
-                                                    Kurt Olsen
-                                                    Brandon Gillespie
---------------------------------------------------------------------------*/
+  NETREK II -- Paradise
+
+  Permission to use, copy, modify, and distribute this software and
+  its documentation, or any derivative works thereof,  for any 
+  NON-COMMERCIAL purpose and without fee is hereby granted, provided
+  that this copyright notice appear in all copies.  No
+  representations are made about the suitability of this software for
+  any purpose.  This software is provided "as is" without express or
+  implied warranty.
+
+	Xtrek Copyright 1986			Chris Guthrie
+	Netrek (Xtrek II) Copyright 1989	Kevin P. Smith
+						Scott Silvey
+	Paradise II (Netrek II) Copyright 1993	Larry Denys
+						Kurt Olsen
+						Brandon Gillespie
+		                Copyright 2000  Bob Glamm
+
+--------------------------------------------------------------------*/
 
 #include "config.h"
 
@@ -24,13 +35,9 @@ suitability of this software for any purpose.  This software is provided
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
+#include "proto.h"
 #include "daemonII.h"
-#include "player.h"
 #include "shmem.h"
-#include "game.h"
-#include "imath.h"
-#include "plutil.h"
-#include "misc.h"
 
 /*-----------------------------NUMBER DEFINES----------------------------*/
  /* defines dealing with ships exploding */
@@ -45,6 +52,11 @@ suitability of this software for any purpose.  This software is provided
 				   lose a docking ring... */
 
 /*-----------------------------------------------------------------------*/
+
+/*---------------------------EXTERNAL GLOBALS-----------------------------*/
+/* from daemonII.c */
+extern int ticks;
+extern int dietime;
 
 /*---------------------------INTERNAL FUNCTIONS---------------------------*/
 
@@ -683,7 +695,7 @@ optional use of TC's new-style turn rates.  */
 static void 
 changedir(struct player *sp)	/* the player to turn */
 {
-    unsigned int ticks;
+    unsigned int ch_ticks;
     unsigned int min, max;
     int     speed;
 
@@ -698,8 +710,8 @@ changedir(struct player *sp)	/* the player to turn */
 	else			/* old style turn */
 	    sp->p_subdir += sp->p_ship.s_turns / ((sp->p_speed < 30) ?
 					   (1 << sp->p_speed) : 1000000000);
-	ticks = sp->p_subdir / 1000;	/* get upper digits of subdir */
-	if (ticks) {		/* if more than one then we turn */
+	ch_ticks = sp->p_subdir / 1000;	/* get upper digits of subdir */
+	if (ch_ticks) {		/* if more than one then we turn */
 	    if (sp->p_dir > sp->p_desdir) {	/* find the min and max of
 						   current */
 		min = sp->p_desdir;	/* direction and desired direction */
@@ -709,12 +721,12 @@ changedir(struct player *sp)	/* the player to turn */
 		min = sp->p_dir;
 		max = sp->p_desdir;
 	    }
-	    if ((ticks > max - min) || (ticks > 256 - max + min))	/* can we immediately */
+	    if ((ch_ticks > max - min) || (ch_ticks > 256 - max + min))	/* can we immediately */
 		sp->p_dir = sp->p_desdir;	/* get to desired direction */
 	    else if ((unsigned char) ((int) sp->p_dir - (int) sp->p_desdir) > 127)
-		sp->p_dir += ticks;	/* else move to the right */
+		sp->p_dir += ch_ticks;	/* else move to the right */
 	    else
-		sp->p_dir -= ticks;	/* move to the left */
+		sp->p_dir -= ch_ticks;	/* move to the left */
 	    sp->p_subdir %= 1000;	/* take off upper digits */
 	}
     }

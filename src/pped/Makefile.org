@@ -15,7 +15,7 @@ CC = cc
 #CFLAGS = -O Aa -I${SERVDIR} -DSYSV -D_HPUX_SOURCE
 CFLAGS = -O -DHAVE_RAND48 -I../include -I.. -ltermcap
 
-OBJS = data.o db.o file.o interface.o main.o
+OBJS = ppeddata.o db.o file.o interface.o main.o
 
 
 all: pped

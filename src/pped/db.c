@@ -5,17 +5,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-/*
-#include <malloc.h>
-*/
 #include <struct.h>
 #include "common.h"
 #include "db.h"
 #include "main.h"
-#include "data.h"
+#include "ppeddata.h"
 
-
-void initDB()
+void
+initDB(void)
 {
 	struct plnode *p, *pn;
 	int i;
@@ -41,8 +38,8 @@ void initDB()
 	dbDirty = 0;
 }
 
-
-void addDB(struct statentry *player)
+void
+addDB(struct statentry *player)
 {
 	struct plnode *p;
 
@@ -67,7 +64,8 @@ void addDB(struct statentry *player)
 	numDBentries++;
 }
 
-struct plnode *GetNode(int n)
+struct plnode *
+GetNode(int n)
 {
 	struct plnode *p, *pn;
 	int i = 0;
@@ -82,7 +80,8 @@ struct plnode *GetNode(int n)
 	return(NULL);
 }
 
-void DeleteNode(int n)
+void
+DeleteNode(int n)
 {
 	struct plnode *p, *pn, *pp;
 	int i;
@@ -109,7 +108,8 @@ void DeleteNode(int n)
 	free(p);
 }
 
-int GetByName(char *name)
+int
+GetByName(char *name)
 {
 	struct plnode *p;
 	int i;

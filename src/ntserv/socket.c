@@ -1,22 +1,31 @@
-/*--------------------------------------------------------------------------
-NETREK II -- Paradise
+/*------------------------------------------------------------------
+  Copyright 1989		Kevin P. Smith
+				Scott Silvey
 
-Permission to use, copy, modify, and distribute this software and its
-documentation, or any derivative works thereof, for any NON-COMMERCIAL
-purpose and without fee is hereby granted, provided that this copyright
-notice appear in all copies.  No representations are made about the
-suitability of this software for any purpose.  This software is provided
-"as is" without express or implied warranty.
+Permission to use, copy, modify, and distribute this
+software and its documentation for any purpose and without
+fee is hereby granted, provided that the above copyright
+notice appear in all copies.
 
-    Xtrek Copyright 1986                            Chris Guthrie
-    Netrek (Xtrek II) Copyright 1989                Kevin P. Smith
-                                                    Scott Silvey
-    Paradise II (Netrek II) Copyright 1993          Larry Denys
-                                                    Kurt Olsen
-                                                    Brandon Gillespie
---------------------------------------------------------------------------*/
+  NETREK II -- Paradise
 
-#define NEED_TIME 
+  Permission to use, copy, modify, and distribute this software and
+  its documentation, or any derivative works thereof,  for any 
+  NON-COMMERCIAL purpose and without fee is hereby granted, provided
+  that this copyright notice appear in all copies.  No
+  representations are made about the suitability of this software for
+  any purpose.  This software is provided "as is" without express or
+  implied warranty.
+
+	Xtrek Copyright 1986			Chris Guthrie
+	Netrek (Xtrek II) Copyright 1989	Kevin P. Smith
+						Scott Silvey
+	Paradise II (Netrek II) Copyright 1993	Larry Denys
+						Kurt Olsen
+						Brandon Gillespie
+		                Copyright 2000  Bob Glamm
+
+--------------------------------------------------------------------*/
 
 #include "config.h"
 
@@ -36,10 +45,8 @@ suitability of this software for any purpose.  This software is provided
 #include "packets.h"
 #include "shmem.h"
 #include "gppackets.h"
-#include "imath.h"
-#include "plutil.h"
-#include "getship.h"
-#include "util.h"
+#include "proto.h"
+#include "ntserv.h"
 
 /* comment this out to disable it */
 #undef DOUBLE_UDP
@@ -84,7 +91,7 @@ static void    handleFeature(), sendFeature(); /* in feature.c */
 static int remoteaddr = -1;	/* inet address in net format */
 extern int errno;
 
-struct packet_handler handlers[] = {
+static struct packet_handler handlers[] = {
     {0},			/* record 0 */
     {handleMessageReq},		/* CP_MESSAGE */
     {handleSpeedReq},		/* CP_SPEED */
@@ -150,26 +157,15 @@ struct packet_handler handlers[] = {
 };
 #define NUM_PACKETS (sizeof(handlers) / sizeof(*handlers) - 1)
 
-int size_of_spacket();
-int size_of_cpacket();
+static int     packetsReceived[256] = {0};
+static int     packetsSent[256] = {0};
 
-int     packetsReceived[256] = {0};
-int     packetsSent[256] = {0};
-
-int     clientDead = 0;
+int     clientDead = 0;	/* used in sockio.c as well */
 
 static int udpLocalPort = 0;
 static int udpClientPort = 0;
-int udpMode = MODE_SIMPLE;	/* what kind of UDP trans we want */
 
-/* this stuff is used for Fat UDP */
-typedef void *PTR;		/* adjust this if you lack (void *) */
-typedef struct fat_node_t {
-    PTR     packet;
-    int     pkt_size;
-    struct fat_node_t *prev;
-    struct fat_node_t *next;
-}       FAT_NODE;
+int udpMode = MODE_SIMPLE;	/* what kind of UDP trans we want */
 
 /* needed for fast lookup of semi-critical fat nodes */
 extern FAT_NODE fat_kills[MAXPLAYER];
@@ -183,33 +179,33 @@ extern FAT_NODE fat_planet2[MAXPLANETS];
 extern FAT_NODE fat_flags[MAXPLAYER];
 extern FAT_NODE fat_hostile[MAXPLAYER];
 
-struct plyr_info_spacket clientPlayersInfo[MAXPLAYER];
-struct plyr_login_spacket clientLogin[MAXPLAYER];
-struct hostile_spacket clientHostile[MAXPLAYER];
-struct stats_spacket clientStats[MAXPLAYER];
-struct player_spacket clientPlayers[MAXPLAYER];
-struct kills_spacket clientKills[MAXPLAYER];
-struct flags_spacket clientFlags[MAXPLAYER];
-struct pstatus_spacket clientPStatus[MAXPLAYER];
-int     msgCurrent;
-struct torp_info_spacket clientTorpsInfo[MAXPLAYER * MAXTORP];
-struct torp_spacket clientTorps[MAXPLAYER * MAXTORP];
-struct thingy_info_spacket clientThingysInfo[TOTALTHINGIES];
-struct thingy_spacket clientThingys[TOTALTHINGIES];
-int     clientThingyStatus[TOTALTHINGIES];
-struct phaser_spacket clientPhasers[MAXPLAYER];
-struct you_spacket clientSelf;
-struct pe1_num_missiles_spacket clientMissiles;
-struct planet_loc_spacket clientPlanetLocs[MAXPLANETS];
-struct plasma_info_spacket clientPlasmasInfo[MAXPLAYER * MAXPLASMA];
-struct plasma_spacket clientPlasmas[MAXPLAYER * MAXPLASMA];
-int     mustUpdate[MAXPLAYER];
-struct status_spacket2 clientStatus2;	/* new stats packets */
-struct stats_spacket2 clientStats2[MAXPLAYER];
-struct planet_spacket2 clientPlanets2[MAXPLANETS];
+static struct plyr_info_spacket clientPlayersInfo[MAXPLAYER];
+static struct plyr_login_spacket clientLogin[MAXPLAYER];
+static struct hostile_spacket clientHostile[MAXPLAYER];
+static struct stats_spacket clientStats[MAXPLAYER];
+static struct player_spacket clientPlayers[MAXPLAYER];
+static struct kills_spacket clientKills[MAXPLAYER];
+static struct flags_spacket clientFlags[MAXPLAYER];
+static struct pstatus_spacket clientPStatus[MAXPLAYER];
+static int     msgCurrent;
+static struct torp_info_spacket clientTorpsInfo[MAXPLAYER * MAXTORP];
+static struct torp_spacket clientTorps[MAXPLAYER * MAXTORP];
+static struct thingy_info_spacket clientThingysInfo[TOTALTHINGIES];
+static struct thingy_spacket clientThingys[TOTALTHINGIES];
+static int     clientThingyStatus[TOTALTHINGIES];
+static struct phaser_spacket clientPhasers[MAXPLAYER];
+static struct you_spacket clientSelf;
+static struct pe1_num_missiles_spacket clientMissiles;
+static struct planet_loc_spacket clientPlanetLocs[MAXPLANETS];
+static struct plasma_info_spacket clientPlasmasInfo[MAXPLAYER * MAXPLASMA];
+static struct plasma_spacket clientPlasmas[MAXPLAYER * MAXPLASMA];
+static int     mustUpdate[MAXPLAYER];
+static struct status_spacket2 clientStatus2;	/* new stats packets */
+static struct stats_spacket2 clientStats2[MAXPLAYER];
+static struct planet_spacket2 clientPlanets2[MAXPLANETS];
 
-struct youss_spacket	clientSelfShip;
-struct youshort_spacket	clientSelfShort;
+static struct youss_spacket	clientSelfShip;
+static struct youshort_spacket	clientSelfShort;
 
 static int		send_threshold	= 0;	/* infinity */
 static int		send_short	= 0;

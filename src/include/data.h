@@ -1,22 +1,38 @@
-/*--------------------------------------------------------------------------
-NETREK II -- Paradise
+/*------------------------------------------------------------------
+  Copyright 1989		Kevin P. Smith
+				Scott Silvey
 
-Permission to use, copy, modify, and distribute this software and its
-documentation, or any derivative works thereof, for any NON-COMMERCIAL
-purpose and without fee is hereby granted, provided that this copyright
-notice appear in all copies.  No representations are made about the
-suitability of this software for any purpose.  This software is provided
-"as is" without express or implied warranty.
+Permission to use, copy, modify, and distribute this
+software and its documentation for any purpose and without
+fee is hereby granted, provided that the above copyright
+notice appear in all copies.
 
-    Xtrek Copyright 1986                            Chris Guthrie
-    Netrek (Xtrek II) Copyright 1989                Kevin P. Smith
-                                                    Scott Silvey
-    Paradise II (Netrek II) Copyright 1993          Larry Denys
-                                                    Kurt Olsen
-                                                    Brandon Gillespie
---------------------------------------------------------------------------*/
+  NETREK II -- Paradise
 
+  Permission to use, copy, modify, and distribute this software and
+  its documentation, or any derivative works thereof,  for any 
+  NON-COMMERCIAL purpose and without fee is hereby granted, provided
+  that this copyright notice appear in all copies.  No
+  representations are made about the suitability of this software for
+  any purpose.  This software is provided "as is" without express or
+  implied warranty.
+
+	Xtrek Copyright 1986			Chris Guthrie
+	Netrek (Xtrek II) Copyright 1989	Kevin P. Smith
+						Scott Silvey
+	Paradise II (Netrek II) Copyright 1993	Larry Denys
+						Kurt Olsen
+						Brandon Gillespie
+		                Copyright 2000  Bob Glamm
+
+--------------------------------------------------------------------*/
+
+#include "config.h"
 #include "defs.h"
+#include "struct.h"
+
+#ifndef DATA_H
+#define DATA_H
 
 #define SBEXPVIEWS 		7
 
@@ -74,8 +90,6 @@ extern int F_gz_motd;		/* Client can't handle GZipped MOTD packets */
 extern unsigned char F_gz_motd_major;	/* Major gzipped format client can handle */
 extern unsigned char F_gz_motd_minor;	/* Minor gzipped format client can handle */
 
-/*extern char *serverName; not needed 8/1/92 TC */
-
 extern int chaos;
 extern int topgun;		/* added 12/9/90 TC */
 extern int hourratio;
@@ -122,3 +136,5 @@ extern char MCONTROL[];
 extern char UMPIRE[];
 extern char MSERVA[];
 extern char SERVNAME[];
+
+#endif /* DATA_H */

@@ -1,20 +1,31 @@
-/*--------------------------------------------------------------------------
-NETREK II -- Paradise
+/*------------------------------------------------------------------
+  Copyright 1989		Kevin P. Smith
+				Scott Silvey
 
-Permission to use, copy, modify, and distribute this software and its
-documentation, or any derivative works thereof, for any NON-COMMERCIAL
-purpose and without fee is hereby granted, provided that this copyright
-notice appear in all copies.  No representations are made about the
-suitability of this software for any purpose.  This software is provided
-"as is" without express or implied warranty.
+Permission to use, copy, modify, and distribute this
+software and its documentation for any purpose and without
+fee is hereby granted, provided that the above copyright
+notice appear in all copies.
 
-    Xtrek Copyright 1986                            Chris Guthrie
-    Netrek (Xtrek II) Copyright 1989                Kevin P. Smith
-                                                    Scott Silvey
-    Paradise II (Netrek II) Copyright 1993          Larry Denys
-                                                    Kurt Olsen
-                                                    Brandon Gillespie
---------------------------------------------------------------------------*/
+  NETREK II -- Paradise
+
+  Permission to use, copy, modify, and distribute this software and
+  its documentation, or any derivative works thereof,  for any 
+  NON-COMMERCIAL purpose and without fee is hereby granted, provided
+  that this copyright notice appear in all copies.  No
+  representations are made about the suitability of this software for
+  any purpose.  This software is provided "as is" without express or
+  implied warranty.
+
+	Xtrek Copyright 1986			Chris Guthrie
+	Netrek (Xtrek II) Copyright 1989	Kevin P. Smith
+						Scott Silvey
+	Paradise II (Netrek II) Copyright 1993	Larry Denys
+						Kurt Olsen
+						Brandon Gillespie
+		                Copyright 2000  Bob Glamm
+
+--------------------------------------------------------------------*/
 
 #include "config.h"
 #include <sys/types.h>
@@ -24,19 +35,11 @@ suitability of this software for any purpose.  This software is provided
 #include "data.h"
 #include "packets.h"
 #include "shmem.h"
+#include "proto.h"
+#include "ntserv.h"
 
 /* define to get LOTS of fat UDP debugging messages */
 /* #define FATDIAG */
-
-
-/* this stuff is used for Fat UDP */
-typedef void *PTR;		/* adjust this if you lack (void *) */
-typedef struct fat_node_t {
-    PTR     packet;
-    int     pkt_size;
-    struct fat_node_t *prev;
-    struct fat_node_t *next;
-}       FAT_NODE;
 
 FAT_NODE fat_kills[MAXPLAYER];
 FAT_NODE fat_torp_info[MAXPLAYER * MAXTORP];
@@ -55,7 +58,7 @@ typedef struct {
     FAT_NODE *head;
     FAT_NODE *tail;
 }       FAT_LIST;
-FAT_LIST fatlist[MAX_FAT_LIST], tmplist[MAX_FAT_LIST];
+static FAT_LIST fatlist[MAX_FAT_LIST], tmplist[MAX_FAT_LIST];
 /* tweakable parameters; compare with UDPBUFSIZE */
 /* NOTE: FAT_THRESH + MAX_FAT_DATA must be < UDPBUFSIZE                */
 /*       MAX_FAT_DATA must be larger than biggest semi-critical packet */

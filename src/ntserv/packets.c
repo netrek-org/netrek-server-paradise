@@ -1,20 +1,31 @@
-/*--------------------------------------------------------------------------
-NETREK II -- Paradise
+/*------------------------------------------------------------------
+  Copyright 1989		Kevin P. Smith
+				Scott Silvey
 
-Permission to use, copy, modify, and distribute this software and its
-documentation, or any derivative works thereof, for any NON-COMMERCIAL
-purpose and without fee is hereby granted, provided that this copyright
-notice appear in all copies.  No representations are made about the
-suitability of this software for any purpose.  This software is provided
-"as is" without express or implied warranty.
+Permission to use, copy, modify, and distribute this
+software and its documentation for any purpose and without
+fee is hereby granted, provided that the above copyright
+notice appear in all copies.
 
-    Xtrek Copyright 1986                            Chris Guthrie
-    Netrek (Xtrek II) Copyright 1989                Kevin P. Smith
-                                                    Scott Silvey
-    Paradise II (Netrek II) Copyright 1993          Larry Denys
-                                                    Kurt Olsen
-                                                    Brandon Gillespie
---------------------------------------------------------------------------*/
+  NETREK II -- Paradise
+
+  Permission to use, copy, modify, and distribute this software and
+  its documentation, or any derivative works thereof,  for any 
+  NON-COMMERCIAL purpose and without fee is hereby granted, provided
+  that this copyright notice appear in all copies.  No
+  representations are made about the suitability of this software for
+  any purpose.  This software is provided "as is" without express or
+  implied warranty.
+
+	Xtrek Copyright 1986			Chris Guthrie
+	Netrek (Xtrek II) Copyright 1989	Kevin P. Smith
+						Scott Silvey
+	Paradise II (Netrek II) Copyright 1993	Larry Denys
+						Kurt Olsen
+						Brandon Gillespie
+		                Copyright 2000  Bob Glamm
+
+--------------------------------------------------------------------*/
 
 #include "config.h"
 
@@ -22,8 +33,10 @@ suitability of this software for any purpose.  This software is provided
 #include "packets.h"
 #include "gppackets.h"
 #include "wtext.h"
+#include "proto.h"
+#include "ntserv.h"
 
-size_t	client_packet_sizes[] = {
+static size_t client_packet_sizes[] = {
   0, 
   sizeof(struct mesg_cpacket),
   sizeof(struct speed_cpacket),
@@ -121,7 +134,7 @@ size_of_cpacket(void *pkt)
 }
 
 
-int     server_packet_sizes[] = {
+static int server_packet_sizes[] = {
     0,				/* record 0 */
     sizeof(struct mesg_spacket),/* SP_MESSAGE */
     sizeof(struct plyr_info_spacket),	/* SP_PLAYER_INFO */
@@ -196,7 +209,7 @@ int     server_packet_sizes[] = {
 
 #define num_spacket_sizes (sizeof(server_packet_sizes) / sizeof(server_packet_sizes[0]) - 1)
 
-unsigned char numofbits[256] =
+static unsigned char numofbits[256] =
 {0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, 1,
  2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 1,
  2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2,
@@ -216,7 +229,8 @@ unsigned char numofbits[256] =
 
 static int vtsize[9] =
 {4, 8, 8, 12, 12, 16, 20, 20, 24};	/* How big is the torppacket */
-int vtisize[9] =
+
+static int vtisize[9] =
 {4, 7, 9, 11, 13, 16, 18, 20, 22};	/* 4 byte Header + torpdata */
 
 

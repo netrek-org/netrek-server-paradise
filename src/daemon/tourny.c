@@ -1,33 +1,53 @@
-/*--------------------------------------------------------------------------
-NETREK II -- Paradise
+/*------------------------------------------------------------------
+  Copyright 1989		Kevin P. Smith
+				Scott Silvey
 
-Permission to use, copy, modify, and distribute this software and its
-documentation, or any derivative works thereof, for any NON-COMMERCIAL
-purpose and without fee is hereby granted, provided that this copyright
-notice appear in all copies.  No representations are made about the
-suitability of this software for any purpose.  This software is provided
-"as is" without express or implied warranty.
+Permission to use, copy, modify, and distribute this
+software and its documentation for any purpose and without
+fee is hereby granted, provided that the above copyright
+notice appear in all copies.
 
-    Xtrek Copyright 1986                            Chris Guthrie
-    Netrek (Xtrek II) Copyright 1989                Kevin P. Smith
-                                                    Scott Silvey
-    Paradise II (Netrek II) Copyright 1993          Larry Denys
-                                                    Kurt Olsen
-                                                    Brandon Gillespie
---------------------------------------------------------------------------*/
+  NETREK II -- Paradise
+
+  Permission to use, copy, modify, and distribute this software and
+  its documentation, or any derivative works thereof,  for any 
+  NON-COMMERCIAL purpose and without fee is hereby granted, provided
+  that this copyright notice appear in all copies.  No
+  representations are made about the suitability of this software for
+  any purpose.  This software is provided "as is" without express or
+  implied warranty.
+
+	Xtrek Copyright 1986			Chris Guthrie
+	Netrek (Xtrek II) Copyright 1989	Kevin P. Smith
+						Scott Silvey
+	Paradise II (Netrek II) Copyright 1993	Larry Denys
+						Kurt Olsen
+						Brandon Gillespie
+		                Copyright 2000  Bob Glamm
+
+--------------------------------------------------------------------*/
 
 #include "config.h"
 #include "defs.h"
 #include "struct.h"
 #include "shmem.h"
 #include "data.h"
+#include "proto.h"
+#include "daemonII.h"
 
 #define TLOGNAME "/tmp/tourney.log"
 #define MAXTIME 120
 
-FILE   *tlog = NULL;
-
 #define TOURNEYMODE	(status2->league > 2)
+
+/*---------------------------LOCAL VARIABLES------------------------------*/
+
+static FILE *tlog = NULL;
+
+static enum player_status_e status_cache[MAXPLAYER];
+static enum ship_types_e ship_cache[MAXPLAYER];
+
+/*---------------------------LOCAL FUNCTIONS------------------------------*/
 
 static void 
 opentlog(void)
@@ -93,9 +113,6 @@ id_planet(struct planet *p)
    List of player related actions
 
    */
-
-enum player_status_e status_cache[MAXPLAYER];
-enum ship_types_e ship_cache[MAXPLAYER];
 
 static void 
 tlog_refit(struct player *pl)

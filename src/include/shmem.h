@@ -1,24 +1,37 @@
-/*--------------------------------------------------------------------------
-NETREK II -- Paradise
+/*------------------------------------------------------------------
+  Copyright 1989		Kevin P. Smith
+				Scott Silvey
 
-Permission to use, copy, modify, and distribute this software and its
-documentation, or any derivative works thereof, for any NON-COMMERCIAL
-purpose and without fee is hereby granted, provided that this copyright
-notice appear in all copies.  No representations are made about the
-suitability of this software for any purpose.  This software is provided
-"as is" without express or implied warranty.
+Permission to use, copy, modify, and distribute this
+software and its documentation for any purpose and without
+fee is hereby granted, provided that the above copyright
+notice appear in all copies.
 
-    Xtrek Copyright 1986                            Chris Guthrie
-    Netrek (Xtrek II) Copyright 1989                Kevin P. Smith
-                                                    Scott Silvey
-    Paradise II (Netrek II) Copyright 1993          Larry Denys
-                                                    Kurt Olsen
-                                                    Brandon Gillespie
---------------------------------------------------------------------------*/
+  NETREK II -- Paradise
 
-#ifndef shmem_h_
-#define shmem_h_
+  Permission to use, copy, modify, and distribute this software and
+  its documentation, or any derivative works thereof,  for any 
+  NON-COMMERCIAL purpose and without fee is hereby granted, provided
+  that this copyright notice appear in all copies.  No
+  representations are made about the suitability of this software for
+  any purpose.  This software is provided "as is" without express or
+  implied warranty.
 
+	Xtrek Copyright 1986			Chris Guthrie
+	Netrek (Xtrek II) Copyright 1989	Kevin P. Smith
+						Scott Silvey
+	Paradise II (Netrek II) Copyright 1993	Larry Denys
+						Kurt Olsen
+						Brandon Gillespie
+		                Copyright 2000  Bob Glamm
+
+--------------------------------------------------------------------*/
+
+#ifndef SHMEM_H
+#define SHMEM_H
+
+#include "config.h"
+#include "defs.h"
 #include "struct.h"
 
 enum spec_weapons_e {
@@ -203,6 +216,7 @@ struct configuration {
     float   losing_advantage;	/* give losing team an army advantage? */
 };
 
+#ifndef SHMEM_C
 extern struct player *players;
 extern struct torp *torps;
 extern struct missile *missiles;
@@ -217,10 +231,6 @@ extern int *stars;
 extern struct mctl *mctl;
 extern struct message *messages;
 extern struct team *teams;
-
-#define NUMPLANETS configvals->numplanets
-#define GWIDTH configvals->gwidth
-#define WORMPAIRS configvals->num_wormpairs
 
 extern struct ship *shipvals;
 extern struct configuration *configvals;
@@ -242,7 +252,12 @@ extern int *asteroid_dens_variance;
 extern int *asteroid_rad_variance;
 extern int *improved_tracking;	/* smarter tracking algorithm */
 extern char *galaxyValid;	/* does galaxy go invalid?  0 if so */
-#define CLUEPHRASE_SIZE	1024
 extern char *cluephrase_storage;
-
 #endif
+
+#define CLUEPHRASE_SIZE	1024
+#define NUMPLANETS configvals->numplanets
+#define GWIDTH configvals->gwidth
+#define WORMPAIRS configvals->num_wormpairs
+
+#endif /* SHMEM_H */

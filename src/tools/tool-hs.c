@@ -1,20 +1,31 @@
-/*--------------------------------------------------------------------------
-NETREK II -- Paradise
+/*------------------------------------------------------------------
+  Copyright 1989		Kevin P. Smith
+				Scott Silvey
 
-Permission to use, copy, modify, and distribute this software and its
-documentation, or any derivative works thereof, for any NON-COMMERCIAL
-purpose and without fee is hereby granted, provided that this copyright
-notice appear in all copies.  No representations are made about the
-suitability of this software for any purpose.  This software is provided
-"as is" without express or implied warranty.
+Permission to use, copy, modify, and distribute this
+software and its documentation for any purpose and without
+fee is hereby granted, provided that the above copyright
+notice appear in all copies.
 
-    Xtrek Copyright 1986                            Chris Guthrie
-    Netrek (Xtrek II) Copyright 1989                Kevin P. Smith
-                                                    Scott Silvey
-    Paradise II (Netrek II) Copyright 1993          Larry Denys
-                                                    Kurt Olsen
-                                                    Brandon Gillespie
---------------------------------------------------------------------------*/
+  NETREK II -- Paradise
+
+  Permission to use, copy, modify, and distribute this software and
+  its documentation, or any derivative works thereof,  for any 
+  NON-COMMERCIAL purpose and without fee is hereby granted, provided
+  that this copyright notice appear in all copies.  No
+  representations are made about the suitability of this software for
+  any purpose.  This software is provided "as is" without express or
+  implied warranty.
+
+	Xtrek Copyright 1986			Chris Guthrie
+	Netrek (Xtrek II) Copyright 1989	Kevin P. Smith
+						Scott Silvey
+	Paradise II (Netrek II) Copyright 1993	Larry Denys
+						Kurt Olsen
+						Brandon Gillespie
+		                Copyright 2000  Bob Glamm
+
+--------------------------------------------------------------------*/
 
 /*
   This is probably broken in anything but the default config
@@ -27,11 +38,12 @@ suitability of this software for any purpose.  This software is provided
 #include <sys/stat.h>
 #include "struct.h"
 #include "data.h"
+#include "proto.h"
 
-int     topn = 1;
-char    name[40] = "";		/* if we want stats for a particular name */
-int     nplayers;
-struct statentry *database;
+static int     topn = 1;
+static char    name[40] = "";	/* if we want stats for a particular name */
+static int     nplayers;
+static struct statentry *database;
 
 struct highscore {
     char    name[32];
@@ -40,8 +52,8 @@ struct highscore {
     struct highscore *next;
 };
 
-struct highscore *scores;
-int     scoresize, nscores;
+static struct highscore *scores;
+static int     scoresize, nscores;
 
 void 
 subbrag(char *name, int stuff, int time, char *title, char *descr, int num)
@@ -129,7 +141,8 @@ brag(char *title, char *descr, int offset)
 
 
 #define COMPARE(STN) \
-int cmp_raw ## STN(struct highscore *a, struct highscore *b) \
+int \
+cmp_raw ## STN(struct highscore *a, struct highscore *b) \
 { \
   int	diff = a->STN - b->STN; \
  \
@@ -141,7 +154,8 @@ int cmp_raw ## STN(struct highscore *a, struct highscore *b) \
     return -1; \
 } \
  \
-int cmp_per ## STN(struct highscore *a, struct highscore *b) \
+int \
+cmp_per ## STN(struct highscore *a, struct highscore *b) \
 { \
   double	diff = a->STN/(double)a->ticks - b->STN/(double)b->ticks; \
  \
@@ -161,7 +175,8 @@ int cmp_per ## STN(struct highscore *a, struct highscore *b) \
 
 
 #define COMPARE(STN) \
-int cmp_raw/**/STN(struct highscore *a, struct highscore *b) \
+int \
+cmp_raw/**/STN(struct highscore *a, struct highscore *b) \
 { \
   int	diff = a->STN - b->STN; \
  \
@@ -173,7 +188,8 @@ int cmp_raw/**/STN(struct highscore *a, struct highscore *b) \
     return -1; \
 } \
  \
-int cmp_per/**/STN(struct highscore *a, struct highscore *b) \
+int \
+cmp_per/**/STN(struct highscore *a, struct highscore *b) \
 { \
   double	diff = a->STN/(double)a->ticks - b->STN/(double)b->ticks; \
  \
@@ -194,7 +210,8 @@ COMPARE(tresbomb)
 COMPARE(tdooshes)
 COMPARE(tplanets)
 
-int cmp_ticks(struct highscore *a, struct highscore *b)
+int
+cmp_ticks(struct highscore *a, struct highscore *b)
 {
     int     diff = a->ticks - b->ticks;
 
@@ -206,7 +223,7 @@ int cmp_ticks(struct highscore *a, struct highscore *b)
 	return -1;
 }
 
-struct statentry zeroplayer;
+static struct statentry zeroplayer;
 
 int 
 different(struct highscore *one, struct highscore *two)

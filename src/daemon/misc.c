@@ -1,20 +1,31 @@
-/*--------------------------------------------------------------------------
-NETREK II -- Paradise
+/*------------------------------------------------------------------
+  Copyright 1989		Kevin P. Smith
+				Scott Silvey
 
-Permission to use, copy, modify, and distribute this software and its
-documentation, or any derivative works thereof, for any NON-COMMERCIAL
-purpose and without fee is hereby granted, provided that this copyright
-notice appear in all copies.  No representations are made about the
-suitability of this software for any purpose.  This software is provided
-"as is" without express or implied warranty.
+Permission to use, copy, modify, and distribute this
+software and its documentation for any purpose and without
+fee is hereby granted, provided that the above copyright
+notice appear in all copies.
 
-    Xtrek Copyright 1986                            Chris Guthrie
-    Netrek (Xtrek II) Copyright 1989                Kevin P. Smith
-                                                    Scott Silvey
-    Paradise II (Netrek II) Copyright 1993          Larry Denys
-                                                    Kurt Olsen
-                                                    Brandon Gillespie
---------------------------------------------------------------------------*/
+  NETREK II -- Paradise
+
+  Permission to use, copy, modify, and distribute this software and
+  its documentation, or any derivative works thereof,  for any 
+  NON-COMMERCIAL purpose and without fee is hereby granted, provided
+  that this copyright notice appear in all copies.  No
+  representations are made about the suitability of this software for
+  any purpose.  This software is provided "as is" without express or
+  implied warranty.
+
+	Xtrek Copyright 1986			Chris Guthrie
+	Netrek (Xtrek II) Copyright 1989	Kevin P. Smith
+						Scott Silvey
+	Paradise II (Netrek II) Copyright 1993	Larry Denys
+						Kurt Olsen
+						Brandon Gillespie
+		                Copyright 2000  Bob Glamm
+
+--------------------------------------------------------------------*/
 
 #include "config.h"
 
@@ -22,18 +33,19 @@ suitability of this software for any purpose.  This software is provided
 #include <setjmp.h>
 
 #include "defs.h"
-#include "misc.h"
 #include "struct.h"
 #include "data.h"
+#include "proto.h"
 #include "daemonII.h"
-#include "planets.h"
 #include "shmem.h"
 
 /*------------------------------MODULE VARIABLES--------------------------*/
 
+#if 0
 #define	NMESSAGES	16
  /* The list of messages that are sent when t-mode begins.  */
-char   *warmessages[] = {
+static char *warmessages[] =
+{
     "A dark mood settles upon the galaxy as galactic superpowers seek",
     "to colonize new territory.  Border disputes errupt developing",
     "into all out intergalactic WAR!!!",
@@ -106,7 +118,8 @@ int     warm[NMESSAGES][2] = {
 
 
  /* The set of message series that are displayed when t-mode ends. */
-char   *peacemessages[] = {
+static char *peacemessages[] =
+{
     "The expansionist pressure subsides, and temporary agreements are",
     "reached in local border disputes.",
     "Peace returns to the galaxy...",
@@ -155,7 +168,7 @@ char   *peacemessages[] = {
     The starting index of each message series and the number of messages in
     the series.
  */
-int     peacem[NMESSAGES][2] = {
+static int peacem[NMESSAGES][2] = {
     {0, 3},
     {3, 3},
     {6, 3},
@@ -173,7 +186,119 @@ int     peacem[NMESSAGES][2] = {
     {30, 1},
     {31, 1},
 };
+#else
 
+/* New message format (much more maintainable than the old message
+   format).  Instead of keeping track of (offset,count) for each
+   message, each message is a single string (ANSI concat rules in
+   effect here) with each line in the message (except the last) broken by \n.
+   When the message is sent to the client, each \n-terminated segment
+   (or \0-terminated segment if the last segment)
+   of the message is sent prefixed by WAR-> or PEACE-> (whichever is
+   appropriate).
+
+   Sure, we have to do a few strchr's, but what the hell */
+
+ /* The list of messages that are sent when t-mode begins.  */
+static char *warmessages[] =
+{
+    "A dark mood settles upon the galaxy as galactic superpowers seek\n"
+    "to colonize new territory.  Border disputes errupt developing\n"
+    "into all out intergalactic WAR!!!",
+
+    "Slick Willy is elected president, the bottom falls out of the\n"
+    "economy, and the pressure to expand rises.",
+
+    "Clinton found with foreign emperor's wife!\n"
+    "All out war ensues.",
+
+    "Taxes on the rich raised to 80%.\n"
+    "The rich flee to neigboring empire.\n"
+    "Democrats demand extradition.\n"
+    "Foreign emporer refuses.\n"
+    "Hillary 'Rob Them' Clinton declares war!\n"
+    "Bill hides out in London.",
+
+    "INTERGALACTIC BEER SHORTAGE!\n"
+    "CHAOS LIKE IT HAS NEVER BEEN SEEN BEFORE ENSUES!",
+
+    "The American Gladiators hit as the number 1 show on the vid.\n"
+    "After a gruesome episode, the masses storm out their homes,\n"
+    "jump in their ships, make a quick stop at their local 7-11\n"
+    "to grab a few beers, then head out into the galaxy to\n"
+    "KICK SOME ASS.  WAR!!!!!!!!!!!!!!!!!!",
+
+    "Khan is resurrected in a bizzare experiment.  Elected as head of\n"
+    "the Starfleet Council, he removes all pajama-wearing new-age\n"
+    "hippies from Starfleet.  (And you thought the borg were bad news)",
+
+    "Several members of the computing support staff of the Galactic\n"
+    "Council are severely injured in a freak skydiving accident.\n"
+    "The rest are killed.  The network collapses without their\n"
+    "guidance.  Galactic chaos breaks out!",
+
+    /* oldies */
+    "A dark mood settles upon the galaxy",
+    "Political pressure to expand is rising",
+    "Border disputes break out as political tensions increase!",
+    "Galactic superpowers seek to colonize new territory!",
+    "'Manifest Destiny' becomes motive in galactic superpower conflict!",
+    "Diplomat insults foriegn emperor's mother and fighting breaks out!",
+    "Dan Quayle declares self as galactic emperor and chaos breaks out!",
+    "Peace parties have been demobilized, and fighting ensues.",
+};
+
+#define NWARMESSAGES (sizeof(warmessages) / sizeof(char *))
+
+ /* The set of message series that are displayed when t-mode ends. */
+static char *peacemessages[] =
+{
+    "The expansionist pressure subsides, and temporary agreements are\n"
+    "reached in local border disputes.\n"
+    "Peace returns to the galaxy...",
+
+    "Wild mob storms the White House!\n"
+    "Clinton flees.\n"
+    "Order returns to the galaxy.",
+
+    "Slick Willy apologizes about incident with foreign emperor's wife.\n"
+    "Claims he did not penetrate.\n"
+    "Peace ensues.",
+
+    "The economy goes belly up.  The Democrats are kicked\n"
+    "out of office, tarred and feathered, and sent to the\n"
+    "zoo on Rigel 4.  Capitalism is implemented and order\n"
+    "returns to the empire.",
+
+    "Officials sieze hidden beer stockpiles at the Mackenzie brother's\n"
+    "house!  The beer shortage is over.  Peace breaks out.",
+
+    "The people decide they would rather sit home and watch\n"
+    "Al Bundy than fight.  The war comes to an end.",
+
+    "Khan takes a fatal blow to the kidneys when Kirk returns from\n"
+    "retirement and whacks him in the back with his walker.\n"
+    "It looks like the hippies are back in control.",
+
+    "Sole survivors of the skydiving accident that took out the\n"
+    "rest of the computing support staff, Michael McLean and Brad\n"
+    "Spatz are released from intensive care and rebuild the\n"
+    "network.  Peace is restored to the Galaxy.",
+
+    /* oldies */
+    "A new day dawns as the oppressive mood lifts",
+    "The expansionist pressure subsides",
+    "Temporary agreement is reached in local border disputes.",
+    "Galactic governments reduce colonization efforts.",
+    "'Manifest Destiny is no longer a fad.' says influential philosopher.",
+    "Diplomat apologizes to foreign emperor's mother and invasion is stopped!",
+    "Dan Quayle is locked up and order returns to the galaxy!",
+    "The peace party has reformed, and is rallying for peace",
+};
+
+#define NPEACEMESSAGES (sizeof(peacemessages) / sizeof(char *))
+
+#endif
 
 static int series = 0;		/* the message series that was printed */
  /* when t-mode started.  */
@@ -194,7 +319,34 @@ static int series = 0;		/* the message series that was printed */
 and prints it out.  It records the message series in the module's series
 variable so that the corresponding peace message series can be printed.  */
 
+static void
+tolstoy_message(char *p, char *transition)
+{
+  char *q;
 
+  do
+  {
+    q = strchr(p, '\n');
+    if(q)
+      *q = 0;
+    pmessage(p, 0, MALL, transition);
+    if(q)
+    {
+      *q = '\n';
+      p = q+1;
+    }
+  } while(q && *p);
+}
+
+void
+warmessage(void)
+{
+  series = lrand48() % NWARMESSAGES;
+  tolstoy_message(warmessages[series], "  WAR->  ");
+}
+
+
+#if 0
 void 
 warmessage(void)
 {
@@ -211,7 +363,7 @@ warmessage(void)
 	i++;			/* on to next message */
     }
 }
-
+#endif
 
 
 
@@ -219,6 +371,15 @@ warmessage(void)
 /*  This function prints a peace message series.  It uses the module
 variable series to decide which message series to print.  */
 
+void
+peacemessage(void)
+{
+  if(series >= NPEACEMESSAGES)
+    series = lrand48() % NPEACEMESSAGES;
+  tolstoy_message(peacemessages[series], " PEACE-> ");
+}
+
+#if 0
 void 
 peacemessage(void)
 {
@@ -233,7 +394,7 @@ peacemessage(void)
 	i++;			/* on to next message */
     }
 }
-
+#endif
 
 
 

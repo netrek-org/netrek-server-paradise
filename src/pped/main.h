@@ -4,8 +4,11 @@
  * prototypes for main.c
  */
 
-int main(int argc, char *argv[]);
-void err(char *s, ...);
-void err_sys(char *s, ...);
-void GoAway(int type);
+#ifndef MAIN_H
+#define MAIN_H
 
+void err P((char *s, ...));
+void err_sys P((char *s, ...));
+void GoAway P((int type));
+
+#endif

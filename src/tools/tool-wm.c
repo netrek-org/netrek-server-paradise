@@ -1,20 +1,31 @@
-/*--------------------------------------------------------------------------
-NETREK II -- Paradise
+/*------------------------------------------------------------------
+  Copyright 1989		Kevin P. Smith
+				Scott Silvey
 
-Permission to use, copy, modify, and distribute this software and its
-documentation, or any derivative works thereof, for any NON-COMMERCIAL
-purpose and without fee is hereby granted, provided that this copyright
-notice appear in all copies.  No representations are made about the
-suitability of this software for any purpose.  This software is provided
-"as is" without express or implied warranty.
+Permission to use, copy, modify, and distribute this
+software and its documentation for any purpose and without
+fee is hereby granted, provided that the above copyright
+notice appear in all copies.
 
-    Xtrek Copyright 1986                            Chris Guthrie
-    Netrek (Xtrek II) Copyright 1989                Kevin P. Smith
-                                                    Scott Silvey
-    Paradise II (Netrek II) Copyright 1993          Larry Denys
-                                                    Kurt Olsen
-                                                    Brandon Gillespie
---------------------------------------------------------------------------*/
+  NETREK II -- Paradise
+
+  Permission to use, copy, modify, and distribute this software and
+  its documentation, or any derivative works thereof,  for any 
+  NON-COMMERCIAL purpose and without fee is hereby granted, provided
+  that this copyright notice appear in all copies.  No
+  representations are made about the suitability of this software for
+  any purpose.  This software is provided "as is" without express or
+  implied warranty.
+
+	Xtrek Copyright 1986			Chris Guthrie
+	Netrek (Xtrek II) Copyright 1989	Kevin P. Smith
+						Scott Silvey
+	Paradise II (Netrek II) Copyright 1993	Larry Denys
+						Kurt Olsen
+						Brandon Gillespie
+		                Copyright 2000  Bob Glamm
+
+--------------------------------------------------------------------*/
 
 /*
 // overhaul by Brandon Gillespie Sept 17 1994
@@ -26,6 +37,7 @@ suitability of this software for any purpose.  This software is provided
 #include "data.h"
 #include "struct.h"
 #include "shmem.h"
+#include "proto.h"
 
 #define CNORMAL   "\33[37;0m"
 #define CBOLD     "\33[1m"
@@ -37,25 +49,29 @@ suitability of this software for any purpose.  This software is provided
 #define CCYAN     "\33[36m"
 
 /* prototypes */
-void       printmes(char mstr[80], int mflags, int mrecpt, int mfrom);
-void       usage(char *me);
-static int contains(char *str1, char *str2);
+void       printmes P((char mstr[80], int, int, int));
+void       usage P((char *));
+static int contains P((char *, char *));
 
-#define PRINT(__x) if (1) {\
-        if (displaykills == 1) \
-            printf("\n%s", __x); \
-        else if (mflags != 169) /* MKILLA) */ \
-            printf("\n%s", __x); \
-        printf(CNORMAL); \
-    }
+#define PRINT(__x) \
+if (1) \
+{ \
+  if (displaykills == 1) \
+    printf("\n%s", __x); \
+  else if (mflags != 169) /* (MKILLA) */ \
+    printf("\n%s", __x); \
+  \
+  printf(CNORMAL); \
+}
+
 /*
 // Global Variables, bad, but this is an easier way to do options
 // which are only set once
 */
 
-int     displaykills = 1;
-int     docolor = 0;
-char   *myname;
+static int     displaykills = 1;
+static int     docolor = 0;
+static char   *myname;
 
 int
 main(int argc, char **argv)

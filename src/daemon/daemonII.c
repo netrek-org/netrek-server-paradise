@@ -1,23 +1,31 @@
-/*--------------------------------------------------------------------------
-NETREK II -- Paradise
+/*------------------------------------------------------------------
+  Copyright 1989		Kevin P. Smith
+				Scott Silvey
 
-Permission to use, copy, modify, and distribute this software and its
-documentation, or any derivative works thereof, for any NON-COMMERCIAL
-purpose and without fee is hereby granted, provided that this copyright
-notice appear in all copies.  No representations are made about the
-suitability of this software for any purpose.  This software is provided
-"as is" without express or implied warranty.
+Permission to use, copy, modify, and distribute this
+software and its documentation for any purpose and without
+fee is hereby granted, provided that the above copyright
+notice appear in all copies.
 
-    Xtrek Copyright 1986                            Chris Guthrie
-    Netrek (Xtrek II) Copyright 1989                Kevin P. Smith
-                                                    Scott Silvey
-    Paradise II (Netrek II) Copyright 1993          Larry Denys
-                                                    Kurt Olsen
-                                                    Brandon Gillespie
---------------------------------------------------------------------------*/
-char binary[] = "@(#)daemonII";
+  NETREK II -- Paradise
 
-#define DAEMONII 1		/* to tell daemonII.h we are in this file */
+  Permission to use, copy, modify, and distribute this software and
+  its documentation, or any derivative works thereof,  for any 
+  NON-COMMERCIAL purpose and without fee is hereby granted, provided
+  that this copyright notice appear in all copies.  No
+  representations are made about the suitability of this software for
+  any purpose.  This software is provided "as is" without express or
+  implied warranty.
+
+	Xtrek Copyright 1986			Chris Guthrie
+	Netrek (Xtrek II) Copyright 1989	Kevin P. Smith
+						Scott Silvey
+	Paradise II (Netrek II) Copyright 1993	Larry Denys
+						Kurt Olsen
+						Brandon Gillespie
+		                Copyright 2000  Bob Glamm
+
+--------------------------------------------------------------------*/
 
 #include "config.h"
 #include <signal.h>
@@ -36,42 +44,32 @@ char binary[] = "@(#)daemonII";
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
-#include "planets.h"
-#include "terrain.h"
-#include "game.h"
+#include "proto.h"
 #include "daemonII.h"
-#include "getship.h"
 #include "weapons.h"
-#include "player.h"
-#include "misc.h"
 #include "shmem.h"
-#include "sysdef.h"
-#include "plutil.h"
 
 #define TellERR(x)     fprintf(stderr, "!  %s: %s\n", argv0, x)
 #define TellERRf(x, y) { \
                          sprintf(buf, x, y); \
                          fprintf(stderr, "!  %s: %s\n", argv0, buf); \
                        }
-/*--------------------------FUNCTION PROTOTYPES---------------------------*/
 
-/*------------------------------------------------------------------------*/
+/*---------------------------GLOBAL VARIABLES-----------------------------*/
 
-
-
-
-
-
-
-/*---------------------------MODULE VARIABLES-----------------------------*/
-
+/* globals that are declared here */
 int     dietime = -1;		/* to decide whether the deamon has been */
- /* inactive for one minute.  Set to -1 so */
- /* the deamon will not immediately quit */
+                                /* inactive for one minute.  Set to -1 so */
+                                /* the deamon will not immediately quit */
 
 int     ticks = 0;		/* counting ticks for game timing */
 
-jmp_buf env;			/* to hold long jump back into main */
+int     plfd;			/* for the planet file */
+int     glfd;			/* for the status file */
+
+/*---------------------------LOCAL VARIABLES------------------------------*/
+
+static jmp_buf env;			/* to hold long jump back into main */
 
 static int debug = 0;		/* set if an arg is passed to main on the
 				   command line, this var gets set to 1 and
@@ -79,18 +77,12 @@ static int debug = 0;		/* set if an arg is passed to main on the
 
 static int doMove;		/* indicates whether it's time to call move() */
 
-int     plfd;			/* for the planet file */
-int     glfd;			/* for the status file */
-
- /* The name of the four teams */
-
- /* The verbage to use in sentences such as 'the XXXXX have/has' */
-char   *teamVerbage[9] = {"", "has", "have", "", "have", "", "", "", "have"};
-
-int     tourntimestamp = 0;	/* ticks since t-mode started */
+static int tourntimestamp = 0;	        /* ticks since t-mode started */
 
 
-static int     tm_robots[MAXTEAM + 1];	/* To limit the number of robots */
+static int tm_robots[MAXTEAM + 1];	/* To limit the number of robots */
+
+/*---------------------------LOCAL FUNCTIONS------------------------------*/
 
 static void
 teamtimers(void)
@@ -112,8 +104,6 @@ shipbuild_timers(void)
 	    if (teams[i].s_turns[t] > 0)	/* and if need be, then dec */
 		teams[i].s_turns[t]--;	/* the construction timer */
 }
-
-/*------------------------------------------------------------------------*/
 
 /* signal handler for SIGALRM */
 static RETSIGTYPE

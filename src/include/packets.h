@@ -1,29 +1,38 @@
-/*--------------------------------------------------------------------------
-NETREK II -- Paradise
+/*------------------------------------------------------------------
+  Copyright 1989		Kevin P. Smith
+				Scott Silvey
 
-Permission to use, copy, modify, and distribute this software and its
-documentation, or any derivative works thereof, for any NON-COMMERCIAL
-purpose and without fee is hereby granted, provided that this copyright
-notice appear in all copies.  No representations are made about the
-suitability of this software for any purpose.  This software is provided
-"as is" without express or implied warranty.
+Permission to use, copy, modify, and distribute this
+software and its documentation for any purpose and without
+fee is hereby granted, provided that the above copyright
+notice appear in all copies.
 
-    Xtrek Copyright 1986                            Chris Guthrie
-    Netrek (Xtrek II) Copyright 1989                Kevin P. Smith
-                                                    Scott Silvey
-    Paradise II (Netrek II) Copyright 1993          Larry Denys
-                                                    Kurt Olsen
-                                                    Brandon Gillespie
---------------------------------------------------------------------------*/
+  NETREK II -- Paradise
 
-#ifndef packets_h
-#define packets_h
+  Permission to use, copy, modify, and distribute this software and
+  its documentation, or any derivative works thereof,  for any 
+  NON-COMMERCIAL purpose and without fee is hereby granted, provided
+  that this copyright notice appear in all copies.  No
+  representations are made about the suitability of this software for
+  any purpose.  This software is provided "as is" without express or
+  implied warranty.
 
-/* function defs */
+	Xtrek Copyright 1986			Chris Guthrie
+	Netrek (Xtrek II) Copyright 1989	Kevin P. Smith
+						Scott Silvey
+	Paradise II (Netrek II) Copyright 1993	Larry Denys
+						Kurt Olsen
+						Brandon Gillespie
+		                Copyright 2000  Bob Glamm
 
-#include "net.h"
+--------------------------------------------------------------------*/
 
-#define STATUS_TOKEN	"\t@@@"	/* ATM */
+#ifndef PACKETS_H
+#define PACKETS_H
+
+#include "config.h"
+#include "defs.h"
+#include "struct.h"
 
 /* the following typedefs allow portability to machines without the
    ubiquitous 32-bit architecture (KSR1, Cray, DEC Alpha) */
@@ -1079,4 +1088,15 @@ struct mesg_s_cpacket {
     INT8    mesg[80];
 };
 
-#endif
+/* fat packet defs */
+typedef void *PTR;
+
+typedef struct fat_node_t
+{
+    PTR     packet;
+    int     pkt_size;
+    struct fat_node_t *prev;
+    struct fat_node_t *next;
+}   FAT_NODE;
+
+#endif /* PACKETS_H */

@@ -2,6 +2,8 @@
  * interface.h
  */
 
+#ifndef INTFDESC_H
+#define INTFDESC_H
 
 enum desc_type {
 	DT_INT,		/* plain int */
@@ -50,3 +52,4 @@ struct inter_desc idesc_tab[] = {
 
 #define NUMDESC 23
 
+#endif /* INTFDESC_H */

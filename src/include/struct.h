@@ -1,23 +1,34 @@
-/*--------------------------------------------------------------------------
-NETREK II -- Paradise
+/*------------------------------------------------------------------
+  Copyright 1989		Kevin P. Smith
+				Scott Silvey
 
-Permission to use, copy, modify, and distribute this software and its
-documentation, or any derivative works thereof, for any NON-COMMERCIAL
-purpose and without fee is hereby granted, provided that this copyright
-notice appear in all copies.  No representations are made about the
-suitability of this software for any purpose.  This software is provided
-"as is" without express or implied warranty.
+Permission to use, copy, modify, and distribute this
+software and its documentation for any purpose and without
+fee is hereby granted, provided that the above copyright
+notice appear in all copies.
 
-    Xtrek Copyright 1986                            Chris Guthrie
-    Netrek (Xtrek II) Copyright 1989                Kevin P. Smith
-                                                    Scott Silvey
-    Paradise II (Netrek II) Copyright 1993          Larry Denys
-                                                    Kurt Olsen
-                                                    Brandon Gillespie
---------------------------------------------------------------------------*/
+  NETREK II -- Paradise
 
-#ifndef struct_h_
-#define struct_h_
+  Permission to use, copy, modify, and distribute this software and
+  its documentation, or any derivative works thereof,  for any 
+  NON-COMMERCIAL purpose and without fee is hereby granted, provided
+  that this copyright notice appear in all copies.  No
+  representations are made about the suitability of this software for
+  any purpose.  This software is provided "as is" without express or
+  implied warranty.
+
+	Xtrek Copyright 1986			Chris Guthrie
+	Netrek (Xtrek II) Copyright 1989	Kevin P. Smith
+						Scott Silvey
+	Paradise II (Netrek II) Copyright 1993	Larry Denys
+						Kurt Olsen
+						Brandon Gillespie
+		                Copyright 2000  Bob Glamm
+
+--------------------------------------------------------------------*/
+
+#ifndef STRUCT_H
+#define STRUCT_H
 
 #include "config.h"
 #include "defs.h"
@@ -26,15 +37,8 @@ suitability of this software for any purpose.  This software is provided
 
 enum ship_types_e {
     SCOUT, DESTROYER, CRUISER, BATTLESHIP, ASSAULT, STARBASE, ATT,
-    JUMPSHIP, FRIGATE, WARBASE, LIGHTCRUISER, CARRIER, UTILITY, PATROL
-
-#if 1
-#define	NUM_TYPES	14	/* this is less clean, but cc has a */
-    /* problem with using an enum constant */
-    /* as an array dimension.  POS compiler. */
-#else
+    JUMPSHIP, FRIGATE, WARBASE, LIGHTCRUISER, CARRIER, UTILITY, PATROL,
     NUM_TYPES
-#endif
 };
 
 struct drivestat {
@@ -1124,6 +1128,6 @@ struct royalty {
 
 
 
-#endif
+#endif /* STRUCT_H */
 
 /*---------END OF FILE---------*/

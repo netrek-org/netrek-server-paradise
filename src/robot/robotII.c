@@ -1,33 +1,38 @@
-/*--------------------------------------------------------------------------
-NETREK II -- Paradise
+/*------------------------------------------------------------------
+  Copyright 1989		Kevin P. Smith
+				Scott Silvey
 
-Permission to use, copy, modify, and distribute this software and its
-documentation, or any derivative works thereof, for any NON-COMMERCIAL
-purpose and without fee is hereby granted, provided that this copyright
-notice appear in all copies.  No representations are made about the
-suitability of this software for any purpose.  This software is provided
-"as is" without express or implied warranty.
+Permission to use, copy, modify, and distribute this
+software and its documentation for any purpose and without
+fee is hereby granted, provided that the above copyright
+notice appear in all copies.
 
-    Xtrek Copyright 1986                            Chris Guthrie
-    Netrek (Xtrek II) Copyright 1989                Kevin P. Smith
-                                                    Scott Silvey
-    Paradise II (Netrek II) Copyright 1993          Larry Denys
-                                                    Kurt Olsen
-                                                    Brandon Gillespie
---------------------------------------------------------------------------*/
+  NETREK II -- Paradise
 
-char binary[] = "@(#)robotII";
+  Permission to use, copy, modify, and distribute this software and
+  its documentation, or any derivative works thereof,  for any 
+  NON-COMMERCIAL purpose and without fee is hereby granted, provided
+  that this copyright notice appear in all copies.  No
+  representations are made about the suitability of this software for
+  any purpose.  This software is provided "as is" without express or
+  implied warranty.
 
-#define NEED_TIME 
+	Xtrek Copyright 1986			Chris Guthrie
+	Netrek (Xtrek II) Copyright 1989	Kevin P. Smith
+						Scott Silvey
+	Paradise II (Netrek II) Copyright 1993	Larry Denys
+						Kurt Olsen
+						Brandon Gillespie
+		                Copyright 2000  Bob Glamm
+
+--------------------------------------------------------------------*/
 
 #include "config.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/file.h>
-#ifndef ULTRIX
-#include <sys/fcntl.h>
-#endif
+#include <fcntl.h>
 #include <signal.h>
 #include <setjmp.h>
 #include <errno.h>
@@ -35,14 +40,17 @@ char binary[] = "@(#)robotII";
 #include "struct.h"
 #include "data.h"
 #include "shmem.h"
-#include "grid.h"
+#include "proto.h"
 
-struct itimerval udt;
+/* from rmove.c */
+RETSIGTYPE rmove();
+
+static struct itimerval udt;
 extern int redrawall;		/* maint: missing "extern" 6/22/92 TC */
 extern int lastm;		/* maint: missing "extern" 6/22/92 TC */
 
 /* This lets you specify which ships a robot is allowed to choose */
-int     robotships[NUM_TYPES] = {
+static int robotships[NUM_TYPES] = {
     1,				/* SCOUT */
     1,				/* DESTROYER */
     1,				/* CRUISER */
@@ -85,8 +93,10 @@ int     runfast;		/* run speed (gain etemp) */
 int     closeslow;		/* approach speed (hard turn) */
 int     closefast;		/* approach speed (soft turn) */
 
-char   *rnames[6] = {"M5", "Colossus", "Guardian", "HAL", "DreadPirate Bob",
-"TERMINATOR"};
+static char *rnames[6] = 
+{
+  "M5", "Colossus", "Guardian", "HAL", "DreadPirate Bob", "TERMINATOR"
+};
 
 static void 
 do_robot_login(void)

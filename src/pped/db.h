@@ -1,3 +1,7 @@
+#ifndef DB_H
+#define DB_H
+
+#include "config.h"
 
 struct plnode {
 	struct statentry player;
@@ -7,9 +11,10 @@ struct plnode {
 };
 
 /* prototypes for db.c */
-void initDB();
-void addDB(struct statentry *player);
-struct plnode *GetNode(int n);
-void DeleteNode(int n);
-int GetByName(char *name);
+void initDB P((void));
+void addDB P((struct statentry *));
+struct plnode *GetNode P((int));
+void DeleteNode P((int));
+int GetByName P((char *));
 
+#endif

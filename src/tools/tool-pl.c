@@ -1,20 +1,31 @@
-/*--------------------------------------------------------------------------
-NETREK II -- Paradise
+/*------------------------------------------------------------------
+  Copyright 1989		Kevin P. Smith
+				Scott Silvey
 
-Permission to use, copy, modify, and distribute this software and its
-documentation, or any derivative works thereof, for any NON-COMMERCIAL
-purpose and without fee is hereby granted, provided that this copyright
-notice appear in all copies.  No representations are made about the
-suitability of this software for any purpose.  This software is provided
-"as is" without express or implied warranty.
+Permission to use, copy, modify, and distribute this
+software and its documentation for any purpose and without
+fee is hereby granted, provided that the above copyright
+notice appear in all copies.
 
-    Xtrek Copyright 1986                            Chris Guthrie
-    Netrek (Xtrek II) Copyright 1989                Kevin P. Smith
-                                                    Scott Silvey
-    Paradise II (Netrek II) Copyright 1993          Larry Denys
-                                                    Kurt Olsen
-                                                    Brandon Gillespie
---------------------------------------------------------------------------*/
+  NETREK II -- Paradise
+
+  Permission to use, copy, modify, and distribute this software and
+  its documentation, or any derivative works thereof,  for any 
+  NON-COMMERCIAL purpose and without fee is hereby granted, provided
+  that this copyright notice appear in all copies.  No
+  representations are made about the suitability of this software for
+  any purpose.  This software is provided "as is" without express or
+  implied warranty.
+
+	Xtrek Copyright 1986			Chris Guthrie
+	Netrek (Xtrek II) Copyright 1989	Kevin P. Smith
+						Scott Silvey
+	Paradise II (Netrek II) Copyright 1993	Larry Denys
+						Kurt Olsen
+						Brandon Gillespie
+		                Copyright 2000  Bob Glamm
+
+--------------------------------------------------------------------*/
 
 #include "config.h"
 
@@ -22,11 +33,12 @@ suitability of this software for any purpose.  This software is provided
 #include "defs.h"
 #include "shmem.h"
 #include "tool-util.h"
+#include "proto.h"
 
 /* ------------------------------------------------------------------- */
-char *statnames[] = {"F", "O", "A", "E", "D", "Q"};
+static char *statnames[] = {"F", "O", "A", "E", "D", "Q"};
 
-char *oldranknames[] = {
+static char *oldranknames[] = {
               "Ensign", "Lieutenan",
               "Lt. Cmdr.", "Commander",
               "Captain", "Flt. Capt",
@@ -34,14 +46,14 @@ char *oldranknames[] = {
               "Admiral"
 };
 
-char *oldshiptypes[] = {"SC", "DD", "CA", "BB", "AS", "SB"};
+static char *oldshiptypes[] = {"SC", "DD", "CA", "BB", "AS", "SB"};
 
 /* ------------------------------------------------------------------- */
-char *maprank(struct player *p);
-char *mapshiptype(struct player *p);
-char *mapname(char *s);
-char *fillcH(int width, char fchar);
-char *typestat(struct player *p);
+char *maprank P((struct player *));
+char *mapshiptype P((struct player *));
+char *mapname P((char *));
+char *fillcH P((int, char));
+char *typestat P((struct player *));
 
 /* -------------------------------[ Main ]----------------------------- */
 int

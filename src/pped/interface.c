@@ -9,17 +9,20 @@
 #include <termios.h>
 #include <sys/ioctl.h>
 #include <time.h>
-#include <struct.h>
 #include <curses.h>
 #include "common.h"
 #include "db.h"
 #include "interface.h"
 #include "intfdesc.h"
 #include "file.h"
+#include "ppeddata.h"
+#include "defs.h"
+#include "struct.h"
 #include "data.h"
-#include "crypt.h"
+#include "proto.h"
 
 
+/*
 static char *shrt_royal_names[] = {
 	"",
 	"Wes",
@@ -27,7 +30,9 @@ static char *shrt_royal_names[] = {
 	"Pra",
 	"Emp"
 };
+*/
 
+/*
 static char *royal_names[] = {
 	"none",
 	"Wesley",
@@ -35,13 +40,17 @@ static char *royal_names[] = {
 	"Praetor",
 	"Emperor"
 };
+*/
 
+/*
 static char *shrt_rank_names[] = {
 	"Recr", "Spec", "Cadt", "Mids", "EnJr", "Ensi", "LtJr",
 	"Lieu", "LtCm", "Cmdr", "HiCm", "Capt", "FlCp", "Comd",
 	"Adml", "RAdm", "Moff", "GrMo"
 };
+*/
 
+/*
 static char *rank_names[] = {
 	"Recruit",     "Specialist", "Cadet",        "Midshipman",
 	"Ensn. Jr.",   "Ensign",     "Lt. Jnr. Gr.", "Lieutenant",
@@ -49,15 +58,58 @@ static char *rank_names[] = {
 	"Fleet Capt.", "Commodore",  "Admiral",      "Rear Adml.",
 	"Moff",        "Grand Moff"
 };
+*/
 
-void getTTYinfo()
+static char *
+short_royal(int n)
+{
+  static char buf[4];
+
+  strncpy(buf, royal[n].name, 3);
+  buf[3] = 0;
+  return(buf);
+}
+
+static char *
+short_rank(int n)
+{
+  static char buf[5];
+  char *p;
+
+  buf[4] = 0;
+  p = strchr(ranks[n].name, ' ');
+  if(!p)
+    strncpy(buf, ranks[n].name, MAX(strlen(ranks[n].name), 4));
+  else
+  {
+    if(!strncasecmp(p+1, "j.g.", 4))
+    {
+      strncpy(buf, ranks[n].name, 2);
+      buf[2] = 'J';
+      buf[3] = 'G';
+    }
+    else if(!strncasecmp(ranks[n].name, "Lt", 2))
+    {
+      buf[0] = 'L';
+      buf[1] = 't';
+      strncpy(buf+2, p+1, MAX(strlen(p+1), 2));
+    }
+    else
+    {
+      strncpy(buf, ranks[n].name, 1);
+      strncpy(buf+1, p+1, MAX(strlen(p+1), 3));
+    }
+  }
+  return(buf);
+}
+
+void
+getTTYinfo(void)
 {
 	struct winsize ws;
 	char *name, bp[1024], area[1024], *ap = area;
 
-#ifdef SYSV
 	signal(SIGWINCH, getTTYinfo);
-#endif
 
 	/* determine # of lines */
 	ioctl(0, TIOCGWINSZ, &ws);
@@ -69,12 +121,14 @@ void getTTYinfo()
 			clrStr = tgetstr("cl", &ap);
 }
 
-void cls()
+void
+cls(void)
 {
 	printf("%s", clrStr); fflush(stdout);
 }
 
-void Interface()
+void
+Interface(void)
 {
 	struct plnode *p, *pn;
 	int lines, top, i, num;
@@ -105,8 +159,8 @@ void Interface()
 			strcat(buf, "_");
 			printf(" %c%4d %-4s %-4s %-17.17s    ",
 				p->status ? '*':' ', top + i,
-				shrt_rank_names[p->player.stats.st_rank],
-				shrt_royal_names[p->player.stats.st_royal],
+				short_rank(p->player.stats.st_rank),
+				short_royal(p->player.stats.st_royal),
 				Strip(buf));
 
 			if(top + i + lines > numDBentries - 1) {
@@ -122,8 +176,8 @@ void Interface()
 			strcat(buf, "_");
 			printf(" %c%4d %-4s %-4s %s\n",
 				p->status ? '*':' ', top + i + lines,
-				shrt_rank_names[p->player.stats.st_rank],
-				shrt_royal_names[p->player.stats.st_royal],
+				short_rank(p->player.stats.st_rank),
+				short_royal(p->player.stats.st_royal),
 				Strip(buf));
 		}
 		printf("\nIndex: Command (? for help) -->"); fflush(stdout);
@@ -187,7 +241,8 @@ void Interface()
 	}
 }
 
-void Edit(int pnum)
+void
+Edit(int pnum)
 {
 	struct plnode *p, player;
 	char buf[18], txt[80];
@@ -300,7 +355,8 @@ void Edit(int pnum)
 	}
 }
 
-int Verify(char *str)
+int
+Verify(char *str)
 {
 	char buffer[18];
 
@@ -319,7 +375,8 @@ int Verify(char *str)
 	}
 }
 
-void Report(char *str)
+void
+Report(char *str)
 {
 	char buffer[18];
 
@@ -329,7 +386,8 @@ void Report(char *str)
 	fgets(buffer, 18, stdin);
 }
 
-void Change(int num, struct plnode *p)
+void
+Change(int num, struct plnode *p)
 {
 	struct inter_desc *it;
 	void *ptr;
@@ -410,19 +468,19 @@ void Change(int num, struct plnode *p)
 
 		case DT_RANK:
 			for(i = 0, col = 0; i < NUMRANKS; i++) {
-				printf(" %2d: %-7s ", i, shrt_rank_names[i]);
+				printf(" %2d: %-7s ", i, short_rank(i));
 				if(++col == 4) {
 					printf("\n");
 					col = 0;
 				}
 			}
 			printf("\nCurrent value for %s: %d (%s)\n", it->name,
-				  *((int *)ptr), rank_names[*((int *)ptr)]);
+				  *((int *)ptr), ranks[*((int *)ptr)].name);
 			printf("Enter new value -->"); fflush(stdout);
 			fgets(buffer, 30, stdin);
 			intnum = atoi(buffer);
 			sprintf(buffer, "%d (%s) as new value for %s.", intnum,
-				  rank_names[intnum], it->name);
+				  ranks[intnum].name, it->name);
 			if(Verify(buffer)) {
 				if(intnum != *((int *)ptr)) {
 					*((int *)ptr) = intnum;
@@ -433,15 +491,15 @@ void Change(int num, struct plnode *p)
 
 		case DT_ROYAL:
 			for(i = 0; i < NUMROYALRANKS; i++)
-				printf(" %2d: %s\n", i, royal_names[i]);
+				printf(" %2d: %s\n", i, royal[i].name);
 
 			printf("Current value for %s: %d (%s)\n", it->name,
-				  *((int *)ptr), royal_names[*((int *)ptr)]);
+				  *((int *)ptr), royal[*((int *)ptr)].name);
 			printf("Enter new value -->"); fflush(stdout);
 			fgets(buffer, 30, stdin);
 			intnum = atoi(buffer);
 			sprintf(buffer, "%d (%s) as new value for %s.", intnum,
-				  royal_names[intnum], it->name);
+				  royal[intnum].name, it->name);
 			if(Verify(buffer)) {
 				if(intnum != *((int *)ptr)) {
 					*((int *)ptr) = intnum;
@@ -455,7 +513,8 @@ void Change(int num, struct plnode *p)
 	}
 }
 
-void Display(struct plnode *n, int from, int to)
+void
+Display(struct plnode *n, int from, int to)
 {
 	int i, hour, dt = 0;
 	char c;
@@ -492,11 +551,11 @@ void Display(struct plnode *n, int from, int to)
 				break;
 			case DT_RANK:
 				printf("  (%2d) %16s : %d (%s)\n", i, it->name, *((int *)ptr),
-					rank_names[*((int *)ptr)]);
+					ranks[*((int *)ptr)].name);
 				break;
 			case DT_ROYAL:
 				printf("  (%2d) %16s : %d (%s)\n", i, it->name, *((int *)ptr),
-					royal_names[*((int *)ptr)]);
+					royal[*((int *)ptr)].name);
 				break;
 			default:
 				printf("Yikes! Unknown it->type in Display()\n");
@@ -519,7 +578,8 @@ void Display(struct plnode *n, int from, int to)
 	}
 }
 
-int CheckChanged()
+int
+CheckChanged(void)
 {
 	struct plnode *p;
 
@@ -533,7 +593,8 @@ int CheckChanged()
 	return(0);
 }
 
-void ClearChanged()
+void
+ClearChanged(void)
 {
 	struct plnode *p;
 
@@ -547,7 +608,8 @@ void ClearChanged()
 }
 
 /* Strip: convert non-printable control chars to ^L notation */
-char *Strip(char *str)
+char
+*Strip(char *str)
 {
 	static char buff[36], *o;
 

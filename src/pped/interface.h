@@ -2,15 +2,21 @@
  * Prototypes for interface.c
  */
 
-void getTTYinfo();
-void cls();
-void Interface();
-void Edit(int pnum);
-int Verify(char *str);
-void Report(char *str);
-void Change(int num, struct plnode *p);
-void Display(struct plnode *n, int from, int to);
-int CheckChanged();
-void ClearChanged();
-char *Strip(char *str);
+#ifndef INTERFACE_H
+#define INTERFACE_H
 
+#include "db.h"
+
+void getTTYinfo P((void));
+void cls P((void));
+void Interface P((void));
+void Edit P((int));
+int Verify P((char *));
+void Report P((char *));
+void Change P((int, struct plnode *));
+void Display P((struct plnode *, int, int));
+int CheckChanged P((void));
+void ClearChanged P((void));
+char *Strip P((char *));
+
+#endif
