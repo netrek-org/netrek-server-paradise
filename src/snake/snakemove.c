@@ -86,7 +86,7 @@ static int defenders[ALLTEAM];
 struct planet *homeworld = 0;
 struct planet *homestar = 0;
 
-struct planet *
+static struct planet *
 star_of(struct planet *pl)
 {
     int     i;
@@ -105,41 +105,15 @@ star_of(struct planet *pl)
 
 
 
-void
-snakemove(void)
+RETSIGTYPE
+snakemove(int unused)
 {
     s_clock++;
 
     _move();
 }
 
-static 
-int _move(void)
-{
-    if (!perfs[0] || !perfs[1])
-	exitSnake(0);
-
-    /* keep ghostbuster away */
-    perfs[0]->p_ghostbuster = 0;
-    perfs[1]->p_ghostbuster = 0;
-
-    if (s_clock == 5)
-	startsnake();
-    else if (s_clock > 5) {
-	check_explode();
-	if (!explode) {
-	    movesnake();
-	}
-	else if ((perfs[0]->p_ntorp == 0 && perfs[1]->p_ntorp == 0 &&
-	    perfs[0]->p_nplasmatorp == 0 && perfs[1]->p_nplasmatorp == 0) ||
-	    /* xx -- sometimes above doesn't work? */
-		 s_clock - explode > 56)
-	    exitSnake(0);
-    }
-    return 1;
-}
-
-void
+static void
 startsnake(void)
 {
     register i, l;
@@ -242,46 +216,105 @@ startsnake(void)
 	fprintf(stderr, "started\n");
 }
 
-void
-restore_eye(void)
+static void
+doeyes(void)
 {
-    if (fl->pt_status != PTMOVE) {
-	/* eyes */
-	fl = &plasmatorps[perfs[0]->p_no * MAXPLASMA];
-	fl->pt_no = perfs[0]->p_no * MAXPLASMA;
-	fl->pt_status = PTMOVE;
-	fl->pt_owner = perfs[0]->p_no;
-	fl->pt_team = perfs[0]->p_team;
-	fl->pt_x = eyet->t_x - EYEWIDTH;
-	fl->pt_y = eyet->t_y;
-	if (plan_guard == 0)
-	    fl->pt_damage = SNAKEPLASMADAMAGE;
-	else
-	    fl->pt_damage = SNAKEPLASMADAMAGE * 10;
-	fl->pt_speed = 0;
-	fl->pt_war = 0;
-	fl->pt_fuse = INT_MAX;
-	fl->pt_turns = 0;
-	perfs[0]->p_nplasmatorp++;
+    unsigned char c = getcourse(eyetp->t_x, eyetp->t_y, eyet->t_x,
+				 eyet->t_y);
+    int     ew = EYEWIDTH, war_ok;
+
+    /* c + 64 -- fl c - 64 -- fr */
+
+    if (plan_guard) {
+	fl->pt_x = planets[planet1].pl_x + Cos[255 - plan_count] * PLANRAD;
+	fl->pt_y = planets[planet1].pl_y + Sin[255 - plan_count] * PLANRAD;
+	fr->pt_x = planets[planet2].pl_x + Cos[255 - plan_count] * PLANRAD;
+	fr->pt_y = planets[planet2].pl_y + Sin[255 - plan_count] * PLANRAD;
+	return;
     }
-    if (fr->pt_status != PTMOVE) {
-	fr = &plasmatorps[perfs[1]->p_no * MAXPLASMA];
-	fr->pt_no = perfs[1]->p_no * MAXPLASMA;
-	fr->pt_status = PTMOVE;
-	fr->pt_owner = perfs[1]->p_no;
-	fr->pt_team = perfs[1]->p_team;	/* doesn't work */
-	fr->pt_x = eyet->t_x + EYEWIDTH;
-	fr->pt_y = eyet->t_y;
-	fr->pt_damage = SNAKEPLASMADAMAGE;
-	fr->pt_speed = 0;
-	fr->pt_war = 0;
-	fr->pt_fuse = INT_MAX;
-	fr->pt_turns = 0;
-	perfs[1]->p_nplasmatorp++;
+    if (fl->pt_war)
+	ew += 15;
+
+    fl->pt_x = eyet->t_x + (double) (ew) * Cos[(unsigned char) (c - EYEANGLE)];
+    fl->pt_y = eyet->t_y + (double) (ew) * Sin[(unsigned char) (c - EYEANGLE)];
+
+    if (fr->pt_war)
+	ew += 15;
+
+    fr->pt_x = eyet->t_x + (double) (ew) * Cos[(unsigned char) (c + EYEANGLE)];
+    fr->pt_y = eyet->t_y + (double) (ew) * Sin[(unsigned char) (c + EYEANGLE)];
+
+    /* toggle war */
+    if ((s_clock % 6) == 0) {
+	/*
+	   your home planet and shipyards are always safe from your own snake
+	   unless you are a target.
+	*/
+	war_ok = !sp_area(thead->t_x, thead->t_y);
+
+	if (!fr->pt_war && war_ok)
+	    fr->pt_war = (FED | ROM | KLI | ORI) & ~(war_ok ? 0 : (1 << tno));
+	else
+	    fr->pt_war = 0;
+
+	if (!fl->pt_war && war_ok)
+	    fl->pt_war = (FED | ROM | KLI | ORI) & ~(war_ok ? 0 : (1 << tno));
+	else
+	    fl->pt_war = 0;
     }
 }
 
-void
+/*
+ * FED 1
+ * ROM 2
+ * KLI 4
+ * ORI 8
+ */
+
+/*
+ *
+ *    256/0
+ * 192  +   64
+ *     128
+ */
+
+static void
+check_tboundary(int teams, unsigned char *mycrs, int range, int x, int y)
+{
+    int     lx = homestar->pl_x - SYSWIDTH / 2, rx = homestar->pl_x + SYSWIDTH / 2, ty = homestar->pl_y - SYSWIDTH / 2,
+            by = homestar->pl_y + SYSWIDTH / 2;
+    int     r = 0, l = 0;
+    unsigned char crs = *mycrs;
+
+    if (x < lx && crs >= 128) {
+	if (crs >= 192)
+	    *mycrs += range;
+	else
+	    *mycrs -= range;
+	l = 1;
+    }
+    else if (x > rx && crs < 128) {
+	if (crs > 64)
+	    *mycrs += range;
+	else
+	    *mycrs -= range;
+	r = 1;
+    }
+    if (y < ty && (crs >= 192 || crs < 64)) {
+	if (crs >= 192 && !l)
+	    *mycrs -= range;
+	else
+	    *mycrs += range;
+    }
+    else if (y > by && (crs < 192 && crs >= 64)) {
+	if (crs < 128 && !r)
+	    *mycrs -= range;
+	else
+	    *mycrs += range;
+    }
+}
+
+static void
 movesnake(void)
 {
     register i, px, py;
@@ -318,7 +351,7 @@ movesnake(void)
 	tr = &players[target];
 	if (tr->p_status == PALIVE) {
 	    int     nd, td;
-	    tc = getacourse(tr->p_x, tr->p_y, thead->t_x, thead->t_y);
+	    tc = getcourse(tr->p_x, tr->p_y, thead->t_x, thead->t_y);
 	    nd = angdist(thead->t_dir, tc);
 	    if (nd > 8) {
 		td = tc + nd;
@@ -385,7 +418,93 @@ movesnake(void)
     doeyes();
 }
 
-void check_explode(void)
+static int
+crash_killer(struct player *p)
+{
+    register int i, px, py;
+    register struct player *j;
+    register struct torp *k;
+    unsigned char tc;
+    int     active = 0;
+
+    tfuse++;
+
+    tc = getcourse(p->p_x, p->p_y, thead->t_x, thead->t_y);
+    thead->t_dir = tc;
+
+    lx = thead->t_x;
+    ly = thead->t_y;
+
+    thead->t_x += (double) (12 * WARP1) * Cos[thead->t_dir];
+    thead->t_y += (double) (12 * WARP1) * Sin[thead->t_dir];
+
+    for (j = perfs[0]; j; j = (j == perfs[1] ? NULL : perfs[1])) {
+	for (i = j->p_no * MAXTORP, k = &torps[i];
+	     i < j->p_no * MAXTORP + length; i++, k++) {
+
+	    /* move the head up if it exploded */
+	    if (k != thead && thead->t_status == TFREE)
+		thead = k;
+	    else if (k == thead)
+		continue;
+
+	    if (k->t_status != TFREE)
+		active++;
+
+	    px = k->t_x;
+	    py = k->t_y;
+
+	    k->t_x = lx;
+	    k->t_y = ly;
+
+	    lx = px;
+	    ly = py;
+	}
+    }
+    return active;
+}
+
+static void
+restore_eye(void)
+{
+    if (fl->pt_status != PTMOVE) {
+	/* eyes */
+	fl = &plasmatorps[perfs[0]->p_no * MAXPLASMA];
+	fl->pt_no = perfs[0]->p_no * MAXPLASMA;
+	fl->pt_status = PTMOVE;
+	fl->pt_owner = perfs[0]->p_no;
+	fl->pt_team = perfs[0]->p_team;
+	fl->pt_x = eyet->t_x - EYEWIDTH;
+	fl->pt_y = eyet->t_y;
+	if (plan_guard == 0)
+	    fl->pt_damage = SNAKEPLASMADAMAGE;
+	else
+	    fl->pt_damage = SNAKEPLASMADAMAGE * 10;
+	fl->pt_speed = 0;
+	fl->pt_war = 0;
+	fl->pt_fuse = INT_MAX;
+	fl->pt_turns = 0;
+	perfs[0]->p_nplasmatorp++;
+    }
+    if (fr->pt_status != PTMOVE) {
+	fr = &plasmatorps[perfs[1]->p_no * MAXPLASMA];
+	fr->pt_no = perfs[1]->p_no * MAXPLASMA;
+	fr->pt_status = PTMOVE;
+	fr->pt_owner = perfs[1]->p_no;
+	fr->pt_team = perfs[1]->p_team;	/* doesn't work */
+	fr->pt_x = eyet->t_x + EYEWIDTH;
+	fr->pt_y = eyet->t_y;
+	fr->pt_damage = SNAKEPLASMADAMAGE;
+	fr->pt_speed = 0;
+	fr->pt_war = 0;
+	fr->pt_fuse = INT_MAX;
+	fr->pt_turns = 0;
+	perfs[1]->p_nplasmatorp++;
+    }
+}
+
+static void
+check_explode(void)
 {
     register int i, l;
     register struct player *j;
@@ -457,236 +576,14 @@ void check_explode(void)
     }
 }
 
-int
-crash_killer(struct player *p)
-{
-    register int i, px, py;
-    register struct player *j;
-    register struct torp *k;
-    unsigned char tc;
-    int     active = 0;
-
-    tfuse++;
-
-    tc = getacourse(p->p_x, p->p_y, thead->t_x, thead->t_y);
-    thead->t_dir = tc;
-
-    lx = thead->t_x;
-    ly = thead->t_y;
-
-    thead->t_x += (double) (12 * WARP1) * Cos[thead->t_dir];
-    thead->t_y += (double) (12 * WARP1) * Sin[thead->t_dir];
-
-    for (j = perfs[0]; j; j = (j == perfs[1] ? NULL : perfs[1])) {
-	for (i = j->p_no * MAXTORP, k = &torps[i];
-	     i < j->p_no * MAXTORP + length; i++, k++) {
-
-	    /* move the head up if it exploded */
-	    if (k != thead && thead->t_status == TFREE)
-		thead = k;
-	    else if (k == thead)
-		continue;
-
-	    if (k->t_status != TFREE)
-		active++;
-
-	    px = k->t_x;
-	    py = k->t_y;
-
-	    k->t_x = lx;
-	    k->t_y = ly;
-
-	    lx = px;
-	    ly = py;
-	}
-    }
-    return active;
-}
-
-void
-doeyes(void)
-{
-    unsigned char c = getacourse(eyetp->t_x, eyetp->t_y, eyet->t_x,
-				 eyet->t_y);
-    int     ew = EYEWIDTH, war_ok;
-
-    /* c + 64 -- fl c - 64 -- fr */
-
-    if (plan_guard) {
-	fl->pt_x = planets[planet1].pl_x + Cos[255 - plan_count] * PLANRAD;
-	fl->pt_y = planets[planet1].pl_y + Sin[255 - plan_count] * PLANRAD;
-	fr->pt_x = planets[planet2].pl_x + Cos[255 - plan_count] * PLANRAD;
-	fr->pt_y = planets[planet2].pl_y + Sin[255 - plan_count] * PLANRAD;
-	return;
-    }
-    if (fl->pt_war)
-	ew += 15;
-
-    fl->pt_x = eyet->t_x + (double) (ew) * Cos[(unsigned char) (c - EYEANGLE)];
-    fl->pt_y = eyet->t_y + (double) (ew) * Sin[(unsigned char) (c - EYEANGLE)];
-
-    if (fr->pt_war)
-	ew += 15;
-
-    fr->pt_x = eyet->t_x + (double) (ew) * Cos[(unsigned char) (c + EYEANGLE)];
-    fr->pt_y = eyet->t_y + (double) (ew) * Sin[(unsigned char) (c + EYEANGLE)];
-
-    /* toggle war */
-    if ((s_clock % 6) == 0) {
-	/*
-	   your home planet and shipyards are always safe from your own snake
-	   unless you are a target.
-	*/
-	war_ok = !sp_area(thead->t_x, thead->t_y);
-
-	if (!fr->pt_war && war_ok)
-	    fr->pt_war = (FED | ROM | KLI | ORI) & ~(war_ok ? 0 : (1 << tno));
-	else
-	    fr->pt_war = 0;
-
-	if (!fl->pt_war && war_ok)
-	    fl->pt_war = (FED | ROM | KLI | ORI) & ~(war_ok ? 0 : (1 << tno));
-	else
-	    fl->pt_war = 0;
-    }
-}
-
-RETSIGTYPE
-exitSnake(int sig)
-{
-    register int i;
-    register struct player *j;
-    register struct torp *k;
-    register struct plasmatorp *f;
-
-    r_signal(SIGALRM, SIG_DFL);
-
-    if (debug)
-	fprintf(stderr, "snake exiting\n");
-
-    for (j = perfs[0]; j; j = (j == perfs[1] ? NULL : perfs[1])) {
-	for (i = j->p_no * MAXTORP, k = &torps[i];
-	     i < j->p_no * MAXTORP + length; i++, k++) {
-	    /* torps are free here */
-	    if (k->t_status != TFREE)
-		k->t_status = TOFF;
-	}
-	f = &plasmatorps[j->p_no * MAXPLASMA];
-	f->pt_status = PTFREE;
-	/* plasma */
-    }
-
-    memset(perfs[0], 0, sizeof(struct player));
-    memset(perfs[1], 0, sizeof(struct player));
-    perfs[0]->p_stats.st_tticks = 1;
-    perfs[1]->p_stats.st_tticks = 1;
-
-    /*
-       note: if we had a segmentation violation or bus error we want a core
-       file to debug
-    */
-    if (sig == SIGBUS || sig == SIGSEGV)
-	abort();
-    else
-	exit(0);
-}
-void
-pmessage2(char *str, int recip, int group, char *address, unsigned char from)
-{
-    struct message *cur;
-    int     mesgnum;
-
-    if ((mesgnum = ++(mctl->mc_current)) >= MAXMESSAGE) {
-	mctl->mc_current = 0;
-	mesgnum = 0;
-    }
-    cur = &messages[mesgnum];
-    cur->m_no = mesgnum;
-    cur->m_flags = group;
-    cur->m_recpt = recip;
-    cur->m_from = from;
-    (void) sprintf(cur->m_data, "%-9s %s", address, str);
-    cur->m_flags |= MVALID;
-}
-void
-pmessage(char *str, int recip, int group, char *address)
-{
-    pmessage2(str, recip, group, address, 255);
-}
-
-/* get course from (mx,my) to (x,y) */
-unsigned char 
-getacourse(int x, int y, int mx, int my)
-{
-    if (x == mx && y == my)
-	return 0;
-
-    return (unsigned char) (int) (atan2((double) (x - mx),
-					(double) (my - y)) / 3.14159 * 128.);
-}
-
-/*
- * FED 1
- * ROM 2
- * KLI 4
- * ORI 8
- */
-
-/*
- *
- *    256/0
- * 192  +   64
- *     128
- */
-
-void
-check_tboundary(int teams, unsigned char *mycrs, int range, int x, int y)
-    int     teams;
-    unsigned char *mycrs;
-    int     range;
-    int     x, y;
-{
-    int     lx = homestar->pl_x - SYSWIDTH / 2, rx = homestar->pl_x + SYSWIDTH / 2, ty = homestar->pl_y - SYSWIDTH / 2,
-            by = homestar->pl_y + SYSWIDTH / 2;
-    int     r = 0, l = 0;
-    unsigned char crs = *mycrs;
-
-    if (x < lx && crs >= 128) {
-	if (crs >= 192)
-	    *mycrs += range;
-	else
-	    *mycrs -= range;
-	l = 1;
-    }
-    else if (x > rx && crs < 128) {
-	if (crs > 64)
-	    *mycrs += range;
-	else
-	    *mycrs -= range;
-	r = 1;
-    }
-    if (y < ty && (crs >= 192 || crs < 64)) {
-	if (crs >= 192 && !l)
-	    *mycrs -= range;
-	else
-	    *mycrs += range;
-    }
-    else if (y > by && (crs < 192 && crs >= 64)) {
-	if (crs < 128 && !r)
-	    *mycrs -= range;
-	else
-	    *mycrs += range;
-    }
-}
-
 /* return rnd between -range & range */
-int
+static int
 rrnd(int range)
 {
     return lrand48() % (2 * range) - range;
 }
 
-void
+static void
 snake_torp(struct torp *t, int n, struct player *p)
 {
     t->t_no = n;
@@ -710,7 +607,7 @@ snake_torp(struct torp *t, int n, struct player *p)
     p->p_ntorp++;
 }
 
-struct player *
+static struct player *
 whokilledme(struct plasmatorp *pt)
 {
     register i;
@@ -737,7 +634,7 @@ whokilledme(struct plasmatorp *pt)
    as the daemon.  This may produce unpredicatable results.  A better
    implementation would mark the "snake plasma" and have the daemon do the
    awarding. */
-void
+static void
 award(struct player *win)
 {
     char    buf[80];
@@ -801,7 +698,7 @@ award(struct player *win)
     }
 }
 
-int
+static int
 bombcheck(int team1, int team2)
 {
     register i;
@@ -852,7 +749,7 @@ bombcheck(int team1, int team2)
     return -1;
 }
 
-void
+static void
 make_war(struct player *p, int plteam)
 {
     register int i;
@@ -888,7 +785,7 @@ make_war(struct player *p, int plteam)
  * (only considers 1 start planet at this time)
  */
 
-int
+static int
 sp_area(int x, int y)
 {
     register i,  px, py;
@@ -908,6 +805,70 @@ sp_area(int x, int y)
     }
 
     return 0;
+}
 
-#endif
+static 
+int _move(void)
+{
+    if (!perfs[0] || !perfs[1])
+	exitSnake(0);
+
+    /* keep ghostbuster away */
+    perfs[0]->p_ghostbuster = 0;
+    perfs[1]->p_ghostbuster = 0;
+
+    if (s_clock == 5)
+	startsnake();
+    else if (s_clock > 5) {
+	check_explode();
+	if (!explode) {
+	    movesnake();
+	}
+	else if ((perfs[0]->p_ntorp == 0 && perfs[1]->p_ntorp == 0 &&
+	    perfs[0]->p_nplasmatorp == 0 && perfs[1]->p_nplasmatorp == 0) ||
+	    /* xx -- sometimes above doesn't work? */
+		 s_clock - explode > 56)
+	    exitSnake(0);
+    }
+    return 1;
+}
+
+RETSIGTYPE
+exitSnake(int sig)
+{
+    register int i;
+    register struct player *j;
+    register struct torp *k;
+    register struct plasmatorp *f;
+
+    r_signal(SIGALRM, SIG_DFL);
+
+    if (debug)
+	fprintf(stderr, "snake exiting\n");
+
+    for (j = perfs[0]; j; j = (j == perfs[1] ? NULL : perfs[1])) {
+	for (i = j->p_no * MAXTORP, k = &torps[i];
+	     i < j->p_no * MAXTORP + length; i++, k++) {
+	    /* torps are free here */
+	    if (k->t_status != TFREE)
+		k->t_status = TOFF;
+	}
+	f = &plasmatorps[j->p_no * MAXPLASMA];
+	f->pt_status = PTFREE;
+	/* plasma */
+    }
+
+    memset(perfs[0], 0, sizeof(struct player));
+    memset(perfs[1], 0, sizeof(struct player));
+    perfs[0]->p_stats.st_tticks = 1;
+    perfs[1]->p_stats.st_tticks = 1;
+
+    /*
+       note: if we had a segmentation violation or bus error we want a core
+       file to debug
+    */
+    if (sig == SIGBUS || sig == SIGSEGV)
+	abort();
+    else
+	exit(0);
 }

@@ -47,22 +47,6 @@ usage(char *name)
     exit(1);
 }
 
-void
-pmessage(char *from_to, char *str, int recip, int group)
-{
-    struct message *cur;
-    if (++(mctl->mc_current) >= MAXMESSAGE)
-	mctl->mc_current = 0;
-    cur = &messages[mctl->mc_current];
-    cur->m_no = mctl->mc_current;
-    cur->m_flags = group;
-    cur->m_time = 0;
-    cur->m_recpt = recip;
-    cur->m_from = 255;
-    (void) sprintf(cur->m_data, "%s%s", from_to, str);
-    cur->m_flags |= MVALID;
-}
-
 int
 main(int argc, char **argv)
 {

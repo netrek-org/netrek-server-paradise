@@ -354,38 +354,6 @@ tournamentMode(void)
     }
 }
 
-
-
-
-/*------------------------------PMESSAGE----------------------------------*/
-/*  This function sens a message to the message board.  It places the message
-in the next position of the array of messages.  The message will ahve a
-header attached to the front of it.  */
-
-/* args:
-    char   *str;		 the message
-    int     recip;		 who is the recipient
-    int     group;		 group sent to and other flags
-    char   *address;		 the header attached to front */
-void 
-pmessage(str, recip, group, address)
-{
-    struct message *cur;	/* to pnt to where to put message */
-    int     mesgnum;		/* to hold index into array of messgs */
-
-    if ((mesgnum = ++(mctl->mc_current)) >= MAXMESSAGE) {
-	mctl->mc_current = 0;	/* move to next index in array and */
-	mesgnum = 0;		/* warp around if necessart */
-    }
-    cur = &messages[mesgnum];	/* get addr of message struct */
-    cur->m_no = mesgnum;	/* set the message number */
-    cur->m_flags = group;	/* set the group and flags */
-    cur->m_recpt = recip;	/* set the recipient */
-    cur->m_from = 255;		/* message is from God */
-    (void) sprintf(cur->m_data, "%s %s", address, str);
-    cur->m_flags |= MVALID;	/* mark message as valid */
-}
-
 /*
    send a message from god to a particular player number
    */
@@ -414,7 +382,7 @@ god2player(char *str, int pno)
 /*  This function writes a message into the logfile so the server god can
 look at it later.  It is used to record messages to god.  */
 
-void 
+static void 
 log_message(char *who, char *info, char *str)
 {
     char   *path;

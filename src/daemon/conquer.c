@@ -66,6 +66,77 @@ swap(int *a, int *b)
 
 /*----------------------------INTERNAL FUNCTIONS---------------------------*/
 
+
+
+
+
+
+/*-------------------------------DISPLAYBEST-------------------------------*/
+/*  This function is used to get a list of players on a team after a
+genocide.  It goes through the players and selects the ones that have
+inflicted the most damage.  They are then printed to the message window
+and to the conquer file.  They are arranged according to how much damage
+the players have inflicted on the enemy, with one planet taken counting
+as thirty armies bombed.  A resource counts as 8 armies bombed and a
+army dooshed counts as five armies bombed.  */
+
+/* args:
+    FILE   *conqfile;		 the opened conquer file 
+    int     team;		 the winning team */
+static void
+displayBest(FILE *conqfile, int team)
+{
+    register int i, k, l;	/* looping vars */
+    register struct player *j;	/* to point to players */
+    int     planets, armies;	/* # planets and armies for player */
+    int     resources, dooshes;	/* resources bombed, armies dooshed */
+    Players winners[MAXPLAYER + 1];	/* to hold player's stats */
+    char    buf[100];		/* to sprintf into */
+    int     number;		/* to hold # players found */
+
+    number = 0;			/* number of players found */
+    for (i = 0, j = &players[0]; i < MAXPLAYER; i++, j++) {
+	if ((j->p_team != team) || (j->p_status == PFREE))	/* player wrong race */
+	    continue;		/* or not here, then forget him */
+	planets = j->p_planets;	/* get all planets and armies for */
+	armies = j->p_armsbomb;	/* entire game */
+	resources = j->p_resbomb;	/* get resources and armies dooshed */
+	dooshes = j->p_dooshes;
+	for (k = 0; k < number; k++) {	/* go find postion in current list */
+	    if (30 * winners[k].planets + winners[k].armies + 8 * winners[k].resources
+		+ 5 * winners[k].dooshes <
+		30 * planets + armies + 8 * resources + 5 * dooshes) {
+		break;		/* break when position found */
+	    }
+	}
+	for (l = number; l >= k; l--)	/* move other players to make room */
+	    winners[l + 1] = winners[l];	/* for new player */
+	number++;		/* we have found one more player */
+	winners[k].planets = planets;	/* record his planets and armies */
+	winners[k].armies = armies;
+	winners[k].resources = resources;
+	winners[k].dooshes = dooshes;
+	strncpy(winners[k].mapchars, twoletters(j), 2);
+	strncpy(winners[k].name, j->p_name, 16);	/* get his name */
+	winners[k].name[15] = 0;/* `Just in case' paranoia */
+    }
+    for (k = 0; k < number; k++) {	/* go through all players found */
+	if (winners[k].planets != 0 || winners[k].armies != 0) {	/* damage done? */
+	    sprintf(buf, " %16s (%2.2s)  %d planets %d armies %d resources %d dooshes",
+		    winners[k].name, winners[k].mapchars, winners[k].planets,
+	       winners[k].armies, winners[k].resources, winners[k].dooshes);
+	    OUT;
+	}
+    }
+}
+
+/*-------------------------------------------------------------------------*/
+
+
+
+
+
+
 /*-----------------------------------GENOCIDE------------------------------*/
 /*  This function checks for a genocide.  It also returns the two teams
 with the most players.  It first goes through the four teams and finds the
@@ -73,7 +144,7 @@ two teams with the greatest number of players.  These two teams are returned
 in the parameters team1 and team2.  If one of the teams does not have at
 least one planet then a 1 is returned.  Otherwise a zero is returned.  */
 
-int 
+static int 
 genocide(int *team1, int *team2)	/* where to put first/second team */
 {
     int     t1, t2;		/* to hold two teams */
@@ -132,7 +203,7 @@ It takes a team and uses the s_plcount in the teams structure to check
 whether a team has prevented surrender or the surrender process should
 begin.  */
 
-void 
+static void 
 checksurrender(int team, int otherplanets)	/* team - team to check */
 {
     char    buf[80];		/* to sprintf into */
@@ -239,7 +310,7 @@ udsurrend(void)
 on the winning and losing teams.  The reason should be either GENOCIDE or
 SURRENDER.  The list is written to the conquer file.  */
 
-void
+static void
 conquerMessage(int winners, int losers, int pno)
  /* the losing and winning teams */
  /* the person who won it */
@@ -305,7 +376,7 @@ conquerMessage(int winners, int losers, int pno)
 }
 
 
-void 
+static void 
 refresh_team_planetcounts(void)
 {
     int     i;
@@ -409,77 +480,6 @@ checkwin(int pno)
     blast_shmem();
     exit(0);
 }
-
-
-
-
-
-
-
-/*-------------------------------DISPLAYBEST-------------------------------*/
-/*  This function is used to get a list of players on a team after a
-genocide.  It goes through the players and selects the ones that have
-inflicted the most damage.  They are then printed to the message window
-and to the conquer file.  They are arranged according to how much damage
-the players have inflicted on the enemy, with one planet taken counting
-as thirty armies bombed.  A resource counts as 8 armies bombed and a
-army dooshed counts as five armies bombed.  */
-
-/* args:
-    FILE   *conqfile;		 the opened conquer file 
-    int     team;		 the winning team */
-void
-displayBest(FILE *conqfile, int team)
-{
-    register int i, k, l;	/* looping vars */
-    register struct player *j;	/* to point to players */
-    int     planets, armies;	/* # planets and armies for player */
-    int     resources, dooshes;	/* resources bombed, armies dooshed */
-    Players winners[MAXPLAYER + 1];	/* to hold player's stats */
-    char    buf[100];		/* to sprintf into */
-    int     number;		/* to hold # players found */
-
-    number = 0;			/* number of players found */
-    for (i = 0, j = &players[0]; i < MAXPLAYER; i++, j++) {
-	if ((j->p_team != team) || (j->p_status == PFREE))	/* player wrong race */
-	    continue;		/* or not here, then forget him */
-	planets = j->p_planets;	/* get all planets and armies for */
-	armies = j->p_armsbomb;	/* entire game */
-	resources = j->p_resbomb;	/* get resources and armies dooshed */
-	dooshes = j->p_dooshes;
-	for (k = 0; k < number; k++) {	/* go find postion in current list */
-	    if (30 * winners[k].planets + winners[k].armies + 8 * winners[k].resources
-		+ 5 * winners[k].dooshes <
-		30 * planets + armies + 8 * resources + 5 * dooshes) {
-		break;		/* break when position found */
-	    }
-	}
-	for (l = number; l >= k; l--)	/* move other players to make room */
-	    winners[l + 1] = winners[l];	/* for new player */
-	number++;		/* we have found one more player */
-	winners[k].planets = planets;	/* record his planets and armies */
-	winners[k].armies = armies;
-	winners[k].resources = resources;
-	winners[k].dooshes = dooshes;
-	strncpy(winners[k].mapchars, twoletters(j), 2);
-	strncpy(winners[k].name, j->p_name, 16);	/* get his name */
-	winners[k].name[15] = 0;/* `Just in case' paranoia */
-    }
-    for (k = 0; k < number; k++) {	/* go through all players found */
-	if (winners[k].planets != 0 || winners[k].armies != 0) {	/* damage done? */
-	    sprintf(buf, " %16s (%2.2s)  %d planets %d armies %d resources %d dooshes",
-		    winners[k].name, winners[k].mapchars, winners[k].planets,
-	       winners[k].armies, winners[k].resources, winners[k].dooshes);
-	    OUT;
-	}
-    }
-}
-
-/*-------------------------------------------------------------------------*/
-
-
-
-
 
 
 /*-----------END OF FILE-----*/

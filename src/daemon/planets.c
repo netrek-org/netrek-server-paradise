@@ -221,13 +221,9 @@ comp_pl_name(a, b)
 
 /*--------------------------------SORTNAMES---------------------------------*/
 /*  This function sorts the planet into a alphabeticly increasing list.  It
-operates on the global planets structure.  This uses a simple bubble sort
-because I was too lazy to write anything more sophisticated.  */
+operates on the global planets structure.  */
 
-/*  Bubble sorts suck.  Let's use the qsort library function instead,
-if available (HK) */
-
-void 
+static void 
 sortnames(void)
 {
     int     i;
@@ -371,13 +367,33 @@ growplanets(void)
 
 
 
+/*-------------------------------UDPLANETS----------------------------------*/
+
+static void 
+fill_planets(int *plist /* array */, int *count /* scalar */, int owner)
+{
+    int     i;
+    *count = 0;
+    for (i = 0; i < configvals->numplanets; i++) {
+	if (owner<0 || planets[i].pl_owner == owner)
+	    plist[(*count)++] = i;
+    }
+
+    for (i = *count - 1; i > 0; i--) {
+	int     idx = lrand48() % (i + 1);
+	int     temp = plist[idx];
+	plist[idx] = plist[i];
+	plist[i] = temp;
+    }
+}
+
 
 /*----------------------------------PVISIBLE------------------------------*/
 /*  This function goes through the players and checks the other playes to see
 if an enemy is close enough to see him.  THIS FUNCTION SHOULD EVENTUALLY USE
 THE SPACE GRID.  */
 
-void 
+static void 
 pvisible(void)
 {
     struct player *p;		/* to point to a player */
@@ -420,7 +436,7 @@ pvisible(void)
 
 
 
-void 
+static void 
 blast_resource(struct player *p, struct player *l, int res, double dival)
 {
     if (status->tourn) {
@@ -443,7 +459,7 @@ player is bombing.  This will knock resources off of planets.  If a player
 is bombing a planet that another team owns, then that team will see the
 player by having the PFSEEN flag set.  */
 
-void 
+static void 
 pbomb(void)
 {
     struct player *p;		/* to point to a player */
@@ -554,7 +570,7 @@ players are close enough to the planet so that the planet should be redrawn.
 Enemy planets will 'see' players that are very close to them.  THIS FUNCTION
 SHOULD EVENTUALLY USE THE SPACE GRID.  */
 
-void 
+static void 
 pfire(void)
 {
     struct player *p;		/* to point to a player */
@@ -679,7 +695,7 @@ pfire(void)
 /*  This function does the revolt of a planet.  It updates the revolt
 timer and prints the messages that warn the team.  */
 
-void 
+static void 
 revolt(struct planet *l)	/* the planet to check */
 {
     if (!configvals->revolts)
@@ -785,6 +801,56 @@ build_stars_array(void)
     }
 }
 
+static void 
+pl_neworbit(void)
+/* rearranges a pre-existing galaxy setup such that planets orbit at more "unique"
+   distances from their star.  Asteroids look and probably play bad when all the
+   planets are approx. the same dist from the star, so I'd suggest turning this
+   on if you plan to have asteroids or orbiting planets on your server.  I'd
+   suggest turning it on even if you don't. :)  -MDM */
+{
+   register int i, j;
+   /* register struct planet *p; */
+   register int numStars = 0, planetsThisStar = 0;
+   int * planetList;
+
+   planetList = (int *) malloc(NUMPLANETS * sizeof(int));
+
+   /* find the number of stars */
+   for (i=0; i < MAXPLANETS; i++)
+      if (PL_TYPE(planets[i]) == PLSTAR) numStars++;
+
+   /* for each star, find the number of planets, and the average distance */
+
+   for (i=1; i <= numStars; i++) {
+      planetsThisStar = 0;
+      for (j=0; j < MAXPLANETS; j++)
+	 if (planets[j].pl_system == i)
+	    planetList[planetsThisStar++] = j;
+      
+      /* now move the planets such that each planet we came across gets its
+	 previous distance from it's star, times (it's position in the 
+	 planetList array)/(planetsThisStar/1.6).  also make sure that
+         new radius isin't so close to star ship can't orbit it.  Heh.  
+         Separate the men from the boyz, eh?  */
+
+      for (j=0; j < planetsThisStar; j++) {
+	 planets[planetList[j]].pl_radius =  
+	    (int)((float)planets[planetList[j]].pl_radius *
+		  ((float)(j+1)/(float)(planetsThisStar/1.6))) + 1500;
+	 planets[planetList[j]].pl_x = 
+	    planets[stars[i]].pl_x + 
+	       (int)((float)cos(planets[planetList[j]].pl_angle) *
+		     (float)planets[planetList[j]].pl_radius);
+	 planets[planetList[j]].pl_y = 
+	    planets[stars[i]].pl_y + 
+	       (int)((float)sin(planets[planetList[j]].pl_angle) * 
+		     (float)planets[planetList[j]].pl_radius);
+      }
+   }
+   free(planetList);
+}
+
 /*------------------------------VISIBLE FUNCTIONS-------------------------*/
 
 /*-------------------------------GEN_PLANETS-------------------------------*/
@@ -852,56 +918,6 @@ gen_planets(void)
 	if (configvals->neworbits) pl_neworbit();
 	generate_terrain();
     }
-}
-
-void 
-pl_neworbit(void)
-/* rearranges a pre-existing galaxy setup such that planets orbit at more "unique"
-   distances from their star.  Asteroids look and probably play bad when all the
-   planets are approx. the same dist from the star, so I'd suggest turning this
-   on if you plan to have asteroids or orbiting planets on your server.  I'd
-   suggest turning it on even if you don't. :)  -MDM */
-{
-   register int i, j;
-   /* register struct planet *p; */
-   register int numStars = 0, planetsThisStar = 0;
-   int * planetList;
-
-   planetList = (int *) malloc(NUMPLANETS * sizeof(int));
-
-   /* find the number of stars */
-   for (i=0; i < MAXPLANETS; i++)
-      if (PL_TYPE(planets[i]) == PLSTAR) numStars++;
-
-   /* for each star, find the number of planets, and the average distance */
-
-   for (i=1; i <= numStars; i++) {
-      planetsThisStar = 0;
-      for (j=0; j < MAXPLANETS; j++)
-	 if (planets[j].pl_system == i)
-	    planetList[planetsThisStar++] = j;
-      
-      /* now move the planets such that each planet we came across gets its
-	 previous distance from it's star, times (it's position in the 
-	 planetList array)/(planetsThisStar/1.6).  also make sure that
-         new radius isin't so close to star ship can't orbit it.  Heh.  
-         Separate the men from the boyz, eh?  */
-
-      for (j=0; j < planetsThisStar; j++) {
-	 planets[planetList[j]].pl_radius =  
-	    (int)((float)planets[planetList[j]].pl_radius *
-		  ((float)(j+1)/(float)(planetsThisStar/1.6))) + 1500;
-	 planets[planetList[j]].pl_x = 
-	    planets[stars[i]].pl_x + 
-	       (int)((float)cos(planets[planetList[j]].pl_angle) *
-		     (float)planets[planetList[j]].pl_radius);
-	 planets[planetList[j]].pl_y = 
-	    planets[stars[i]].pl_y + 
-	       (int)((float)sin(planets[planetList[j]].pl_angle) * 
-		     (float)planets[planetList[j]].pl_radius);
-      }
-   }
-   free(planetList);
 }
 
 void 
@@ -1060,7 +1076,7 @@ pop_one_planet2(struct planet *l)
     l->pl_tinfo[l->pl_owner].timestamp = status->clock;
 }
 
-void 
+static void 
 pop_one_planet(struct planet *l)
 {
     switch (configvals->popscheme) {
@@ -1075,27 +1091,7 @@ pop_one_planet(struct planet *l)
 }
 
 
-/*-------------------------------UDPLANETS----------------------------------*/
-
-void 
-fill_planets(int *plist /* array */, int *count /* scalar */, int owner)
-{
-    int     i;
-    *count = 0;
-    for (i = 0; i < configvals->numplanets; i++) {
-	if (owner<0 || planets[i].pl_owner == owner)
-	    plist[(*count)++] = i;
-    }
-
-    for (i = *count - 1; i > 0; i--) {
-	int     idx = lrand48() % (i + 1);
-	int     temp = plist[idx];
-	plist[idx] = plist[i];
-	plist[i] = temp;
-    }
-}
-
-int 
+static int 
 find_other_team(int teammask)
 {
     int     counts[NUMTEAM];

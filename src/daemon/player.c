@@ -52,7 +52,7 @@ suitability of this software for any purpose.  This software is provided
 /*  This function does the beamup for a player.  It allows the player
 to beam up all the armies on a planet.  */
 
-void 
+static void 
 beammeupscotty(struct player *j)	/* the player beaming */
 {
     struct planet *l;		/* to point to planet beaming from */
@@ -141,7 +141,7 @@ is dowcked on.  This function also has Kurt's mod for beaming while at
 different alert statuses.  You get more stats from taking while alert status
 is red than green.  */
 
-void 
+static void 
 beamdown(struct player *j)	/* the player beaming */
 {
     char    buf[90];		/* to sprintf into */
@@ -260,12 +260,73 @@ beamdown(struct player *j)	/* the player beaming */
 
 
 
+/*----------------------------------BLOWUP--------------------------------*/
+/*  This function does the explosion damage of a ship explosion.  It
+inflicts damage on the nearby players.  The damage has been changed to be
+based on the amount of fuel the ship has when it explodes.  */
+
+static void 
+blowup(struct player *sh)	/* the player that blew up */
+{
+    register int i;		/* looping vars */
+    int     dx, dy;		/* delta coords of a ship */
+    double  dist2;		/* for distance of ship (sqared) */
+    double  maxdist, maxdist2;	/* to hold max damage dist */
+    int     damage;		/* to hold calculated damage */
+    register struct player *j;	/* to point to other players */
+    double  ft, expl;		/* floating point temp */
+
+
+    /* moved some of this stuff out of the for loop... */
+    maxdist = sqrt((double) MAX(sh->p_fuel, 0) / 6.0) * 20.0;
+    if (maxdist > MAXDAMDIST)
+	maxdist = MAXDAMDIST;
+    maxdist2 = maxdist * maxdist;
+
+    expl = (double) ((sh->p_ship.s_expldam
+		      + sqrt(MAX(sh->p_fuel, 0) / (double) sh->p_ship.s_maxfuel) * sh->p_ship.s_fueldam)
+		     / get_explode_views(sh->p_ship.s_type));
+
+    if (sh->p_whydead == KGHOST)
+	return;			/* no gostbusted ships blowing up */
+
+    for (i = 0, j = &players[i]; i < MAXPLAYER; i++, j++) {
+	struct player	*me;
+	if ((j->p_status != PALIVE) || (sh == j))	/* player no alive or is
+							   same */
+	    continue;		/* as exploding ship, then continue */
+	me = sh;		/* for friendlyPlayer macro below */
+	if ((sh->p_whydead == KQUIT) && (friendlyPlayer(j)))
+	    continue;		/* No quiting to blow up on people */
+	dx = sh->p_x - j->p_x;	/* delta coords */
+	dy = sh->p_y - j->p_y;
+	if ((ABS(dx) > (int) maxdist) || (ABS(dy) > (int) maxdist))
+	    continue;		/* continue if obviously too far away */
+	dist2 = (double) dx *(double) dx + (double) dy *(double) dy;
+	if (dist2 >= maxdist2)	/* if too far away to damage */
+	    continue;		/* then check next player */
+
+	ft = sqrt(1.0 - dist2 / maxdist2);
+	damage = (int) (expl * ft);	/* scale by distance */
+	if (damage > 0) {	/* if damage done then */
+	    /*
+	       inflict damage, and maybe credit the person who killed us if
+	       we cause the death of a teammate
+	    */
+	    inflict_damage(sh, &players[sh->p_whodead], j, damage, KSHIP);
+	}
+    }
+}
+
+
+
+
 /*--------------------------------DOSHIPEXPLODE---------------------------*/
 /*  This function makes a ship explode.  It resets various fields in the
 players structure and decs the timer before the player's explosion is done
 and he is really dead.  */
 
-void 
+static void 
 doshipexplode(struct player *j)	/* the player to explode */
 {
     int     k;			/* another damned looping var */
@@ -311,7 +372,7 @@ doshipexplode(struct player *j)	/* the player to explode */
 /*  This function makes a player orbit around a planet by adjusting his
 coordinates to go around in a circle.   */
 
-void 
+static void 
 doorbit(struct player *j)	/* the player in orbit */
 {
     int     x, y;
@@ -333,7 +394,7 @@ doorbit(struct player *j)	/* the player in orbit */
 }
 
 
-void 
+static void 
 repair_docking_ring(struct player *j)
 {
     int     i;
@@ -359,7 +420,7 @@ eration, repair, etc.  Some changes:  fuel cost of cloaking is based on
 the speed of the ship.  There is a ver for how fast each ship can take on
 fuel from  a planet of other ship  */
 
-void 
+static void 
 doresources(struct player *j)	/* the player in orbit */
 {
     int     factor;
@@ -537,7 +598,7 @@ doresources(struct player *j)	/* the player in orbit */
 /*  This function checks to see if the player has hit a wall.  If he has his
 direction and position are adjusted.  */
 
-void 
+static void 
 dobounce(struct player *j)	/* the player to bounce */
 {
     int     x = j->p_x;
@@ -571,7 +632,7 @@ dobounce(struct player *j)	/* the player to bounce */
 players in the game and seeing if they are too close.  Should probably be
 moved to the code that does visibility.  */
 
-void 
+static void 
 doalert(struct player *j)	/* the player to check for */
 {
     int     k;			/* Oh, no.  Another looping var */
@@ -619,7 +680,7 @@ direction to his desired direction, with the rate of change based on the
 player's speed and maneuveribility of his ship.  This function includes
 optional use of TC's new-style turn rates.  */
 
-void 
+static void 
 changedir(struct player *sp)	/* the player to turn */
 {
     unsigned int ticks;
@@ -662,7 +723,7 @@ changedir(struct player *sp)	/* the player to turn */
 
 
 
-int 
+static int 
 being_tractored(struct player *victim)
 {
     int     i;
@@ -684,7 +745,7 @@ being_tractored(struct player *victim)
 decellerates the ship if it is needed.  The coordinates of the ship are
 then adjusted.  */
 
-void 
+static void 
 domove(struct player *j)	/* the player to move */
 {
     int     maxspeed;		/* to hold max speed */
@@ -879,7 +940,7 @@ domove(struct player *j)	/* the player to move */
 /*  This function handles the tractoring and pressoring for a player.
 There is a long set of conditions that can turn off tractors.  */
 
-void 
+static void 
 dotractor(struct player *j)	/* the player to do */
 {
     float   cosTheta, sinTheta;	/* Cos and Sin from me to him */
@@ -1059,67 +1120,6 @@ checkmaxkills(int pl)		/* # of player to check */
     }
     else if (stats->st_tmaxkills < dude->p_kills) {	/* else normal ship */
 	stats->st_tmaxkills = dude->p_kills;	/* set if new max kills */
-    }
-}
-
-
-
-
-/*----------------------------------BLOWUP--------------------------------*/
-/*  This function does the explosion damage of a ship explosion.  It
-inflicts damage on the nearby players.  The damage has been changed to be
-based on the amount of fuel the ship has when it explodes.  */
-
-void 
-blowup(struct player *sh)	/* the player that blew up */
-{
-    register int i;		/* looping vars */
-    int     dx, dy;		/* delta coords of a ship */
-    double  dist2;		/* for distance of ship (sqared) */
-    double  maxdist, maxdist2;	/* to hold max damage dist */
-    int     damage;		/* to hold calculated damage */
-    register struct player *j;	/* to point to other players */
-    double  ft, expl;		/* floating point temp */
-
-
-    /* moved some of this stuff out of the for loop... */
-    maxdist = sqrt((double) MAX(sh->p_fuel, 0) / 6.0) * 20.0;
-    if (maxdist > MAXDAMDIST)
-	maxdist = MAXDAMDIST;
-    maxdist2 = maxdist * maxdist;
-
-    expl = (double) ((sh->p_ship.s_expldam
-		      + sqrt(MAX(sh->p_fuel, 0) / (double) sh->p_ship.s_maxfuel) * sh->p_ship.s_fueldam)
-		     / get_explode_views(sh->p_ship.s_type));
-
-    if (sh->p_whydead == KGHOST)
-	return;			/* no gostbusted ships blowing up */
-
-    for (i = 0, j = &players[i]; i < MAXPLAYER; i++, j++) {
-	struct player	*me;
-	if ((j->p_status != PALIVE) || (sh == j))	/* player no alive or is
-							   same */
-	    continue;		/* as exploding ship, then continue */
-	me = sh;		/* for friendlyPlayer macro below */
-	if ((sh->p_whydead == KQUIT) && (friendlyPlayer(j)))
-	    continue;		/* No quiting to blow up on people */
-	dx = sh->p_x - j->p_x;	/* delta coords */
-	dy = sh->p_y - j->p_y;
-	if ((ABS(dx) > (int) maxdist) || (ABS(dy) > (int) maxdist))
-	    continue;		/* continue if obviously too far away */
-	dist2 = (double) dx *(double) dx + (double) dy *(double) dy;
-	if (dist2 >= maxdist2)	/* if too far away to damage */
-	    continue;		/* then check next player */
-
-	ft = sqrt(1.0 - dist2 / maxdist2);
-	damage = (int) (expl * ft);	/* scale by distance */
-	if (damage > 0) {	/* if damage done then */
-	    /*
-	       inflict damage, and maybe credit the person who killed us if
-	       we cause the death of a teammate
-	    */
-	    inflict_damage(sh, &players[sh->p_whodead], j, damage, KSHIP);
-	}
     }
 }
 

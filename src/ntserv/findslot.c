@@ -30,23 +30,23 @@ suitability of this software for any purpose.  This software is provided
 #include "packets.h"
 #include "shmem.h"
 
-int 
-findslot(int overload, enum HomeAway homeaway)
+static void 
+mapWaitCount(unsigned int count)
 {
-    int     i;
+    if (count == -1)
+	return;
 
-    i = grabslot(overload, homeaway);
-    players[i].p_pos = -1;
-    memset(&players[i].p_stats, 0, sizeof(struct stats));
-    players[i].p_stats.st_tticks = 1;
-    players[i].p_stats.st_flags = ST_INITIAL;
-    return (i);
+    sendQueuePacket((short) count);
+    blk_flag = 1;
+    updateMOTD();
+    blk_flag = 0;
+
+    undeferDeferred();		/* send the MOTD through the TCP buffers */
+    flushSockBuf();
 }
 
-static int allocate_slot(homeaway, overload, allocate)
-    enum HomeAway	homeaway;
-    int	overload;
-    int	allocate;
+static int
+allocate_slot(enum HomeAway homeaway, int overload, int allocate)
 {
     int	i;
     if (overload) {
@@ -165,7 +165,7 @@ static int allocate_slot(homeaway, overload, allocate)
  */
 
 /* overload - indicates request for tester's slot */
-int 
+static int
 grabslot(int overload, enum HomeAway homeaway)
 {
     int     count;		/* My number */
@@ -329,17 +329,15 @@ grabslot(int overload, enum HomeAway homeaway)
     }
 }
 
-void 
-mapWaitCount(unsigned int count)
+int 
+findslot(int overload, enum HomeAway homeaway)
 {
-    if (count == -1)
-	return;
+    int     i;
 
-    sendQueuePacket((short) count);
-    blk_flag = 1;
-    updateMOTD();
-    blk_flag = 0;
-
-    undeferDeferred();		/* send the MOTD through the TCP buffers */
-    flushSockBuf();
+    i = grabslot(overload, homeaway);
+    players[i].p_pos = -1;
+    memset(&players[i].p_stats, 0, sizeof(struct stats));
+    players[i].p_stats.st_tticks = 1;
+    players[i].p_stats.st_flags = ST_INITIAL;
+    return (i);
 }

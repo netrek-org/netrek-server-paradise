@@ -33,6 +33,15 @@ struct stats *mystats;
 
 /*----------------------------VISIBLE FUNCTIONS---------------------------*/
 
+unsigned char
+getcourse(int x, int y, int xme, int yme)
+{
+    return(
+           (unsigned char) (int) 
+             (atan2((double) (x - xme), (double) (yme - y)) / M_PI * 128.0)
+          );
+}
+
 /*-------------------------------ANGDIST----------------------------------*/
 /*  This function provides the proper angular distance between two angles.
 The angles are expressed as numbers from 0-255. */

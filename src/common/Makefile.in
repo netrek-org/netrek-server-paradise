@@ -33,7 +33,7 @@ INSTALL_DATA=@INSTALL_DATA@
 ####
 
 COMMON_OBJS=cutil.o data.o imath.o plutil.o path.o grid.o \
-            shmem.o sintab.o structdesc.o util.o parse-ranks.o
+            shmem.o sintab.o smessage.o structdesc.o util.o parse-ranks.o
 ROBOT_OBJS=detonate.o enter.o getship.o interface.o orbit.o \
            phaser.o torp.o
 

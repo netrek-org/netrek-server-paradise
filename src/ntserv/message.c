@@ -156,7 +156,7 @@ struct control_cmd {
 
    */
 
-enum token_names_e
+static enum token_names_e
 next_token(char *cmd, struct control_cmd *legals, char **after)
 {
     char    buf[80];		/* space for the token */
@@ -200,7 +200,7 @@ next_token(char *cmd, struct control_cmd *legals, char **after)
     return potentialtok;
 }
 
-int
+static int
 match_token(char *cmd, char *token, char **after)
 {
     struct control_cmd	legals[2];
@@ -214,7 +214,7 @@ match_token(char *cmd, char *token, char **after)
    Returns -1 on failure, slot number on success.
    Slot number is guaranteed to be <MAXPLAYER. */
 
-int
+static int
 get_slotnum(char *cmd, char **after)
 {
     int	rval;
@@ -250,7 +250,7 @@ get_slotnum(char *cmd, char **after)
     return rval;
 }
 
-void
+static void
 bad_slotnum(char *msg)
 {
     char	buf[256];
@@ -263,7 +263,7 @@ bad_slotnum(char *msg)
    Returns 0 on failure, 1 on success.
    Token is returned in dst. */
 
-int
+static int
 get_one_token(char *cmd, char *dst, int dstsize, char **after)
 {
     while (*cmd && isspace(*cmd))
@@ -293,7 +293,7 @@ get_one_token(char *cmd, char *dst, int dstsize, char **after)
    Returns 0 on failure without modifying dst.
    */
 
-int
+static int
 get_int(char *cmd, int *dst, char **after)
 {
     int	rval, offset;
@@ -322,7 +322,7 @@ get_int(char *cmd, int *dst, char **after)
    Returns 0 on failure without modifying dst.
    */
 
-int
+static int
 get_double(char *cmd, double *dst, char **after)
 {
     double	rval;
@@ -347,7 +347,7 @@ get_double(char *cmd, double *dst, char **after)
     return 1;
 }
 
-int
+static int
 get_teamid(char *cmd, int *team, char **after)
 {
     int	i,j;
@@ -379,7 +379,7 @@ get_teamid(char *cmd, int *team, char **after)
     return i<NUMTEAM;
 }
 
-int
+static int
 get_shipid(char *cmd, int *shipn, char **after)
 {
     int	i;
@@ -419,7 +419,7 @@ get_shipid(char *cmd, int *shipn, char **after)
 
 /* writes a comma-separated list of help strings into the message window */
 
-void 
+static void 
 respond_with_help_string(struct control_cmd *legals)
 {
     int     i;
@@ -1196,7 +1196,7 @@ team_really_ready(struct league_team *team)
     return 1;
 }
 
-void 
+static void 
 trydefect(struct player *victim, enum HomeAway dest, char *destname, 
           enum HomeAway from, char *fromname, struct player *actor)
 {

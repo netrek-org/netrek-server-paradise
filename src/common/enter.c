@@ -31,8 +31,6 @@ suitability of this software for any purpose.  This software is provided
 
 #include "orbit.h"
 
-static void placeIndependent P((void));
-
 /*------------------------------NUMBER DEFINES-----------------------------*/
 #define INDEP (GWIDTH/3)	/* width of region in the center of galaxy */
 				/* that independents can join in */
@@ -42,6 +40,7 @@ static void placeIndependent P((void));
 /*-------------------------------------------------------------------------*/
 
 
+#ifdef USED
 int 
 find_start_planet(int team, int flag)
 {
@@ -60,6 +59,7 @@ find_start_planet(int team, int flag)
 
     return valid[lrand48() % nvalid];
 }
+#endif
 
 
 
@@ -87,7 +87,7 @@ two times too large.  */
 #define AT_LEAST(rank) if (me->p_stats.st_royal<rank) me->p_stats.st_royal = rank;
 
 
-void 
+static void 
 peanut_gallery(void)
 {
     char    buf[90];
@@ -149,9 +149,7 @@ peanut_gallery(void)
     }
 }
 
-
-
-void 
+static void 
 advertise_tourney_queue(void)
 {
     char    buf[80], addrbuf[10];
@@ -172,8 +170,108 @@ advertise_tourney_queue(void)
     pmessage (buf, me->p_no, MINDIV, addrbuf);
 }
 
+/*--------------------------------AUTOPEACE------------------------------*/
+/*  This function set the player as hostile to all teams with at least one
+player on them if it is t-mode.  Otherwise if it is not t-mode the player
+is set as hositle to everyone.  */
 
+static void 
+auto_peace(void)
+{
+    int     i, num[MAXTEAM + 1];/* to hold team's player counts */
+    struct player *p;		/* looping var */
 
+    num[0] = num[FED] = num[ROM] = num[KLI] = num[ORI] = 0;	/* zero counts */
+    for (i = 0, p = players; i < MAXPLAYER; i++, p++)	/* loop all players */
+	if (p->p_status != PFREE)	/* ince the count of the team the */
+	    num[p->p_team]++;	/* player is on */
+    if (status->tourn)		/* if t-mode then make player hostile */
+	me->p_hostile =		/* make all teams with a player on */
+	    ((FED * (num[FED] >= configvals->tournplayers)) |
+	     (ROM * (num[ROM] >= configvals->tournplayers)) |
+	     (KLI * (num[KLI] >= configvals->tournplayers)) |
+	     (ORI * (num[ORI] >= configvals->tournplayers)));
+    else			/* else if not t-mode then */
+	me->p_hostile = FED | ROM | KLI | ORI;	/* hostile to everyone */
+}
+
+/*------------------------------PLACEINDEPENDENT---------------------------*/
+/*  This function places an independent player in the game so he is not
+near any other players.  */
+
+static void 
+placeIndependent(void)
+{
+    int     i;			/* ye olde looping var */
+    struct player *p;		/* to point to players */
+    int     good, failures;	/* flag for success, count of tries */
+
+    failures = 0;		/* have started loops yet */
+    while (failures < 10) {	/* only try 10 times */
+	me->p_x = GWIDTH / 2 + (lrand48() % INDEP) - INDEP / 2;	/* middle 9th of */
+	me->p_y = GWIDTH / 2 + (lrand48() % INDEP) - INDEP / 2;	/* galaxy */
+	good = 1;
+	for (i = 0, p = players; i < MAXPLAYER; i++, p++) {
+	    if ((p->p_status != PFREE) && (p != me)) {
+		if ((ABS(p->p_x - me->p_x) < 2 * TRACTDIST) &&
+		    (ABS(p->p_y - me->p_y) < 2 * TRACTDIST)) {
+		    failures++;	/* found a player too close */
+		    good = 0;	/* position not good */
+		    break;	/* try another positon */
+		}
+	    }
+	}
+	if (good)		/* if good placement found then */
+	    return;		/* return */
+    }
+    fprintf(stderr, "Couldn't place the bot successfully.\n");
+}
+
+static int
+findtestslot(void)
+{
+    register int i;
+
+    for (i = MAXPLAYER - configvals->ntesters; i < MAXPLAYER; i++) {
+        if (players[i].p_status == PFREE) {     /* We have a free slot */
+            players[i].p_status = POUTFIT;      /* possible race code */
+            break;
+        }
+    }
+    if (i == MAXPLAYER) {
+        return -1;              /* no room in tester slots */
+    }
+    memset(&players[i].p_stats, 0, sizeof(struct stats));
+    players[i].p_stats.st_tticks = 1;
+    return (i);
+}
+
+int
+findrslot(void)
+{
+    register int i;
+
+    /* look for tester slot first */
+    i = findtestslot();
+    if (i > -1)
+        return i;
+
+    for (i = 0; i < MAXPLAYER; i++) {
+        if (players[i].p_status == PFREE) {     /* We have a free slot */
+            players[i].p_status = POUTFIT;      /* possible race code */
+            break;
+        }
+    }
+    if ((i == MAXPLAYER) || (i == -1)) {
+        if (debug) {
+            fprintf(stderr, "No more room in game\n");
+        }
+        return -1;
+    }
+    memset(&players[i].p_stats, 0, sizeof(struct stats));
+    players[i].p_stats.st_tticks = 1;
+    return (i);
+}
 
 /*------------------------------------ENTER-------------------------------*/
 /*  This function places a player into the game.  It initializes fields in
@@ -380,76 +478,5 @@ enter(int tno, int disp, int pno, int s_type, int startplanet)
     delay = 0;
     return startplanet;
 }
-
-
-
-
-/*--------------------------------AUTOPEACE------------------------------*/
-/*  This function set the player as hostile to all teams with at least one
-player on them if it is t-mode.  Otherwise if it is not t-mode the player
-is set as hositle to everyone.  */
-
-void 
-auto_peace(void)
-{
-    int     i, num[MAXTEAM + 1];/* to hold team's player counts */
-    struct player *p;		/* looping var */
-
-    num[0] = num[FED] = num[ROM] = num[KLI] = num[ORI] = 0;	/* zero counts */
-    for (i = 0, p = players; i < MAXPLAYER; i++, p++)	/* loop all players */
-	if (p->p_status != PFREE)	/* ince the count of the team the */
-	    num[p->p_team]++;	/* player is on */
-    if (status->tourn)		/* if t-mode then make player hostile */
-	me->p_hostile =		/* make all teams with a player on */
-	    ((FED * (num[FED] >= configvals->tournplayers)) |
-	     (ROM * (num[ROM] >= configvals->tournplayers)) |
-	     (KLI * (num[KLI] >= configvals->tournplayers)) |
-	     (ORI * (num[ORI] >= configvals->tournplayers)));
-    else			/* else if not t-mode then */
-	me->p_hostile = FED | ROM | KLI | ORI;	/* hostile to everyone */
-}
-
-
-
-
-/*------------------------------PLACEINDEPENDENT---------------------------*/
-/*  This function places an independent player in the game so he is not
-near any other players.  */
-
-static void 
-placeIndependent(void)
-{
-    int     i;			/* ye olde looping var */
-    struct player *p;		/* to point to players */
-    int     good, failures;	/* flag for success, count of tries */
-
-    failures = 0;		/* have started loops yet */
-    while (failures < 10) {	/* only try 10 times */
-	me->p_x = GWIDTH / 2 + (lrand48() % INDEP) - INDEP / 2;	/* middle 9th of */
-	me->p_y = GWIDTH / 2 + (lrand48() % INDEP) - INDEP / 2;	/* galaxy */
-	good = 1;
-	for (i = 0, p = players; i < MAXPLAYER; i++, p++) {
-	    if ((p->p_status != PFREE) && (p != me)) {
-		if ((ABS(p->p_x - me->p_x) < 2 * TRACTDIST) &&
-		    (ABS(p->p_y - me->p_y) < 2 * TRACTDIST)) {
-		    failures++;	/* found a player too close */
-		    good = 0;	/* position not good */
-		    break;	/* try another positon */
-		}
-	    }
-	}
-	if (good)		/* if good placement found then */
-	    return;		/* return */
-    }
-    fprintf(stderr, "Couldn't place the bot successfully.\n");
-}
-
-
-
-
-/*------------------------------------------------------------------------*/
-
-
-
 
 /*----------END OF FILE--------*/

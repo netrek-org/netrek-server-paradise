@@ -90,13 +90,376 @@ char   *teamVerbage[9] = {"", "has", "have", "", "have", "", "", "", "have"};
 int     tourntimestamp = 0;	/* ticks since t-mode started */
 
 
+static int     tm_robots[MAXTEAM + 1];	/* To limit the number of robots */
+
+static void
+teamtimers(void)
+{
+    register int i;
+    for (i = 0; i <= MAXTEAM; i++) {
+	if (tm_robots[i] > 0)
+	    tm_robots[i]--;
+    }
+}
+
+static void
+shipbuild_timers(void)
+{
+    int     i, t;
+
+    for (i = 0; i <= MAXTEAM; i++)	/* go through all teams */
+	for (t = 0; t < NUM_TYPES; t++)	/* and each ship type */
+	    if (teams[i].s_turns[t] > 0)	/* and if need be, then dec */
+		teams[i].s_turns[t]--;	/* the construction timer */
+}
+
 /*------------------------------------------------------------------------*/
 
+/* signal handler for SIGALRM */
+static RETSIGTYPE
+setflag(int unused)
+{
+    doMove = 1;
+}
+
+static RETSIGTYPE
+freemem(int sig)
+{
+    register int i;
+    register struct player *j;
+
+    if (sig) {
+	fprintf(stderr, "Daemon: Caught signal %d\n", sig);
+	/* U_STACK_TRACE(); */
+    }
+
+    /* Blow players out of the game */
+    for (i = 0, j = &players[i]; i < MAXPLAYER; i++, j++) {
+	j->p_status = POUTFIT;
+	j->p_whydead = KDAEMON;
+	j->p_ntorp = 0;
+	j->p_nplasmatorp = 0;
+	j->p_explode = 600 / PLAYERFUSE;	/* ghost buster was leaving
+						   players in */
+    }
+    /* Kill waiting players */
+    status->gameup = 0;		/* say goodbye to xsg et. al. 4/10/92 TC */
+    status->count = 0;
+    save_planets();
+    sleep(2);
+    blast_shmem();
+    exit(0);
+}
+
+/* Don't fear the ... */
+
+static RETSIGTYPE
+reaper(int unused)
+{
+    static int status;
+    static int pid;
+
+#ifdef HAVE_WAIT3
+    while ((pid = wait3((int *) & status, WNOHANG, (struct rusage *) 0)) > 0) {
+#else				/* note: no status info */
+    while ((pid = waitpid(0, 0, WNOHANG)) > 0) {
+#endif				/* SVR4 */
+	if (debug) {
+	    fprintf(stderr, "Reaping: pid is %d (status: %X)\n",
+		    pid, status);
+	}
+    }
+}
+
+/*---------------------[ prints the usage of daemonII ]---------------------*/
+
+static void
+printdaemonIIUsage(char *myname)
+{
+    int x;
+    char message[][255] = {
+        "\n\t'%s [options]'\n\n",
+        "Options:\n",
+        "\t-h   help (this usage message)\n",
+        "\t-l   configures as a League server (usually run by listen)\n",
+        "\t-d   debug\n",
+        "\t-a   attach to a crashed daemon's memory segment\n",
+        "\nNOTE: %s is designed to be launched by the startup process.\n\n",
+        "\0"
+    };
+
+    fprintf(stderr, "-- NetrekII (Paradise), %s --\n", PARAVERS);
+    for (x=0; *message[x] != '\0'; x++)
+        fprintf(stderr, message[x], myname);
+
+    exit(1);
+}
+
+static void
+check_load(void)
+{
+#ifdef HAVE_UPTIME
+    FILE   *fp;
+    char    buf[100];
+    char   *s;
+    float   load;
+
+    fp = popen(UPTIME_PATH, "r");
+    if (fp == NULL) {
+/*	status->gameup=0;*/
+	return;
+    }
+    fgets(buf, 99, fp);
+    s = strrchr(buf, ':');
+    if (s == NULL) {
+/*	status->gameup=0;*/
+	pclose(fp);
+	return;
+    }
+    if (sscanf(s + 1, " %f", &load) == 1) {
+	sprintf(buf, "NetrekII (Paradise), %s", PARAVERS);
+	pmessage(buf, 0, MALL, MSERVA);
+	if (load >= configvals->maxload && status->gameup == 1) {
+	    status->gameup = 0;
+	    sprintf(buf, "The load is %f, this game is going down", load);
+	    pmessage(buf, 0, MALL, MSERVA);
+	}
+	else if (load < configvals->maxload && status->gameup == 0) {
+	    status->gameup = 1;
+	    sprintf(buf, "The load is %f, this game is coming up", load);
+	    pmessage(buf, 0, MALL, MSERVA);
+	}
+	else {
+	    sprintf(buf, "Load check: %-7.2f", load);
+	    buf[strlen(buf) - 1] = '\0';
+	    pmessage(buf, 0, MALL, MSERVA);
+	}
+    }
+    else {
+/*	status->gameup=0;*/
+    }
+    r_signal(SIGCHLD, SIG_DFL);
+    pclose(fp);
+    r_signal(SIGCHLD, reaper);
+#endif
+}
+
+/*---------------------------------MOVE-----------------------------------*/
+/*  This is the main loop for the program.  It is called every 1/10th of
+a second.  It decides which  functions of the deamon need to be run.  */
+
+static void
+move(void)
+{
+    static int oldtourn = 0;	/* are we in t-mode or not */
+    int     i, j;		/* looping vars */
+    struct planet *pl;
+
+    if (++ticks == dietime) {	/* no player for 1 minute. kill self */
+	if (debug)		/* do not quit if debug mode */
+	    fprintf(stderr, "Ho hum.  1 minute, no activity...\n");
+	else {			/* quit if not debug mode */
+	    fprintf(stderr, "Self-destructing the daemon!\n");
+	    freemem(0);
+	}
+    }
+
+    if ((FUSE(300)) && update_sys_defaults())	/* check to load system
+						   defualts */
+	/* This message tells players that new defaults have been */
+	/* loaded and the message triggers the ntserv processes */
+	/* to check new defaults.  */
+	pmessage("Loading new server configuration.", 0, MALL, MSERVA);
+
+    if(FUSE(SECONDS(1))) {
+	if (tournamentMode()) {	/* are we in tournament mode */
+	    if (!oldtourn) {	/* is this a new condition */
+		if(!status2->starttourn) {	/* fresh t-mode */
+		    if(configvals->gamestartnuke)
+			explode_everyone(KTOURNSTART, 20);
+		}
+		status2->starttourn = configvals->nottimeout ? configvals->nottimeout : -1;
+		warmessage();	/* go print war message */
+		for (i = 0, pl = &planets[i]; i < NUMPLANETS; i++, pl++)
+		    for (j = 0; j < MAXTEAM + 1; j++)
+			pl->pl_tinfo[j].timestamp = 0;
+		status->clock = 0;
+		tourntimestamp = ticks;	/* take a timestamp */
+	    }
+	    oldtourn = 1;		/* record that we have printed warmsg */
+	    status->tourn = 1;	/* set the game status to t-mode */
+	    status->time++;		/* inc time in t-mode */
+	}
+	else {			/* else we are not in t-mode */
+	    if (oldtourn) {		/* if previously in t-mode */
+		tourntimestamp = ticks;	/* record t-mode ending */
+		peacemessage();	/* send peace message */
+	    } else {
+		static fuse=0;
+		fuse++;
+		if(fuse>60 && status2->starttourn > 0) {
+		    fuse = 0;
+		    status2->starttourn--;
+		    switch(status2->starttourn) {
+		    case 0:
+			status2->newgalaxy = 1;
+			break;
+		    case 1:
+		    case 3:
+		    case 5:
+		    case 15:
+			{
+			    static char	buf[120];
+			    sprintf(buf, "Warning!!  Galaxy will be reset in %d minute%s due to inactivity.", status2->starttourn, (status2->starttourn==1)?"":"s");
+			    pmessage(buf, 0, MALL, MSERVA);
+			}
+			break;
+			pmessage("Warning!!  Galaxy will be reset in one minute due to inactivity.", 0, MALL, MSERVA);
+			break;
+		    }
+		}
+	    }
+	    oldtourn = 0;		/* set we are not in t-mode */
+	    status->tourn = 0;	/* record in stats */
+	}
+    }
+
+    parse_godmessages();	/* log any messages to god */
+
+    handle_pause_goop();	/* print any messages related to pausing the
+				   game */
+
+    if (!status2->paused)
+      {
+	if (FUSE(PLAYERFUSE))	/* time to update players? */
+	    udplayers();
+
+	if (FUSE(TORPFUSE))	/* time to update torps? */
+	    udtorps();
+	if (FUSE(MISSILEFUSE))	/* time to update missiles? */
+	    udmissiles();
+	if (FUSE(PLASMAFUSE))	/* time to update plasma? */
+	    udplasmatorps();
+	if (FUSE(PHASERFUSE))	/* time to update phasers? */
+	    udphaser();
 
 
+	if (FUSE(CLOAKFUSE))	/* time to update cloaking? */
+	    udcloak();
+
+	if (FUSE(TEAMFUSE))	/* time to update team timers? */
+	    teamtimers();
+
+	if (FUSE(PLFIGHTFUSE))	/* time to update planets? */
+	    plfight();
+
+	if (FUSE(TERRAINFUSE))	/* time to do terrain effects? */
+	    doTerrainEffects();
+
+	if (FUSE(BEAMFUSE))	/* time to update beaming */
+	    beam();
+
+	if (FUSE(SYNCFUSE))	/* time to save planets? */
+	    save_planets();
 
 
+	if (FUSE(topgun ? HOSEFUSE2 : HOSEFUSE)
+	    && status->tourn != 1	/* no Iggy during T-mode */
+	    && status2->league == 0
+	    )	/* no Iggy during league games */
+	    rescue(HUNTERKILLER, 0, -1);	/* send in iggy-- no team, no
+						   target */
 
+	if (status->tourn) {
+	    {
+		static int spinner = 0;
+
+		for (spinner += configvals->popspeed; spinner >= 100; spinner -= 100)
+		    popplanets(); /* increase population */
+	    }
+
+	    if (FUSE(PLANETFUSE)) /* time to grow resources */
+		growplanets();
+
+	    {
+		/* check for revolts.  Each planet is checked on average
+		   once every PLANETFUSE. */
+		static int spinner = 0;
+		for (spinner += configvals->numplanets;
+		     spinner >= PLANETFUSE;
+		     spinner -= PLANETFUSE) {
+		    check_revolt();
+		}
+	    }
+	}
+	/* planet moving */
+	if (configvals->planupdspd > 0 && FUSE(4))
+	    moveplanets();
+
+	if (FUSE(MINUTEFUSE) && status->tourn) {
+
+	    shipbuild_timers();
+
+	    if (!status2->league)
+		udsurrend();	/* update surrender every minute unless
+				   playing league */
+
+	    status->clock++;	/* increment the timestamp clock */
+
+	}
+	/* update the tournament clock, maybe print messages */
+	udtourny();
+    }				/* end if !paused */
+
+    if (FUSE(MINUTEFUSE)) {
+	int     i, c;
+	c = 0;
+	for (i = 0; i < MAXPLAYER; i++) {
+	    if (players[i].p_status != PFREE)
+		c++;
+	}
+#ifdef COUNTFILENAME
+	if (c) {
+	    char   *paths;
+	    FILE   *logfile;
+	    paths = build_path(COUNTFILENAME);
+	    logfile = fopen(paths, "a");
+	    if (logfile) {
+		struct tm *tp;
+		char    buf[50];
+		time_t  cal;
+
+		cal = time(0);
+		tp = localtime(&cal);
+		strftime(buf, 50, "%m/%d %H:%M", tp);
+
+		fprintf(logfile, "%s : %2d ", buf, c);
+		for (i = 0; i < c; i++) {
+		    putc('*', logfile);
+		}
+		putc('\n', logfile);
+		fclose(logfile);
+	    }
+	}
+#endif
+    }
+
+    if (status2->newgalaxy) {
+
+	/* Disable the game timer. It'll be set again after the longjmp() */
+	stoptimer();
+
+	status2->nontteamlock = ALLTEAM;/* allow all teams again */
+	status2->starttourn = 0;	/* fresh galaxy */
+
+	gen_planets();
+        
+	for( i = 0; i < MAXPLAYER; i++ ){
+          galaxyValid[i] = 0;	/* force download of new galaxy map */
+	}
+	longjmp(env, 0);
+    }
+}
 
 
 /*----------------------------------MAIN-----------------------------------*/
@@ -346,38 +709,6 @@ main(int argc, char **argv)
 	}
     }
 }
-/*---------------------[ prints the usage of daemonII ]---------------------*/
-
-void
-printdaemonIIUsage(char *myname)
-{
-    int x;
-    char message[][255] = {
-        "\n\t'%s [options]'\n\n",
-        "Options:\n",
-        "\t-h   help (this usage message)\n",
-        "\t-l   configures as a League server (usually run by listen)\n",
-        "\t-d   debug\n",
-        "\t-a   attach to a crashed daemon's memory segment\n",
-        "\nNOTE: %s is designed to be launched by the startup process.\n\n",
-        "\0"
-    };
-
-    fprintf(stderr, "-- NetrekII (Paradise), %s --\n", PARAVERS);
-    for (x=0; *message[x] != '\0'; x++)
-        fprintf(stderr, message[x], myname);
-
-    exit(1);
-}
-
-/*--------------------------[ printdaemonIIUsage ]--------------------------*/
-
-/* signal handler for SIGALRM */
-RETSIGTYPE
-setflag(int unused)
-{
-    doMove = 1;
-}
 
 void 
 starttimer(void)
@@ -452,302 +783,6 @@ handle_pause_goop(void)
     }
 }
 
-/*---------------------------------MOVE-----------------------------------*/
-/*  This is the main loop for the program.  It is called every 1/10th of
-a second.  It decides which  functions of the deamon need to be run.  */
-
-void
-move(void)
-{
-    static int oldtourn = 0;	/* are we in t-mode or not */
-    int     i, j;		/* looping vars */
-    struct planet *pl;
-
-    if (++ticks == dietime) {	/* no player for 1 minute. kill self */
-	if (debug)		/* do not quit if debug mode */
-	    fprintf(stderr, "Ho hum.  1 minute, no activity...\n");
-	else {			/* quit if not debug mode */
-	    fprintf(stderr, "Self-destructing the daemon!\n");
-	    freemem(0);
-	}
-    }
-
-    if ((FUSE(300)) && update_sys_defaults())	/* check to load system
-						   defualts */
-	/* This message tells players that new defaults have been */
-	/* loaded and the message triggers the ntserv processes */
-	/* to check new defaults.  */
-	pmessage("Loading new server configuration.", 0, MALL, MSERVA);
-
-    if(FUSE(SECONDS(1))) {
-	if (tournamentMode()) {	/* are we in tournament mode */
-	    if (!oldtourn) {	/* is this a new condition */
-		if(!status2->starttourn) {	/* fresh t-mode */
-		    if(configvals->gamestartnuke)
-			explode_everyone(KTOURNSTART, 20);
-		}
-		status2->starttourn = configvals->nottimeout ? configvals->nottimeout : -1;
-		warmessage();	/* go print war message */
-		for (i = 0, pl = &planets[i]; i < NUMPLANETS; i++, pl++)
-		    for (j = 0; j < MAXTEAM + 1; j++)
-			pl->pl_tinfo[j].timestamp = 0;
-		status->clock = 0;
-		tourntimestamp = ticks;	/* take a timestamp */
-	    }
-	    oldtourn = 1;		/* record that we have printed warmsg */
-	    status->tourn = 1;	/* set the game status to t-mode */
-	    status->time++;		/* inc time in t-mode */
-	}
-	else {			/* else we are not in t-mode */
-	    if (oldtourn) {		/* if previously in t-mode */
-		tourntimestamp = ticks;	/* record t-mode ending */
-		peacemessage();	/* send peace message */
-	    } else {
-		static fuse=0;
-		fuse++;
-		if(fuse>60 && status2->starttourn > 0) {
-		    fuse = 0;
-		    status2->starttourn--;
-		    switch(status2->starttourn) {
-		    case 0:
-			status2->newgalaxy = 1;
-			break;
-		    case 1:
-		    case 3:
-		    case 5:
-		    case 15:
-			{
-			    static char	buf[120];
-			    sprintf(buf, "Warning!!  Galaxy will be reset in %d minute%s due to inactivity.", status2->starttourn, (status2->starttourn==1)?"":"s");
-			    pmessage(buf, 0, MALL, MSERVA);
-			}
-			break;
-			pmessage("Warning!!  Galaxy will be reset in one minute due to inactivity.", 0, MALL, MSERVA);
-			break;
-		    }
-		}
-	    }
-	    oldtourn = 0;		/* set we are not in t-mode */
-	    status->tourn = 0;	/* record in stats */
-	}
-    }
-
-    parse_godmessages();	/* log any messages to god */
-
-    handle_pause_goop();	/* print any messages related to pausing the
-				   game */
-
-    if (!status2->paused)
-      {
-	if (FUSE(PLAYERFUSE))	/* time to update players? */
-	    udplayers();
-
-	if (FUSE(TORPFUSE))	/* time to update torps? */
-	    udtorps();
-	if (FUSE(MISSILEFUSE))	/* time to update missiles? */
-	    udmissiles();
-	if (FUSE(PLASMAFUSE))	/* time to update plasma? */
-	    udplasmatorps();
-	if (FUSE(PHASERFUSE))	/* time to update phasers? */
-	    udphaser();
-
-
-	if (FUSE(CLOAKFUSE))	/* time to update cloaking? */
-	    udcloak();
-
-	if (FUSE(TEAMFUSE))	/* time to update team timers? */
-	    teamtimers();
-
-	if (FUSE(PLFIGHTFUSE))	/* time to update planets? */
-	    plfight();
-
-	if (FUSE(TERRAINFUSE))	/* time to do terrain effects? */
-	    doTerrainEffects();
-
-	if (FUSE(BEAMFUSE))	/* time to update beaming */
-	    beam();
-
-	if (FUSE(SYNCFUSE))	/* time to save planets? */
-	    save_planets();
-
-
-	if (FUSE(topgun ? HOSEFUSE2 : HOSEFUSE)
-	    && status->tourn != 1	/* no Iggy during T-mode */
-	    && status2->league == 0
-	    )	/* no Iggy during league games */
-	    rescue(HUNTERKILLER, 0, -1);	/* send in iggy-- no team, no
-						   target */
-
-	if (status->tourn) {
-	    {
-		static int spinner = 0;
-
-		for (spinner += configvals->popspeed; spinner >= 100; spinner -= 100)
-		    popplanets(); /* increase population */
-	    }
-
-	    if (FUSE(PLANETFUSE)) /* time to grow resources */
-		growplanets();
-
-	    {
-		/* check for revolts.  Each planet is checked on average
-		   once every PLANETFUSE. */
-		static int spinner = 0;
-		for (spinner += configvals->numplanets;
-		     spinner >= PLANETFUSE;
-		     spinner -= PLANETFUSE) {
-		    check_revolt();
-		}
-	    }
-	}
-	/* planet moving */
-	if (configvals->planupdspd > 0 && FUSE(4))
-	    moveplanets();
-
-	if (FUSE(MINUTEFUSE) && status->tourn) {
-
-	    shipbuild_timers();
-
-	    if (!status2->league)
-		udsurrend();	/* update surrender every minute unless
-				   playing league */
-
-	    status->clock++;	/* increment the timestamp clock */
-
-	}
-	/* update the tournament clock, maybe print messages */
-	udtourny();
-    }				/* end if !paused */
-
-    if (FUSE(MINUTEFUSE)) {
-	int     i, c;
-	c = 0;
-	for (i = 0; i < MAXPLAYER; i++) {
-	    if (players[i].p_status != PFREE)
-		c++;
-	}
-#ifdef COUNTFILENAME
-	if (c) {
-	    char   *paths;
-	    FILE   *logfile;
-	    paths = build_path(COUNTFILENAME);
-	    logfile = fopen(paths, "a");
-	    if (logfile) {
-		struct tm *tp;
-		char    buf[50];
-		time_t  cal;
-
-		cal = time(0);
-		tp = localtime(&cal);
-		strftime(buf, 50, "%m/%d %H:%M", tp);
-
-		fprintf(logfile, "%s : %2d ", buf, c);
-		for (i = 0; i < c; i++) {
-		    putc('*', logfile);
-		}
-		putc('\n', logfile);
-		fclose(logfile);
-	    }
-	}
-#endif
-    }
-
-    if (status2->newgalaxy) {
-
-	/* Disable the game timer. It'll be set again after the longjmp() */
-	stoptimer();
-
-	status2->nontteamlock = ALLTEAM;/* allow all teams again */
-	status2->starttourn = 0;	/* fresh galaxy */
-
-	gen_planets();
-        
-	for( i = 0; i < MAXPLAYER; i++ ){
-          galaxyValid[i] = 0;	/* force download of new galaxy map */
-	}
-	longjmp(env, 0);
-    }
-}
-
-
-RETSIGTYPE
-freemem(int sig)
-{
-    register int i;
-    register struct player *j;
-
-    if (sig) {
-	fprintf(stderr, "Daemon: Caught signal %d\n", sig);
-	/* U_STACK_TRACE(); */
-    }
-
-    /* Blow players out of the game */
-    for (i = 0, j = &players[i]; i < MAXPLAYER; i++, j++) {
-	j->p_status = POUTFIT;
-	j->p_whydead = KDAEMON;
-	j->p_ntorp = 0;
-	j->p_nplasmatorp = 0;
-	j->p_explode = 600 / PLAYERFUSE;	/* ghost buster was leaving
-						   players in */
-    }
-    /* Kill waiting players */
-    status->gameup = 0;		/* say goodbye to xsg et. al. 4/10/92 TC */
-    status->count = 0;
-    save_planets();
-    sleep(2);
-    blast_shmem();
-    exit(0);
-}
-
-
-void
-check_load(void)
-{
-#ifdef HAVE_UPTIME
-    FILE   *fp;
-    char    buf[100];
-    char   *s;
-    float   load;
-
-    fp = popen(UPTIME_PATH, "r");
-    if (fp == NULL) {
-/*	status->gameup=0;*/
-	return;
-    }
-    fgets(buf, 99, fp);
-    s = strrchr(buf, ':');
-    if (s == NULL) {
-/*	status->gameup=0;*/
-	pclose(fp);
-	return;
-    }
-    if (sscanf(s + 1, " %f", &load) == 1) {
-	sprintf(buf, "NetrekII (Paradise), %s", PARAVERS);
-	pmessage(buf, 0, MALL, MSERVA);
-	if (load >= configvals->maxload && status->gameup == 1) {
-	    status->gameup = 0;
-	    sprintf(buf, "The load is %f, this game is going down", load);
-	    pmessage(buf, 0, MALL, MSERVA);
-	}
-	else if (load < configvals->maxload && status->gameup == 0) {
-	    status->gameup = 1;
-	    sprintf(buf, "The load is %f, this game is coming up", load);
-	    pmessage(buf, 0, MALL, MSERVA);
-	}
-	else {
-	    sprintf(buf, "Load check: %-7.2f", load);
-	    buf[strlen(buf) - 1] = '\0';
-	    pmessage(buf, 0, MALL, MSERVA);
-	}
-    }
-    else {
-/*	status->gameup=0;*/
-    }
-    r_signal(SIGCHLD, SIG_DFL);
-    pclose(fp);
-    r_signal(SIGCHLD, reaper);
-#endif
-}
 
 void
 ghostmess(struct player *victim)
@@ -884,58 +919,4 @@ rescue(int team, int target, int planet)
 	    fprintf(stderr, "Forking robot: pid is %d\n", pid);
 	}
     }
-}
-
-#include <sys/resource.h>
-
-/*ARGSUSED*/
-
-/* Don't fear the ... */
-
-RETSIGTYPE
-reaper(int unused)
-{
-    static int status;
-    static int pid;
-
-#ifdef HAVE_WAIT3
-    while ((pid = wait3((int *) & status, WNOHANG, (struct rusage *) 0)) > 0) {
-#else				/* note: no status info */
-    while ((pid = waitpid(0, 0, WNOHANG)) > 0) {
-#endif				/* SVR4 */
-	if (debug) {
-	    fprintf(stderr, "Reaping: pid is %d (status: %X)\n",
-		    pid, status);
-	}
-    }
-}
-
-unsigned char 
-getcourse(int x, int y, int xme, int yme)
-{
-    return ((unsigned char) (int) (atan2((double) (x - xme),
-				     (double) (yme - y)) / 3.14159 * 128.));
-}
-
-int     tm_robots[MAXTEAM + 1];	/* To limit the number of robots */
-
-void
-teamtimers(void)
-{
-    register int i;
-    for (i = 0; i <= MAXTEAM; i++) {
-	if (tm_robots[i] > 0)
-	    tm_robots[i]--;
-    }
-}
-
-void
-shipbuild_timers(void)
-{
-    int     i, t;
-
-    for (i = 0; i <= MAXTEAM; i++)	/* go through all teams */
-	for (t = 0; t < NUM_TYPES; t++)	/* and each ship type */
-	    if (teams[i].s_turns[t] > 0)	/* and if need be, then dec */
-		teams[i].s_turns[t]--;	/* the construction timer */
 }

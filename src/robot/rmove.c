@@ -141,8 +141,655 @@ extern int runfast;
 extern int closeslow;
 extern int closefast;
 
-void
-rmove(void)
+/* This function means that the robot has nothing better to do.
+   If there are hostile players in the game, it will try to get
+   as close to them as it can, while staying in its own space.
+   Otherwise, it will head to the center of its own space.
+*/
+/* CRD feature: robots now hover near their start planet - MAK,  2-Jun-93 */
+
+#define GUARDDIST 8000
+
+static void
+go_home(struct Enemy *ebuf)
+{
+    int     x, y;
+    double  dx, dy;
+    struct player *j;
+
+    if (ebuf == 0) {		/* No enemies */
+/*	if (debug)
+	    fprintf(stderr, "%d) No enemies\n", me->p_no);*/
+	if (target >= 0) {
+	    /* First priority, current target (if any) */
+	    j = &players[target];
+	    x = j->p_x;
+	    y = j->p_y;
+	}
+	else if (startplanet == -1) {
+	    /* No start planet, so go to center of galaxy */
+	    x = (GWIDTH / 2);
+	    y = (GWIDTH / 2);
+	}
+	else {
+	    /* Return to start planet */
+	    x = planets[startplanet].pl_x + (lrand48() % 2000) - 1000;
+	    y = planets[startplanet].pl_y + (lrand48() % 2000) - 1000;
+	}
+    }
+    else {			/* Let's get near him */
+	j = &players[ebuf->e_info];
+	x = j->p_x;
+	y = j->p_y;
+
+	if (startplanet != -1) {
+	    /* Get between enemy and planet */
+	    int     px, py;
+	    double  theta;
+
+	    px = planets[startplanet].pl_x;
+	    py = planets[startplanet].pl_y;
+	    theta = atan2((double) (y - py), (double) (x - px));
+	    x = px + GUARDDIST * cos(theta);
+	    y = py + GUARDDIST * sin(theta);
+	}
+    }
+/*    if (debug)
+	fprintf(stderr, "%d) moving towards (%d/%d)\n",
+	    me->p_no, x, y);*/
+
+    /*
+       Note that I've decided that robots should never stop moving. * It
+       makes them too easy to kill
+    */
+
+    me->p_desdir = getcourse(x, y, me->p_x, me->p_y);
+    if (angdist(me->p_desdir, me->p_dir) > 64)
+	set_speed(dogslow, 1);
+    else if (me->p_etemp > 900)	/* 90% of 1000 */
+	set_speed(runslow, 1);
+    else {
+	dx = x - me->p_x;
+	dy = y - me->p_y;
+	set_speed((ihypot((int)dx, (int)dy) / 5000) + 3, 1);
+    }
+    cloak_off();
+}
+
+static int
+phaser_plasmas(void)
+{
+    register struct plasmatorp *pt;
+    register int i;
+    int     myphrange;
+
+    myphrange = phrange;	/* PHASEDIST * me->p_ship.s_phaserdamage /
+				   100; */
+    for (i = 0, pt = &plasmatorps[0]; i < MAXPLASMA * MAXPLAYER; i++, pt++) {
+	if (pt->pt_status != PTMOVE)
+	    continue;
+	if (i == me->p_no)
+	    continue;
+	if (!(pt->pt_war & me->p_team) && !(me->p_hostile & pt->pt_team))
+	    continue;
+	if (abs(pt->pt_x - me->p_x) > myphrange)
+	    continue;
+	if (abs(pt->pt_y - me->p_y) > myphrange)
+	    continue;
+	if (ihypot(pt->pt_x - me->p_x, pt->pt_y - me->p_y) > myphrange)
+	    continue;
+	repair_off();
+	cloak_off();
+	phaser(getcourse(pt->pt_x, pt->pt_y, me->p_x, me->p_y));
+	return 1;		/* was this missing? 3/25/92 TC */
+	break;
+    }
+    return 0;			/* was this missing? 3/25/92 TC */
+}
+
+static int
+projectDamage(int eNum, int *dirP)
+{
+    register int i, j, numHits = 0, mx, my, tx, ty, dx, dy;
+    double  tdx, tdy, mdx, mdy;
+    register struct torp *t;
+
+    *dirP = 0;
+    for (i = 0, t = &torps[eNum * MAXTORP]; i < MAXTORP; i++, t++) {
+	if (t->t_status == TFREE)
+	    continue;
+	tx = t->t_x;
+	ty = t->t_y;
+	mx = me->p_x;
+	my = me->p_y;
+	tdx = (double) t->t_speed * Cos[t->t_dir] * WARP1;
+	tdy = (double) t->t_speed * Sin[t->t_dir] * WARP1;
+	mdx = (double) me->p_speed * Cos[me->p_dir] * WARP1;
+	mdy = (double) me->p_speed * Sin[me->p_dir] * WARP1;
+	for (j = t->t_fuse; j > 0; j--) {
+	    tx += tdx;
+	    ty += tdy;
+	    mx += mdx;
+	    my += mdy;
+	    dx = tx - mx;
+	    dy = ty - my;
+	    if (ABS(dx) < EXPDIST && ABS(dy) < EXPDIST) {
+		numHits++;
+		*dirP += t->t_dir;
+		break;
+	    }
+	}
+    }
+    if (numHits > 0)
+	*dirP /= numHits;
+    return (numHits);
+}
+
+static int
+isTractoringMe(struct Enemy *enemy_buf)
+{
+    return ((enemy_buf->e_hisflags & PFTRACT) &&	/* bug fix: was using */
+	    !(enemy_buf->e_hisflags & PFPRESS) &&	/* e_flags 6/24/92 TC */
+	    (enemy_buf->e_tractor == me->p_no));
+}
+
+static struct Enemy ebuf;
+
+static struct Enemy *
+get_nearest(void)
+{
+    int     pcount = 0;
+    register int i;
+    register struct player *j;
+    int     intruder = 0;
+    int     tdist;
+    double  dx, dy;
+    double  vxa, vya, l;	/* Used for trap shooting */
+    double  vxt, vyt;
+    double  vxs, vys;
+    double  dp;
+
+    /* Find an enemy */
+    ebuf.e_info = me->p_no;
+    ebuf.e_dist = GWIDTH + 1;
+
+    pcount = 0;			/* number of human players in game */
+
+    if (target >= 0) {
+	j = &players[target];
+	if (!((me->p_swar | me->p_hostile) & j->p_team))
+	    declare_war(players[target].p_team);	/* make sure we're at
+							   war 7/31/91 TC */
+
+	/* We have an enemy */
+	/* Get his range */
+	dx = j->p_x - me->p_x;
+	dy = j->p_y - me->p_y;
+	tdist = ihypot((int)dx, (int)dy);
+
+	if (j->p_status != POUTFIT) {	/* ignore target if outfitting */
+	    ebuf.e_info = target;
+	    ebuf.e_dist = tdist;
+	    ebuf.e_flags &= ~(E_INTRUDER);
+	}
+	/* need a loop to find hostile ships */
+	/* within tactical range */
+
+	for (i = 0, j = &players[i]; i < MAXPLAYER; i++, j++) {
+	    if ((j->p_status != PALIVE) || (j == me) ||
+		((j->p_flags & PFROBOT) && (!hostile)))
+		continue;
+	    else
+		pcount++;	/* Other players in the game */
+	    if (((j->p_swar | j->p_hostile) & me->p_team)
+		|| ((me->p_swar | me->p_hostile) & j->p_team)) {
+		/* We have an enemy */
+		/* Get his range */
+		dx = j->p_x - me->p_x;
+		dy = j->p_y - me->p_y;
+		tdist = ihypot((int)dx, (int)dy);
+
+		/* if target's teammate is too close, mark as nearest */
+
+		if ((tdist < ebuf.e_dist) && (tdist < 15000)) {
+		    ebuf.e_info = i;
+		    ebuf.e_dist = tdist;
+		    ebuf.e_flags &= ~(E_INTRUDER);
+		}
+	    }			/* end if */
+	}			/* end for */
+    }
+    else {			/* no target */
+	/* avoid dead slots, me, other robots (which aren't hostile) */
+	for (i = 0, j = &players[i]; i < MAXPLAYER; i++, j++) {
+	    if ((j->p_status != PALIVE) || (j == me) ||
+		((j->p_flags & PFROBOT) && (!hostile)))
+		continue;
+	    else
+		pcount++;	/* Other players in the game */
+	    if (((j->p_swar | j->p_hostile) & me->p_team)
+		|| ((me->p_swar | me->p_hostile) & j->p_team)) {
+		/* We have an enemy */
+		/* Get his range */
+		dx = j->p_x - me->p_x;
+		dy = j->p_y - me->p_y;
+		tdist = ihypot((int)dx, (int)dy);
+
+		/* Check to see if ship is near our planet. */
+		if (startplanet != -1) {
+		    int     px, py;
+		    px = planets[startplanet].pl_x;
+		    py = planets[startplanet].pl_y;
+
+		    intruder = (ihypot(j->p_x - px, j->p_y - py)
+				< GUARDDIST);
+		}
+		if (tdist < ebuf.e_dist) {
+		    ebuf.e_info = i;
+		    ebuf.e_dist = tdist;
+		    if (intruder)
+			ebuf.e_flags |= E_INTRUDER;
+		    else
+			ebuf.e_flags &= ~(E_INTRUDER);
+		}
+	    }			/* end if */
+	}			/* end for */
+    }				/* end else */
+    if (pcount == 0) {
+	return (NOENEMY);	/* no players in game */
+    }
+    else if (ebuf.e_info == me->p_no) {
+	return (0);		/* no hostile players in the game */
+    }
+    else {
+	j = &players[ebuf.e_info];
+
+	/* Get torpedo course to nearest enemy */
+	ebuf.e_flags &= ~(E_TSHOT);
+
+	vxa = (j->p_x - me->p_x);
+	vya = (j->p_y - me->p_y);
+	l = ihypot((int)vxa, (int)vya);	/* Normalize va */
+	if (l != 0) {
+	    vxa /= l;
+	    vya /= l;
+	}
+	vxs = (Cos[j->p_dir] * j->p_speed) * WARP1;
+	vys = (Sin[j->p_dir] * j->p_speed) * WARP1;
+	dp = vxs * vxa + vys * vya;	/* Dot product of (va vs) */
+	dx = vxs - dp * vxa;
+	dy = vys - dp * vya;
+	l = hypot(dx, dy);	/* Determine how much speed is required */
+	dp = (float) (me->p_ship.s_torp.speed * WARP1);
+	l = (dp * dp - l * l);
+	if (l > 0) {
+	    double  he_x, he_y, area;
+
+	    /* Only shoot if within distance */
+	    he_x = j->p_x + Cos[j->p_dir] * j->p_speed * 50 * WARP1;
+	    he_y = j->p_y + Sin[j->p_dir] * j->p_speed * 50 * WARP1;
+	    area = 50 * me->p_ship.s_torp.speed * WARP1;
+	    if (ihypot(he_x - me->p_x, he_y - me->p_y) < area) {
+		l = sqrt(l);
+		vxt = l * vxa + dx;
+		vyt = l * vya + dy;
+		ebuf.e_flags |= E_TSHOT;
+		ebuf.e_tcourse = getcourse((int) vxt + me->p_x, (int) vyt + me->p_y, me->p_x, me->p_y);
+	    }
+	}
+	/* Get phaser shot status */
+	if (ebuf.e_dist < 0.8 * phrange)
+	    ebuf.e_flags |= E_PSHOT;
+	else
+	    ebuf.e_flags &= ~(E_PSHOT);
+
+	/* Get tractor/pressor status */
+	if (ebuf.e_dist < trrange)
+	    ebuf.e_flags |= E_TRACT;
+	else
+	    ebuf.e_flags &= ~(E_TRACT);
+
+
+	/* get his phaser range */
+	ebuf.e_phrange = PHASEDIST * j->p_ship.s_phaser.damage / 100;
+
+	/* get course info */
+	ebuf.e_course = getcourse(j->p_x, j->p_y, me->p_x, me->p_y);
+	ebuf.e_edir = j->p_dir;
+	ebuf.e_hisflags = j->p_flags;
+	ebuf.e_tractor = j->p_tractor;
+	/*
+	   if (debug) fprintf(stderr, "Set course to enemy is %d (%d)\n",
+	   (int)ebuf.e_course, (int) ebuf.e_course * 360 / 256);
+	*/
+
+	/* check to polymorph */
+
+	if ((polymorphic) && (j->p_ship.s_type != me->p_ship.s_type) &&
+	    (j->p_ship.s_type != ATT)) {	/* don't polymorph to ATT
+						   4/8/92 TC */
+	    int     old_shield;
+	    int     old_damage;
+	    old_shield = me->p_ship.s_maxshield;
+	    old_damage = me->p_ship.s_maxdamage;
+
+	    getship(&(me->p_ship), j->p_ship.s_type);
+	    config();
+	    if (me->p_speed > me->p_ship.s_imp.maxspeed)
+		me->p_speed = me->p_ship.s_imp.maxspeed;
+	    me->p_shield = (me->p_shield * (float) me->p_ship.s_maxshield)
+		/ (float) old_shield;
+	    me->p_damage = (me->p_damage * (float) me->p_ship.s_maxdamage)
+		/ (float) old_damage;
+	}
+	return (&ebuf);
+    }
+}
+
+static struct planet *
+get_nearest_planet(void)
+{
+    register int i;
+    register struct planet *l;
+    register struct planet *nearest;
+    int     dist = GWIDTH;	/* Manhattan distance to nearest planet */
+    int     ldist;
+
+    nearest = &planets[0];
+    for (i = 0, l = &planets[i]; i < NUMPLANETS; i++, l++) {
+	if ((ldist = (abs(me->p_x - l->pl_x) + abs(me->p_y - l->pl_y))) <
+	    dist) {
+	    dist = ldist;
+	    nearest = l;
+	}
+    }
+    return nearest;
+}
+
+static int
+do_repair(void)
+{
+/* Repair if necessary (we are safe) */
+
+    register struct planet *l;
+    int     dx, dy;
+    int     dist;
+
+    l = get_nearest_planet();
+    dx = abs(me->p_x - l->pl_x);
+    dy = abs(me->p_y - l->pl_y);
+
+    if (me->p_damage > 0) {
+	if ((me->p_swar | me->p_hostile) & l->pl_owner) {
+	    if (l->pl_armies > 0) {
+		if ((dx < PFIREDIST) && (dy < PFIREDIST)) {
+		    if (debug)
+			fprintf(stderr, "%d) on top of hostile planet (%s)\n", me->p_no, l->pl_name);
+		    return (0);	/* can't repair on top of hostile planets */
+		}
+		if (ihypot((int)dx, (int)dy) < PFIREDIST) {
+		    if (debug)
+			fprintf(stderr, "%d) on top of hostile planet (%s)\n", me->p_no, l->pl_name);
+		    return (0);
+		}
+	    }
+	    me->p_desspeed = 0;
+	}
+	else {			/* if friendly */
+	    if ((l->pl_flags & PLREPAIR) &&
+		!(me->p_flags & PFORBIT)) {	/* oh, repair! */
+		dist = ihypot((int)dx, (int)dy);
+
+		if (debug)
+		    fprintf(stderr, "%d) locking on to planet %d\n",
+			    me->p_no, l->pl_no);
+		cloak_off();
+		shield_down();
+		me->p_desdir = getcourse(l->pl_x, l->pl_y, me->p_x, me->p_y);
+		lock_planet(l->pl_no);
+		me->p_desspeed = 4;
+		if (dist - (ORBDIST / 2) < (11500 * me->p_speed * me->p_speed) /
+		    me->p_ship.s_imp.dec) {
+		    if (me->p_desspeed > 2) {
+			set_speed(2, 1);
+		    }
+		}
+		if ((dist < ENTORBDIST) && (me->p_speed <= 2)) {
+		    me->p_flags &= ~PFPLLOCK;
+		    orbit();
+		}
+		return (1);
+	    }
+	    else {		/* not repair, so ignore it */
+		me->p_desspeed = 0;
+	    }
+	}
+	shield_down();
+	if (me->p_speed == 0)
+	    repair();
+	if (debug)
+	    fprintf(stderr, "%d) repairing damage at %d\n",
+		    me->p_no,
+		    me->p_damage);
+	return (1);
+    }
+    else {
+	return (0);
+    }
+}
+
+static char *
+robo_message(struct player *enemy)
+{
+    int     i;
+    char   *s, *t;
+
+    i = (lrand48() % (sizeof(rmessages) / sizeof(rmessages[0])));
+
+    for (t = rmessages[i], s = rmessage; *t != '\0'; s++, t++) {
+	switch (*t) {
+	case '$':
+	    switch (*(++t)) {
+	    case '$':
+		*s = *t;
+		break;
+	    case 'T':		/* "a Fed" or "a Klingon" ... */
+		if (enemy->p_team != me->p_team &&
+		    enemy->p_team == ORI) {
+		    strcpy(s, "an ");
+		}
+		else {
+		    strcpy(s, "a ");
+		}
+		s = s + strlen(s);
+	    case 't':		/* "Fed" or "Orion" */
+		if (enemy->p_team != me->p_team) {
+		    switch (enemy->p_team) {
+		    case FED:
+			strcpy(s, "Fed");
+			break;
+		    case ROM:
+			strcpy(s, "Romulan");
+			break;
+		    case KLI:
+			strcpy(s, "Klingon");
+			break;
+		    case ORI:
+			strcpy(s, "Orion");
+			break;
+		    }
+		}
+		else {
+		    strcpy(s, "TRAITOR");
+		}
+		s = s + strlen(s) - 1;
+		break;
+	    case 'f':
+		switch (me->p_team) {
+		case FED:
+		    strcpy(s, "Federation");
+		    break;
+		case ROM:
+		    strcpy(s, "Romulan empire");
+		    break;
+		case KLI:
+		    strcpy(s, "Klingon empire");
+		    break;
+		case ORI:
+		    strcpy(s, "Orion empire");
+		    break;
+		}
+		s = s + strlen(s) - 1;
+		break;
+	    default:
+		*s = *t;
+	    }
+	    break;
+	default:
+	    *s = *t;
+	    break;
+	}
+    }
+    *s = '\0';
+    return (rmessage);
+}
+
+static char *
+termie_message(struct player *enemy)
+{
+    int     i;
+    char   *s, *t;
+
+    i = (lrand48() % (sizeof(termie_messages) / sizeof(termie_messages[0])));
+
+    for (t = termie_messages[i], s = tmessage; *t != '\0'; s++, t++) {
+	switch (*t) {
+	case '$':
+	    switch (*(++t)) {
+	    case '$':
+		*s = *t;
+		break;
+	    case 'T':		/* "a Fed" or "a Klingon" ... */
+		if (enemy->p_team != me->p_team &&
+		    enemy->p_team == ORI) {
+		    strcpy(s, "an ");
+		}
+		else {
+		    strcpy(s, "a ");
+		}
+		s = s + strlen(s);
+	    case 't':		/* "Fed" or "Orion" */
+		if (enemy->p_team != me->p_team) {
+		    switch (enemy->p_team) {
+		    case FED:
+			strcpy(s, "Fed");
+			break;
+		    case ROM:
+			strcpy(s, "Romulan");
+			break;
+		    case KLI:
+			strcpy(s, "Klingon");
+			break;
+		    case ORI:
+			strcpy(s, "Orion");
+			break;
+		    }
+		}
+		else {
+		    strcpy(s, "TRAITOR");
+		}
+		s = s + strlen(s) - 1;
+		break;
+	    case 'f':
+		switch (me->p_team) {
+		case FED:
+		    strcpy(s, "Federation");
+		    break;
+		case ROM:
+		    strcpy(s, "Romulan empire");
+		    break;
+		case KLI:
+		    strcpy(s, "Klingon empire");
+		    break;
+		case ORI:
+		    strcpy(s, "Orion empire");
+		    break;
+		}
+		s = s + strlen(s) - 1;
+		break;
+	    case 'n':		/* name 8/2/91 TC */
+		strcpy(s, enemy->p_name);
+		s = s + strlen(s) - 1;
+		break;
+	    default:
+		*s = *t;
+	    }
+	    break;
+	default:
+	    *s = *t;
+	    break;
+	}
+    }
+    *s = '\0';
+    return (tmessage);
+
+}
+
+static void
+exitRobot(void)
+{
+    static char buf[80];
+
+    r_signal(SIGALRM, SIG_IGN);
+    if (me != NULL && me->p_team != ALLTEAM) {
+	if (target >= 0) {
+	    strcpy(buf, "I'll be back.");
+	    messAll(buf);
+	}
+	else {
+/*	    sprintf(buf, "%s %s (%s) leaving the game (%.16s@%.16s)",
+		    ranks[me->p_stats.st_rank].name,
+		    me->p_name,
+		    me->p_mapchars,
+		    me->p_login,
+		    me->p_monitor);
+	    messAll(buf);*/
+	}
+    }
+
+    if(configvals->robot_stats)
+      save_robot();
+
+    strcpy(buf, me->p_name);
+    /* something about Terminators hangs up the slot when a human */
+    /* tries to log in on that slot, so... */
+    memset(me, 0, sizeof(struct player));	/* confusion 8/5/91 TC */
+    strcpy(me->p_name, buf);
+
+/*    me->p_status = PFREE;
+      move_player(me->p_no, -1,-1, 1);
+*/
+
+    /*
+       all right, so zeroing out p_stats.st_tticks has undesireable side
+       effects when the client tries to compute ratings...
+    */
+
+    me->p_stats.st_tticks = 1;	/* quick fix 3/15/92 TC */
+    exit(0);
+}
+
+static void
+messAll(char *buf)
+{
+    static char addrbuf[20];
+
+    sprintf(addrbuf, " %s->ALL", twoletters(me));
+    pmessage2(buf, 0, MALL, addrbuf, me->p_no);
+}
+
+RETSIGTYPE
+rmove(int unused)
 {
     register struct player *j;
     register struct planet *l;
@@ -150,7 +797,6 @@ rmove(void)
     register int burst;
     register int numHits, tDir;
     int     avDir;
-    extern struct Enemy *get_nearest();
     struct Enemy *enemy_buf;
     struct player *enemy=NULL;
     static int clock = 0;
@@ -422,7 +1068,7 @@ rmove(void)
 	    dy = ABS(l->pl_y - me->p_y);
 	    /* Avoid over box rather than circle to speed calculations */
 	    if (dx < AVOID_STAR && dy < AVOID_STAR) {
-		stardir = getcourse(l->pl_x, l->pl_y);
+		stardir = getcourse(l->pl_x, l->pl_y, me->p_x, me->p_y);
 
 		if (dx < AVOID_MELT && dy < AVOID_MELT) {
 		    /* Emergency! Way too close! */
@@ -637,727 +1283,4 @@ rmove(void)
     else {
 	go_home(enemy_buf);
     }
-}
-
-unsigned char 
-getcourse(int x, int y)
-{
-    return ((unsigned char) (int) (atan2((double) (x - me->p_x),
-				 (double) (me->p_y - y)) / 3.14159 * 128.));
-}
-
-/* the 100000's here were once GWIDTHs... */
-struct {
-    int     x;
-    int     y;
-}       center[] = {{
-
-	100000 / 2, 100000 / 2
-},				/* change 5/20/91 TC was {0,0} */
-{
-    100000 / 4, 100000 * 3 / 4
-},				/* Fed */
-{
-    100000 / 4, 100000 / 4
-},				/* Rom */
-{
-    0, 0
-},
-{
-    100000 *3 / 4, 100000 / 4
-}      ,			/* Kli */
-{
-    0, 0
-}      ,
-{
-    0, 0
-}      ,
-{
-    0, 0
-}      ,
-{
-    100000 *3 / 4, 100000 * 3 / 4
-}
-};				/* Ori */
-
-/* This function means that the robot has nothing better to do.
-   If there are hostile players in the game, it will try to get
-   as close to them as it can, while staying in its own space.
-   Otherwise, it will head to the center of its own space.
-*/
-/* CRD feature: robots now hover near their start planet - MAK,  2-Jun-93 */
-
-#define GUARDDIST 8000
-
-void
-go_home(struct Enemy *ebuf)
-{
-    int     x, y;
-    double  dx, dy;
-    struct player *j;
-
-    if (ebuf == 0) {		/* No enemies */
-/*	if (debug)
-	    fprintf(stderr, "%d) No enemies\n", me->p_no);*/
-	if (target >= 0) {
-	    /* First priority, current target (if any) */
-	    j = &players[target];
-	    x = j->p_x;
-	    y = j->p_y;
-	}
-	else if (startplanet == -1) {
-	    /* No start planet, so go to center of galaxy */
-	    x = (GWIDTH / 2);
-	    y = (GWIDTH / 2);
-	}
-	else {
-	    /* Return to start planet */
-	    x = planets[startplanet].pl_x + (lrand48() % 2000) - 1000;
-	    y = planets[startplanet].pl_y + (lrand48() % 2000) - 1000;
-	}
-    }
-    else {			/* Let's get near him */
-	j = &players[ebuf->e_info];
-	x = j->p_x;
-	y = j->p_y;
-
-	if (startplanet != -1) {
-	    /* Get between enemy and planet */
-	    int     px, py;
-	    double  theta;
-
-	    px = planets[startplanet].pl_x;
-	    py = planets[startplanet].pl_y;
-	    theta = atan2((double) (y - py), (double) (x - px));
-	    x = px + GUARDDIST * cos(theta);
-	    y = py + GUARDDIST * sin(theta);
-	}
-    }
-/*    if (debug)
-	fprintf(stderr, "%d) moving towards (%d/%d)\n",
-	    me->p_no, x, y);*/
-
-    /*
-       Note that I've decided that robots should never stop moving. * It
-       makes them too easy to kill
-    */
-
-    me->p_desdir = getcourse(x, y);
-    if (angdist(me->p_desdir, me->p_dir) > 64)
-	set_speed(dogslow, 1);
-    else if (me->p_etemp > 900)	/* 90% of 1000 */
-	set_speed(runslow, 1);
-    else {
-	dx = x - me->p_x;
-	dy = y - me->p_y;
-	set_speed((ihypot((int)dx, (int)dy) / 5000) + 3, 1);
-    }
-    cloak_off();
-}
-
-int
-phaser_plasmas(void)
-{
-    register struct plasmatorp *pt;
-    register int i;
-    int     myphrange;
-
-    myphrange = phrange;	/* PHASEDIST * me->p_ship.s_phaserdamage /
-				   100; */
-    for (i = 0, pt = &plasmatorps[0]; i < MAXPLASMA * MAXPLAYER; i++, pt++) {
-	if (pt->pt_status != PTMOVE)
-	    continue;
-	if (i == me->p_no)
-	    continue;
-	if (!(pt->pt_war & me->p_team) && !(me->p_hostile & pt->pt_team))
-	    continue;
-	if (abs(pt->pt_x - me->p_x) > myphrange)
-	    continue;
-	if (abs(pt->pt_y - me->p_y) > myphrange)
-	    continue;
-	if (ihypot(pt->pt_x - me->p_x, pt->pt_y - me->p_y) > myphrange)
-	    continue;
-	repair_off();
-	cloak_off();
-	phaser(getcourse(pt->pt_x, pt->pt_y));
-	return 1;		/* was this missing? 3/25/92 TC */
-	break;
-    }
-    return 0;			/* was this missing? 3/25/92 TC */
-}
-
-int
-projectDamage(int eNum, int *dirP)
-{
-    register int i, j, numHits = 0, mx, my, tx, ty, dx, dy;
-    double  tdx, tdy, mdx, mdy;
-    register struct torp *t;
-
-    *dirP = 0;
-    for (i = 0, t = &torps[eNum * MAXTORP]; i < MAXTORP; i++, t++) {
-	if (t->t_status == TFREE)
-	    continue;
-	tx = t->t_x;
-	ty = t->t_y;
-	mx = me->p_x;
-	my = me->p_y;
-	tdx = (double) t->t_speed * Cos[t->t_dir] * WARP1;
-	tdy = (double) t->t_speed * Sin[t->t_dir] * WARP1;
-	mdx = (double) me->p_speed * Cos[me->p_dir] * WARP1;
-	mdy = (double) me->p_speed * Sin[me->p_dir] * WARP1;
-	for (j = t->t_fuse; j > 0; j--) {
-	    tx += tdx;
-	    ty += tdy;
-	    mx += mdx;
-	    my += mdy;
-	    dx = tx - mx;
-	    dy = ty - my;
-	    if (ABS(dx) < EXPDIST && ABS(dy) < EXPDIST) {
-		numHits++;
-		*dirP += t->t_dir;
-		break;
-	    }
-	}
-    }
-    if (numHits > 0)
-	*dirP /= numHits;
-    return (numHits);
-}
-
-int
-isTractoringMe(struct Enemy *enemy_buf)
-{
-    return ((enemy_buf->e_hisflags & PFTRACT) &&	/* bug fix: was using */
-	    !(enemy_buf->e_hisflags & PFPRESS) &&	/* e_flags 6/24/92 TC */
-	    (enemy_buf->e_tractor == me->p_no));
-}
-
-struct Enemy ebuf;
-
-struct Enemy *
-get_nearest(void)
-{
-    int     pcount = 0;
-    register int i;
-    register struct player *j;
-    int     intruder = 0;
-    int     tdist;
-    double  dx, dy;
-    double  vxa, vya, l;	/* Used for trap shooting */
-    double  vxt, vyt;
-    double  vxs, vys;
-    double  dp;
-
-    /* Find an enemy */
-    ebuf.e_info = me->p_no;
-    ebuf.e_dist = GWIDTH + 1;
-
-    pcount = 0;			/* number of human players in game */
-
-    if (target >= 0) {
-	j = &players[target];
-	if (!((me->p_swar | me->p_hostile) & j->p_team))
-	    declare_war(players[target].p_team);	/* make sure we're at
-							   war 7/31/91 TC */
-
-	/* We have an enemy */
-	/* Get his range */
-	dx = j->p_x - me->p_x;
-	dy = j->p_y - me->p_y;
-	tdist = ihypot((int)dx, (int)dy);
-
-	if (j->p_status != POUTFIT) {	/* ignore target if outfitting */
-	    ebuf.e_info = target;
-	    ebuf.e_dist = tdist;
-	    ebuf.e_flags &= ~(E_INTRUDER);
-	}
-	/* need a loop to find hostile ships */
-	/* within tactical range */
-
-	for (i = 0, j = &players[i]; i < MAXPLAYER; i++, j++) {
-	    if ((j->p_status != PALIVE) || (j == me) ||
-		((j->p_flags & PFROBOT) && (!hostile)))
-		continue;
-	    else
-		pcount++;	/* Other players in the game */
-	    if (((j->p_swar | j->p_hostile) & me->p_team)
-		|| ((me->p_swar | me->p_hostile) & j->p_team)) {
-		/* We have an enemy */
-		/* Get his range */
-		dx = j->p_x - me->p_x;
-		dy = j->p_y - me->p_y;
-		tdist = ihypot((int)dx, (int)dy);
-
-		/* if target's teammate is too close, mark as nearest */
-
-		if ((tdist < ebuf.e_dist) && (tdist < 15000)) {
-		    ebuf.e_info = i;
-		    ebuf.e_dist = tdist;
-		    ebuf.e_flags &= ~(E_INTRUDER);
-		}
-	    }			/* end if */
-	}			/* end for */
-    }
-    else {			/* no target */
-	/* avoid dead slots, me, other robots (which aren't hostile) */
-	for (i = 0, j = &players[i]; i < MAXPLAYER; i++, j++) {
-	    if ((j->p_status != PALIVE) || (j == me) ||
-		((j->p_flags & PFROBOT) && (!hostile)))
-		continue;
-	    else
-		pcount++;	/* Other players in the game */
-	    if (((j->p_swar | j->p_hostile) & me->p_team)
-		|| ((me->p_swar | me->p_hostile) & j->p_team)) {
-		/* We have an enemy */
-		/* Get his range */
-		dx = j->p_x - me->p_x;
-		dy = j->p_y - me->p_y;
-		tdist = ihypot((int)dx, (int)dy);
-
-		/* Check to see if ship is near our planet. */
-		if (startplanet != -1) {
-		    int     px, py;
-		    px = planets[startplanet].pl_x;
-		    py = planets[startplanet].pl_y;
-
-		    intruder = (ihypot(j->p_x - px, j->p_y - py)
-				< GUARDDIST);
-		}
-		if (tdist < ebuf.e_dist) {
-		    ebuf.e_info = i;
-		    ebuf.e_dist = tdist;
-		    if (intruder)
-			ebuf.e_flags |= E_INTRUDER;
-		    else
-			ebuf.e_flags &= ~(E_INTRUDER);
-		}
-	    }			/* end if */
-	}			/* end for */
-    }				/* end else */
-    if (pcount == 0) {
-	return (NOENEMY);	/* no players in game */
-    }
-    else if (ebuf.e_info == me->p_no) {
-	return (0);		/* no hostile players in the game */
-    }
-    else {
-	j = &players[ebuf.e_info];
-
-	/* Get torpedo course to nearest enemy */
-	ebuf.e_flags &= ~(E_TSHOT);
-
-	vxa = (j->p_x - me->p_x);
-	vya = (j->p_y - me->p_y);
-	l = ihypot((int)vxa, (int)vya);	/* Normalize va */
-	if (l != 0) {
-	    vxa /= l;
-	    vya /= l;
-	}
-	vxs = (Cos[j->p_dir] * j->p_speed) * WARP1;
-	vys = (Sin[j->p_dir] * j->p_speed) * WARP1;
-	dp = vxs * vxa + vys * vya;	/* Dot product of (va vs) */
-	dx = vxs - dp * vxa;
-	dy = vys - dp * vya;
-	l = hypot(dx, dy);	/* Determine how much speed is required */
-	dp = (float) (me->p_ship.s_torp.speed * WARP1);
-	l = (dp * dp - l * l);
-	if (l > 0) {
-	    double  he_x, he_y, area;
-
-	    /* Only shoot if within distance */
-	    he_x = j->p_x + Cos[j->p_dir] * j->p_speed * 50 * WARP1;
-	    he_y = j->p_y + Sin[j->p_dir] * j->p_speed * 50 * WARP1;
-	    area = 50 * me->p_ship.s_torp.speed * WARP1;
-	    if (ihypot(he_x - me->p_x, he_y - me->p_y) < area) {
-		l = sqrt(l);
-		vxt = l * vxa + dx;
-		vyt = l * vya + dy;
-		ebuf.e_flags |= E_TSHOT;
-		ebuf.e_tcourse = getcourse((int) vxt + me->p_x, (int) vyt + me->p_y);
-	    }
-	}
-	/* Get phaser shot status */
-	if (ebuf.e_dist < 0.8 * phrange)
-	    ebuf.e_flags |= E_PSHOT;
-	else
-	    ebuf.e_flags &= ~(E_PSHOT);
-
-	/* Get tractor/pressor status */
-	if (ebuf.e_dist < trrange)
-	    ebuf.e_flags |= E_TRACT;
-	else
-	    ebuf.e_flags &= ~(E_TRACT);
-
-
-	/* get his phaser range */
-	ebuf.e_phrange = PHASEDIST * j->p_ship.s_phaser.damage / 100;
-
-	/* get course info */
-	ebuf.e_course = getcourse(j->p_x, j->p_y);
-	ebuf.e_edir = j->p_dir;
-	ebuf.e_hisflags = j->p_flags;
-	ebuf.e_tractor = j->p_tractor;
-	/*
-	   if (debug) fprintf(stderr, "Set course to enemy is %d (%d)\n",
-	   (int)ebuf.e_course, (int) ebuf.e_course * 360 / 256);
-	*/
-
-	/* check to polymorph */
-
-	if ((polymorphic) && (j->p_ship.s_type != me->p_ship.s_type) &&
-	    (j->p_ship.s_type != ATT)) {	/* don't polymorph to ATT
-						   4/8/92 TC */
-	    extern int config();
-	    extern int getship();
-	    int     old_shield;
-	    int     old_damage;
-	    old_shield = me->p_ship.s_maxshield;
-	    old_damage = me->p_ship.s_maxdamage;
-
-	    getship(&(me->p_ship), j->p_ship.s_type);
-	    config();
-	    if (me->p_speed > me->p_ship.s_imp.maxspeed)
-		me->p_speed = me->p_ship.s_imp.maxspeed;
-	    me->p_shield = (me->p_shield * (float) me->p_ship.s_maxshield)
-		/ (float) old_shield;
-	    me->p_damage = (me->p_damage * (float) me->p_ship.s_maxdamage)
-		/ (float) old_damage;
-	}
-	return (&ebuf);
-    }
-}
-
-struct planet *
-get_nearest_planet(void)
-{
-    register int i;
-    register struct planet *l;
-    register struct planet *nearest;
-    int     dist = GWIDTH;	/* Manhattan distance to nearest planet */
-    int     ldist;
-
-    nearest = &planets[0];
-    for (i = 0, l = &planets[i]; i < NUMPLANETS; i++, l++) {
-	if ((ldist = (abs(me->p_x - l->pl_x) + abs(me->p_y - l->pl_y))) <
-	    dist) {
-	    dist = ldist;
-	    nearest = l;
-	}
-    }
-    return nearest;
-}
-
-int
-do_repair(void)
-{
-/* Repair if necessary (we are safe) */
-
-    register struct planet *l;
-    int     dx, dy;
-    int     dist;
-
-    l = get_nearest_planet();
-    dx = abs(me->p_x - l->pl_x);
-    dy = abs(me->p_y - l->pl_y);
-
-    if (me->p_damage > 0) {
-	if ((me->p_swar | me->p_hostile) & l->pl_owner) {
-	    if (l->pl_armies > 0) {
-		if ((dx < PFIREDIST) && (dy < PFIREDIST)) {
-		    if (debug)
-			fprintf(stderr, "%d) on top of hostile planet (%s)\n", me->p_no, l->pl_name);
-		    return (0);	/* can't repair on top of hostile planets */
-		}
-		if (ihypot((int)dx, (int)dy) < PFIREDIST) {
-		    if (debug)
-			fprintf(stderr, "%d) on top of hostile planet (%s)\n", me->p_no, l->pl_name);
-		    return (0);
-		}
-	    }
-	    me->p_desspeed = 0;
-	}
-	else {			/* if friendly */
-	    if ((l->pl_flags & PLREPAIR) &&
-		!(me->p_flags & PFORBIT)) {	/* oh, repair! */
-		dist = ihypot((int)dx, (int)dy);
-
-		if (debug)
-		    fprintf(stderr, "%d) locking on to planet %d\n",
-			    me->p_no, l->pl_no);
-		cloak_off();
-		shield_down();
-		me->p_desdir = getcourse(l->pl_x, l->pl_y);
-		lock_planet(l->pl_no);
-		me->p_desspeed = 4;
-		if (dist - (ORBDIST / 2) < (11500 * me->p_speed * me->p_speed) /
-		    me->p_ship.s_imp.dec) {
-		    if (me->p_desspeed > 2) {
-			set_speed(2, 1);
-		    }
-		}
-		if ((dist < ENTORBDIST) && (me->p_speed <= 2)) {
-		    me->p_flags &= ~PFPLLOCK;
-		    orbit();
-		}
-		return (1);
-	    }
-	    else {		/* not repair, so ignore it */
-		me->p_desspeed = 0;
-	    }
-	}
-	shield_down();
-	if (me->p_speed == 0)
-	    repair();
-	if (debug)
-	    fprintf(stderr, "%d) repairing damage at %d\n",
-		    me->p_no,
-		    me->p_damage);
-	return (1);
-    }
-    else {
-	return (0);
-    }
-}
-
-
-void
-pmessage(char *str, int recip, int group, char *address)
-{
-    pmessage2(str, recip, group, address, 255);
-}
-
-
-void
-pmessage2(char *str, int recip, int group, char *address, unsigned char from)
-    char   *str;
-    int     recip;
-    int     group;
-    char   *address;
-    unsigned char from;
-{
-    struct message *cur;
-    int     mesgnum;
-
-    if ((mesgnum = ++(mctl->mc_current)) >= MAXMESSAGE) {
-	mctl->mc_current = 0;
-	mesgnum = 0;
-    }
-    cur = &messages[mesgnum];
-    cur->m_no = mesgnum;
-    cur->m_flags = group;
-    cur->m_recpt = recip;
-    cur->m_from = from;
-    (void) sprintf(cur->m_data, "%-9s %s", address, str);
-    cur->m_flags |= MVALID;
-}
-
-
-char *
-robo_message(struct player *enemy)
-{
-    int     i;
-    char   *s, *t;
-
-    i = (lrand48() % (sizeof(rmessages) / sizeof(rmessages[0])));
-
-    for (t = rmessages[i], s = rmessage; *t != '\0'; s++, t++) {
-	switch (*t) {
-	case '$':
-	    switch (*(++t)) {
-	    case '$':
-		*s = *t;
-		break;
-	    case 'T':		/* "a Fed" or "a Klingon" ... */
-		if (enemy->p_team != me->p_team &&
-		    enemy->p_team == ORI) {
-		    strcpy(s, "an ");
-		}
-		else {
-		    strcpy(s, "a ");
-		}
-		s = s + strlen(s);
-	    case 't':		/* "Fed" or "Orion" */
-		if (enemy->p_team != me->p_team) {
-		    switch (enemy->p_team) {
-		    case FED:
-			strcpy(s, "Fed");
-			break;
-		    case ROM:
-			strcpy(s, "Romulan");
-			break;
-		    case KLI:
-			strcpy(s, "Klingon");
-			break;
-		    case ORI:
-			strcpy(s, "Orion");
-			break;
-		    }
-		}
-		else {
-		    strcpy(s, "TRAITOR");
-		}
-		s = s + strlen(s) - 1;
-		break;
-	    case 'f':
-		switch (me->p_team) {
-		case FED:
-		    strcpy(s, "Federation");
-		    break;
-		case ROM:
-		    strcpy(s, "Romulan empire");
-		    break;
-		case KLI:
-		    strcpy(s, "Klingon empire");
-		    break;
-		case ORI:
-		    strcpy(s, "Orion empire");
-		    break;
-		}
-		s = s + strlen(s) - 1;
-		break;
-	    default:
-		*s = *t;
-	    }
-	    break;
-	default:
-	    *s = *t;
-	    break;
-	}
-    }
-    *s = '\0';
-    return (rmessage);
-}
-
-char *
-termie_message(struct player *enemy)
-{
-    int     i;
-    char   *s, *t;
-
-    i = (lrand48() % (sizeof(termie_messages) / sizeof(termie_messages[0])));
-
-    for (t = termie_messages[i], s = tmessage; *t != '\0'; s++, t++) {
-	switch (*t) {
-	case '$':
-	    switch (*(++t)) {
-	    case '$':
-		*s = *t;
-		break;
-	    case 'T':		/* "a Fed" or "a Klingon" ... */
-		if (enemy->p_team != me->p_team &&
-		    enemy->p_team == ORI) {
-		    strcpy(s, "an ");
-		}
-		else {
-		    strcpy(s, "a ");
-		}
-		s = s + strlen(s);
-	    case 't':		/* "Fed" or "Orion" */
-		if (enemy->p_team != me->p_team) {
-		    switch (enemy->p_team) {
-		    case FED:
-			strcpy(s, "Fed");
-			break;
-		    case ROM:
-			strcpy(s, "Romulan");
-			break;
-		    case KLI:
-			strcpy(s, "Klingon");
-			break;
-		    case ORI:
-			strcpy(s, "Orion");
-			break;
-		    }
-		}
-		else {
-		    strcpy(s, "TRAITOR");
-		}
-		s = s + strlen(s) - 1;
-		break;
-	    case 'f':
-		switch (me->p_team) {
-		case FED:
-		    strcpy(s, "Federation");
-		    break;
-		case ROM:
-		    strcpy(s, "Romulan empire");
-		    break;
-		case KLI:
-		    strcpy(s, "Klingon empire");
-		    break;
-		case ORI:
-		    strcpy(s, "Orion empire");
-		    break;
-		}
-		s = s + strlen(s) - 1;
-		break;
-	    case 'n':		/* name 8/2/91 TC */
-		strcpy(s, enemy->p_name);
-		s = s + strlen(s) - 1;
-		break;
-	    default:
-		*s = *t;
-	    }
-	    break;
-	default:
-	    *s = *t;
-	    break;
-	}
-    }
-    *s = '\0';
-    return (tmessage);
-
-}
-
-void
-exitRobot(void)
-{
-    static char buf[80];
-
-    r_signal(SIGALRM, SIG_IGN);
-    if (me != NULL && me->p_team != ALLTEAM) {
-	if (target >= 0) {
-	    strcpy(buf, "I'll be back.");
-	    messAll(buf);
-	}
-	else {
-/*	    sprintf(buf, "%s %s (%s) leaving the game (%.16s@%.16s)",
-		    ranks[me->p_stats.st_rank].name,
-		    me->p_name,
-		    me->p_mapchars,
-		    me->p_login,
-		    me->p_monitor);
-	    messAll(buf);*/
-	}
-    }
-
-    if(configvals->robot_stats)
-      save_robot();
-
-    strcpy(buf, me->p_name);
-    /* something about Terminators hangs up the slot when a human */
-    /* tries to log in on that slot, so... */
-    memset(me, 0, sizeof(struct player));	/* confusion 8/5/91 TC */
-    strcpy(me->p_name, buf);
-
-/*    me->p_status = PFREE;
-      move_player(me->p_no, -1,-1, 1);
-*/
-
-    /*
-       all right, so zeroing out p_stats.st_tticks has undesireable side
-       effects when the client tries to compute ratings...
-    */
-
-    me->p_stats.st_tticks = 1;	/* quick fix 3/15/92 TC */
-    exit(0);
-}
-
-void
-messAll(char *buf)
-{
-    static char addrbuf[20];
-
-    sprintf(addrbuf, " %s->ALL", twoletters(me));
-    pmessage2(buf, 0, MALL, addrbuf, me->p_no);
 }

@@ -84,7 +84,7 @@ reset_fat_list(void)
  *
  * This routine looks too complex... there must be a simpler way to do this.
  */
-void 
+static void 
 dequeue(FAT_NODE *fatp)
 {
     int     i;
@@ -155,7 +155,7 @@ dequeue(FAT_NODE *fatp)
  * merges the temporary queues with the fatlists once the transmission is
  * sent.
  */
-void 
+static void 
 enqueue(FAT_NODE *fatp, int list)
 {
 #ifdef FATDIAG

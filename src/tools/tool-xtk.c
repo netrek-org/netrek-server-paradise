@@ -24,11 +24,32 @@ suitability of this software for any purpose.  This software is provided
 #include "getship.h"
 #include "tool-util.h"
 
-char    teamlet[] = {'I', 'F', 'R', 'X', 'K', 'X', 'X', 'X', 'O'};
-char   *names[] = {"Neutral", "Fed", "Rom", "", "Kli", "", "", "", "Ori"};
+static char *names[] = {"Neutral", "Fed", "Rom", "", "Kli", "", "", "", "Ori"};
 
-void Usage(char *myname);
-void pmessage();
+static void
+Usage(char *myname)
+{
+    printf("-- NetrekII (Paradise), %s --\n", PARAVERS);
+    printf("\
+\n\t%'s [0-9a-j] <mode><mode option>'\n\
+\n\
+Where <mode> is one of :\n\
+      e(ject from game)             (simulates self-destruct)\n\
+      s(hip class change)[abcdosA]  (A = ATT)\n\
+      T(eam change)[frko]           (no team == independent)\n\
+      D(emote)                      (-1 to rank)\n\
+      P(romote)                     (+1 to rank)\n\
+      F(ree slot)                   (bypasses 6 minute ghostbuster timeout)\n\
+      k(ills increment)             (+1 kill)\n\
+      h(arm)                        (no shields, 50%% damage)\n\
+      a(rmies increment)            (+6 armies)\n\
+      C(lock, surrender -- set it)  (to 6 minutes (debugging aid))\n\
+      L(oss adjust, SB (-1))        (in case you toast an SB accidentally)\n\
+      R(obot obliterate)            (like obliterate, but only for robots)\n\
+      (no mode == obliterate)\n\
+", myname);
+    exit(1);
+}
 
 int
 main(int argc, char *argv)
@@ -162,11 +183,6 @@ main(int argc, char *argv)
 	    sprintf(buf, "%2s has been changed to a %s.",
 		    twoletters(victim), names[team]);
 	    pmessage(buf, 0, MALL);
-#if 0
-	    sprintf(buf, "%c%c", teamlet[victim->p_team],
-		    shipnos[pno]);
-	    strncpy(victim->p_mapchars, buf, 2);
-#endif
 	}
 	break;
     case 'D':			/* demote */
@@ -222,76 +238,4 @@ main(int argc, char *argv)
 	Usage(myname);
     }				/* end switch */
     return 0;
-}
-
-void
-Usage(char *myname)
-{
-    printf("-- NetrekII (Paradise), %s --\n", PARAVERS);
-    printf("\
-\n\t%'s [0-9a-j] <mode><mode option>'\n\
-\n\
-Where <mode> is one of :\n\
-      e(ject from game)             (simulates self-destruct)\n\
-      s(hip class change)[abcdosA]  (A = ATT)\n\
-      T(eam change)[frko]           (no team == independent)\n\
-      D(emote)                      (-1 to rank)\n\
-      P(romote)                     (+1 to rank)\n\
-      F(ree slot)                   (bypasses 6 minute ghostbuster timeout)\n\
-      k(ills increment)             (+1 kill)\n\
-      h(arm)                        (no shields, 50%% damage)\n\
-      a(rmies increment)            (+6 armies)\n\
-      C(lock, surrender -- set it)  (to 6 minutes (debugging aid))\n\
-      L(oss adjust, SB (-1))        (in case you toast an SB accidentally)\n\
-      R(obot obliterate)            (like obliterate, but only for robots)\n\
-      (no mode == obliterate)\n\
-", myname);
-    exit(1);
-}
-
-
-#if 0
-/* stuff copied from other files: */
-
-char   *
-twoletters(pl)
-    struct player *pl;
-/* calculate the two letters that form the players designation (e.g. R4) */
-{
-#define RINGSIZE MAXPLAYER+3
-    static char buf[RINGSIZE][3];	/* ring of buffers so that this */
-    static int idx;		/* proc can be called several times before
-				   the results are used */
-    if (idx >= RINGSIZE)
-	idx = 0;
-    buf[idx][0] = teams[pl->p_team].letter;
-    buf[idx][1] = shipnos[pl->p_no];
-    buf[idx][2] = 0;
-    return buf[idx++];
-}
-#endif
-
-
-/*------------------------------PMESSAGE----------------------------------*/
-/*  This function sends a message to the message board.  It places the message
-in the next position of the array of messages.  The message will ahve a
-header attached to the front of it.  */
-
-void 
-pmessage(char *str, int recip, int group)
-{
-    struct message *cur;	/* to pnt to where to put message */
-    int     mesgnum;		/* to hold index into array of messgs */
-
-    if ((mesgnum = ++(mctl->mc_current)) >= MAXMESSAGE) {
-	mctl->mc_current = 0;	/* move to next index in array and */
-	mesgnum = 0;		/* warp around if necessart */
-    }
-    cur = &messages[mesgnum];	/* get addr of message struct */
-    cur->m_no = mesgnum;	/* set the message number */
-    cur->m_flags = group;	/* set the group and flags */
-    cur->m_recpt = recip;	/* set the recipient */
-    cur->m_from = 255;		/* message is from God */
-    (void) sprintf(cur->m_data, "%s %s", "XTKILL:", str);
-    cur->m_flags |= MVALID;	/* mark message as valid */
 }

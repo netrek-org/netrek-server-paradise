@@ -88,7 +88,7 @@ int     closefast;		/* approach speed (soft turn) */
 char   *rnames[6] = {"M5", "Colossus", "Guardian", "HAL", "DreadPirate Bob",
 "TERMINATOR"};
 
-void 
+static void 
 do_robot_login(void)
 {
   int     plfd, position, entries;
@@ -168,7 +168,6 @@ save_robot(void)
 int main(int argc, char **argv)
 {
     register int i;
-    int     rmove();
     int     team = -1;
     int     bteam=0;
     int     pno;
@@ -416,37 +415,6 @@ int main(int argc, char **argv)
 	pause();
     }
     return 0;
-}
-
-int
-findrslot(void)
-{
-    register int i;
-
-    for (i = MAXPLAYER - 1; i >= 0; i--)
-    {
-	/* reverse entry..let's be trendy 4/6/92 TC */
-	if (players[i].p_status == PFREE) {	/* We have a free slot */
-	    players[i].p_status = POUTFIT;	/* possible race code */
-	    break;
-	}
-    }
-    if ((i == MAXPLAYER) || (i == -1)) {
-	if (debug) {
-	    fprintf(stderr, "No more room in game\n");
-	}
-	exit(0);
-    }
-    memset(&players[i].p_stats, 0, sizeof(struct stats));
-    players[i].p_stats.st_tticks = 1;
-    return (i);
-}
-
-void 
-warning(char *mess)
-{
-    if (debug)
-	fprintf(stderr, "warning: %s\n", mess);
 }
 
 void

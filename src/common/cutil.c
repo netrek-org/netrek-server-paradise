@@ -49,21 +49,6 @@ void (*r_signal(int sig, void (*func)() )) ()
     return (oact.sa_handler);
 }
 
-
-int 
-touch(char *file)
-{
-#ifdef HAVE_UTIME_NULL
-    return(utime(file, NULL));
-#else
-    time_t  now[2];
-
-    now[0] = now[1] = time(0);
-
-    return(utime(file, (void *) now));
-#endif
-}
-
 #ifndef HAVE_STRDUP
 char *
 strdup(char *str)

@@ -43,7 +43,7 @@ VPATH=../common:../rsa
 NTSERV_OBJS=cluecheck.o message.o death.o fatudp.o findslot.o \
             gameconf.o getentry.o getname.o input.o main.o missile.o \
 	    packets.o parsexbm.o ping.o plasma.o redraw.o socket.o \
-	    sockio.o smessage.o timecheck.o warning.o feature.o
+	    sockio.o timecheck.o warning.o feature.o
 
 all: ntserv
 

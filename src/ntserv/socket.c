@@ -50,6 +50,14 @@ suitability of this software for any purpose.  This software is provided
 /* combine with BROKEN; drops 90% of packets */
 #undef HOSED
 
+static void forceUpdate P((void));
+static int  isCensured P((char *));
+static int  parseIgnore P((struct mesg_cpacket *));
+static int  parseQuery P((struct mesg_cpacket *));
+static int  bouncePingStats P((struct mesg_spacket *));
+static void bounce P((char *, int));
+
+
 static void    handleTorpReq(), handlePhasReq(), handleSpeedReq();
 static void    handleDirReq(), handleShieldReq(), handleRepairReq();
 static void    handleOrbitReq();
@@ -72,7 +80,6 @@ static void    handleRSAKey();
 static void    handlePingResponse();
 static void	handleShortReq(), handleThresh(), handleSMessageReq();
 static void    handleFeature(), sendFeature(); /* in feature.c */
-int bouncePingStats();
 
 static int remoteaddr = -1;	/* inet address in net format */
 extern int errno;
@@ -374,6 +381,995 @@ isClientDead(void)
     return (clientDead);
 }
 
+void
+sendQueuePacket(short int pos)
+{
+    struct queue_spacket qPacket;
+
+    qPacket.type = SP_QUEUE;
+    qPacket.pos = htons(pos);
+    sendClientPacket((struct player_spacket *) & qPacket);
+    flushSockBuf();
+}
+
+static void
+sendClientSizedPacket(struct player_spacket *packet, int size)
+ /* Pick a random type for the packet */
+{
+    int     orig_type;
+    int     issc;
+    static int oldStatus = POUTFIT;
+
+#ifdef SHOW_PACKETS
+    {
+	FILE   *logfile;
+	char   *paths;
+	paths = build_path("logs/metaserver.log");
+	logfile=fopen(paths, "a");
+	if (logfile) {
+	    fprintf(logfile, "Sending packet type %d\n", (int)packet->type);
+	    fclose(logfile);
+        }
+
+    }
+#endif
+
+#ifdef T_DIAG2
+    if( (packet->type == SP_TERRAIN2) || (packet->type == SP_TERRAIN_INFO2) ){
+      pmessage( "Sending TERRAIN packet\n", 0, MALL, MSERVA );
+    }
+#endif
+
+    orig_type = packet->type;
+    packet->type &= (char) 0x3f;
+
+    /* if we're not given the size, calculate it */
+    if (size<0) {
+	if (size_of_spacket(packet) == 0) {
+	    printf("Attempt to send strange packet %d\n", packet->type);
+	    return;
+	}
+	size = size_of_spacket(packet);
+    } else {
+	/* pad to 32-bits */
+	size = ((size-1)/4 + 1) * 4;
+    }
+
+    packetsSent[packet->type]++;
+
+
+    if (commMode == COMM_TCP
+	|| (commMode == COMM_UDP && udpMode == MODE_TCP)) {
+	switch(orig_type) {
+	case SP_MOTD:
+	case SP_MOTD_PIC:
+	    /* these can afford to be delayed */
+	    sendTCPdeferred((void*)packet, size);
+	    break;
+
+	default:
+	    /* business as usual, TCP */
+	    sendTCPbuffered((void*)packet, size);
+	    break;
+	}
+    }
+    else {
+	/*
+	   do UDP stuff unless it's a "critical" packet (note that both kinds
+	   get a sequence number appended) (FIX)
+	*/
+	issc = 0;
+	switch (orig_type) {
+	case SP_KILLS:
+	case SP_TORP_INFO:
+	case SP_THINGY_INFO:
+	case SP_PHASER:
+	case SP_PLASMA_INFO:
+	case SP_YOU | 0x40:	/* ??? what is this? */
+	case SP_STATUS:
+	case SP_STATUS2:
+	case SP_PLANET:
+	case SP_PLANET2:
+	case SP_FLAGS:
+	case SP_HOSTILE:
+	    /*
+	       these are semi-critical; flag as semi-critical and fall
+	       through
+	    */
+	    issc = 1;
+
+	case SP_PLAYER:
+	case SP_TORP:
+	case SP_S_TORP:
+	case SP_S_8_TORP:
+	case SP_THINGY:
+	case SP_YOU:
+	case SP_PLASMA:
+	case SP_STATS:
+	case SP_STATS2:
+/*	case SP_SCAN:*/
+	case SP_PING:
+	case SP_UDP_REPLY:	/* only reply when COMM_UDP is SWITCH_VERIFY */
+	    /* these are non-critical updates; send them via UDP */
+	    V_UDPDIAG(("Sending type %d\n", packet->type));
+	    packets_sent++;
+	    sendUDPbuffered(issc, (void*)packet, size);
+	    break;
+
+	case SP_MOTD:
+	case SP_MOTD_PIC:
+	    sendTCPdeferred((void*)packet, size);
+	    break;
+
+	default:
+	    sendTCPbuffered((void*)packet, size);
+	    break;
+	}
+    }
+
+    if (me != NULL)
+	oldStatus = me->p_status;
+}
+
+void
+sendClientPacket(struct player_spacket *packet)
+{
+    sendClientSizedPacket(packet, -1);
+}
+
+static void
+updateTorpInfos(void)
+{
+    register struct torp *torp;
+    register int i;
+    register struct torp_info_spacket *tpi;
+
+    for (i = 0, torp = torps, tpi = clientTorpsInfo;
+	 i < MAXPLAYER * MAXTORP;
+	 i++, torp++, tpi++) {
+	if (torp->t_owner == me->p_no) {
+	    if (torp->t_war != tpi->war ||
+		torp->t_status != tpi->status) {
+		tpi->type = SP_TORP_INFO;
+		tpi->war = torp->t_war;
+		tpi->status = torp->t_status;
+		tpi->tnum = htons(i);
+		sendClientPacket((struct player_spacket *) tpi);
+	    }
+	}
+	else {			/* Someone else's torp... */
+	    if (torp->t_y > me->p_y + SCALE * WINSIDE / 2 ||
+		torp->t_x > me->p_x + SCALE * WINSIDE / 2 ||
+		torp->t_x < me->p_x - SCALE * WINSIDE / 2 ||
+		torp->t_y < me->p_y - SCALE * WINSIDE / 2 ||
+		torp->t_status == TFREE) {
+		if (torp->t_status == TFREE && tpi->status == TEXPLODE) {
+		    tpi->status = TFREE;
+		    continue;
+		}
+		if (tpi->status != TFREE) {
+		    tpi->status = TFREE;
+		    tpi->tnum = htons(i);
+		    tpi->type = SP_TORP_INFO;
+		    sendClientPacket((struct player_spacket *) tpi);
+		}
+	    }
+	    else {		/* in view */
+		enum torp_status_e tstatus = torp->t_status;
+
+		if (status2->paused
+		    && players[torp->t_owner].p_team != me->p_team)
+		    tstatus = TFREE;	/* enemy torps are invisible during
+					   game pause */
+
+		if (tstatus != tpi->status ||
+		    (torp->t_war & me->p_team) != tpi->war) {
+		    /* Let the client fade away the explosion on its own */
+		    tpi->war = torp->t_war & me->p_team;
+		    tpi->type = SP_TORP_INFO;
+		    tpi->tnum = htons(i);
+		    tpi->status = tstatus;
+		    sendClientPacket((struct player_spacket *) tpi);
+		}
+	    }
+	}
+    }
+}
+
+static void
+updateTorps(void)
+{
+    register struct torp *torp;
+    register int i;
+    register struct torp_spacket *tp;
+
+    for (i = 0, torp = torps, tp = clientTorps;
+	 i < MAXPLAYER * MAXTORP;
+	 i++, torp++, tp++) {
+	if (torp->t_owner == me->p_no) {
+
+	    if (tp->x != htonl(torp->t_x) ||
+		tp->y != htonl(torp->t_y)) {
+		tp->type = SP_TORP;
+		tp->x = htonl(torp->t_x);
+		tp->y = htonl(torp->t_y);
+		tp->dir = torp->t_dir;
+		tp->tnum = htons(i);
+		sendClientPacket((struct player_spacket *) tp);
+	    }
+	}
+	else {			/* Someone else's torp... */
+	    if (torp->t_y > me->p_y + SCALE * WINSIDE / 2 ||
+		torp->t_x > me->p_x + SCALE * WINSIDE / 2 ||
+		torp->t_x < me->p_x - SCALE * WINSIDE / 2 ||
+		torp->t_y < me->p_y - SCALE * WINSIDE / 2 ||
+		torp->t_status == TFREE) {
+	      /* do nothing */
+	    }
+	    else {		/* in view */
+		enum torp_status_e tstatus = torp->t_status;
+
+		if (status2->paused
+		    && players[torp->t_owner].p_team != me->p_team)
+		    tstatus = TFREE;	/* enemy torps are invisible during
+					   game pause */
+
+		if (tstatus==TFREE)
+		    continue;	/* no need to transmit position */
+
+		if (tp->x != htonl(torp->t_x) ||
+		    tp->y != htonl(torp->t_y)) {
+		    tp->x = htonl(torp->t_x);
+		    tp->y = htonl(torp->t_y);
+		    tp->dir = torp->t_dir;
+		    tp->tnum = htons(i);
+		    tp->type = SP_TORP;
+		    sendClientPacket((struct player_spacket *) tp);
+		}
+	    }
+	}
+    }
+}
+
+#define NIBBLE()	*(*data)++ = (torp->t_war & 0xf) | (torp->t_status << 4)
+
+static int
+encode_torp_status(struct torp *torp, int pnum, char **data, 
+                   struct torp_info_spacket *tpi, 
+		   struct torp_spacket *tp, 
+		   int *mustsend)
+{
+    if (pnum!=me->p_no) {
+	int	dx,dy;
+	int	i = SCALE*WINSIDE/2;
+	dx = me->p_x-torp->t_x;
+	dy = me->p_y-torp->t_y;
+	if (dx<-i  || dx > i || dy < -i || dy > i || torp->t_status==TFREE) {
+	    if (torp->t_status==TFREE && tpi->status==TEXPLODE)
+		tpi->status=TFREE;
+	    else if (tpi->status != TFREE) {
+		tpi->status=TFREE; 
+		*mustsend=1;
+	    }
+	    return 0;
+	}
+    }
+
+    if (torp->t_war != tpi->war) {
+	tpi->war = torp->t_war;
+	tpi->status = torp->t_status;
+	NIBBLE();
+	return 1;
+    } else if (torp->t_status != tpi->status) {
+	switch (torp->t_status) {
+	case TFREE:
+	    {
+		int	rval=0;
+		if (tpi->status==TEXPLODE) {
+		    NIBBLE();
+		    rval = 1;
+		} else 
+		    *mustsend=1;
+		tpi->status = torp->t_status;
+		tp->x = htonl(torp->t_x);
+		tp->y = htonl(torp->t_y);
+		return rval;
+	    }
+	    break;
+	case TMOVE:
+	case TSTRAIGHT:
+	    tpi->status = torp->t_status;
+	    break;
+	default:
+	    NIBBLE();
+	    tpi->status = torp->t_status;
+	    return 1;
+	    break;
+	}
+    }
+    return 0;
+}
+
+#define	TORP_INVISIBLE(tstatus) ( \
+				 (tstatus)== TFREE || \
+				 (tstatus) == TOFF || \
+				 (tstatus) == TLAND)
+
+static int
+encode_torp_position(struct torp *torp, int pnum, char **data, int *shift, 
+                     struct torp_spacket *cache)
+{
+    int	x,y;
+
+    if (htonl(torp->t_x) == cache->x &&
+	htonl(torp->t_y) == cache->y)
+	return 0;
+
+    cache->x = htonl(torp->t_x);
+    cache->y = htonl(torp->t_y);
+
+    if (TORP_INVISIBLE(torp->t_status)
+	|| ( status2->paused &&
+	    players[pnum].p_team != me->p_team)
+	)
+	return 0;
+
+    x = torp->t_x/SCALE - me->p_x/SCALE + WINSIDE/2;
+    y = torp->t_y/SCALE - me->p_y/SCALE + WINSIDE/2;
+
+    if (x<0 || x >=WINSIDE ||
+	y<0 || y >=WINSIDE) {
+	if (pnum != me->p_no)
+	    return 0;
+	x = y = 501;
+    }
+
+    **data |= x<<*shift;
+    *(++(*data)) = (0x1ff&x)>> (8-*shift);
+    (*shift)++;
+    **data |= y<<*shift;
+    *(++(*data)) = (0x1ff&y)>> (8-*shift);
+    (*shift)++;
+    if (*shift==8) {
+	*shift=0;
+	*(++(*data))=0;
+    }
+    return 1;
+}
+
+static void
+short_updateTorps(void)
+{
+    register int i;
+
+    for (i = 0; i <= (MAXPLAYER*MAXTORP-1)/8; i++) {
+	struct torp *torp = &torps[i*8];
+	int	j;
+	char	packet[2	/* packet type and player number */
+		       +1	/* torp mask */
+		       +1	/* torp info mask */
+		       +18	/* 2*8 9-bit numbers */
+                       +8       /* 8 torp info bytes */
+		       ];
+	char	*data = packet+4;
+	char	info[8];
+	char	*ip=info;
+	int	shift=0;
+	int	torppos_mask = 0;
+	int	torpinfo_mask = 0;
+	int	mustsend;
+
+	/* encode screen x and y coords */
+	data[0]=0;
+#define TIDX	(j+i*8)
+#define PNUM	((int)((j+i*8)/MAXTORP))
+	for (j=0; j<8 && TIDX<MAXPLAYER*MAXTORP; j++) {
+	    torpinfo_mask |= encode_torp_status
+		(&torp[j], PNUM, &ip, &clientTorpsInfo[TIDX], &clientTorps[TIDX], &mustsend) << j;
+	    torppos_mask |= encode_torp_position
+		(&torp[j], PNUM, &data, &shift, &clientTorps[TIDX]) << j;
+	}
+
+/*	if (!torppos_mask)
+	    continue; */
+
+	if (torpinfo_mask) {
+	    if (shift)
+		data++;
+	    for (j=0; j<8 && &info[j] < ip; j++)
+		data[j] = info[j];
+	    packet[0] = SP_S_TORP_INFO;
+	    packet[1] = torppos_mask;
+	    packet[2] = i;
+	    packet[3] = torpinfo_mask;
+	    sendClientSizedPacket(packet, (data-packet + j));
+	} else if (torppos_mask==0xff) {
+	    /* what a disgusting hack */
+	    packet[2] = SP_S_8_TORP;
+	    packet[3] = i;
+	    sendClientSizedPacket(packet+2, 20);
+	} else if (mustsend || torppos_mask != 0) {
+	    packet[1] = SP_S_TORP;
+	    packet[2] = torppos_mask&0xff;
+	    packet[3] = i;
+	    sendClientSizedPacket(packet+1, (data-(packet+1) + (shift!=0)));
+	}
+    }
+#undef PNUM
+#undef TIDX
+}
+
+static void
+updateMissiles(void)
+{
+    register struct missile *missile;
+    register int i;
+    register struct thingy_info_spacket *dpi;
+    register struct thingy_spacket *dp;
+
+    for (i = 0, missile = missiles, dpi = clientThingysInfo, dp = clientThingys;
+	 i < MAXPLAYER * NPTHINGIES;
+	 i++, missile++, dpi++, dp++) {
+	enum torp_status_e msstatus = missile->ms_status;
+
+	if (status2->paused &&
+	    players[missile->ms_owner].p_team != me->p_team)
+	    msstatus = TFREE;	/* enemy torps are invisible during game
+				   pause */
+
+	switch (msstatus) {
+	case TFREE:
+	case TLAND:
+	case TOFF:
+	    dpi->shape = htons(SHP_BLANK);
+	    break;
+	case TMOVE:
+	case TRETURN:
+	case TSTRAIGHT:
+	    dpi->shape = htons((missile->ms_type == FIGHTERTHINGY)
+			       ? SHP_FIGHTER
+			       : SHP_MISSILE);
+	    break;
+	case TEXPLODE:
+	case TDET:
+	    dpi->shape = htons(SHP_PBOOM);
+	    break;
+	}
+
+	dpi->type = SP_THINGY_INFO;
+	dpi->tnum = htons(i);
+
+	dp->type = SP_THINGY;
+	dp->tnum = htons(i);
+	dp->dir = missile->ms_dir;
+
+	if (missile->ms_owner == me->p_no) {
+	    if (missile->ms_war != dpi->war ||
+		msstatus != clientThingyStatus[i]) {
+		dpi->war = missile->ms_war;
+		clientThingyStatus[i] = msstatus;
+		sendClientPacket((struct player_spacket *) dpi);
+	    }
+	    if (dp->x != htonl(missile->ms_x) ||
+		dp->y != htonl(missile->ms_y)) {
+		dp->x = htonl(missile->ms_x);
+		dp->y = htonl(missile->ms_y);
+		/* printf("missile at %d,%d\n", dp->x, dp->y); */
+		sendClientPacket((struct player_spacket *) dp);
+	    }
+	}
+	else {			/* Someone else's missile... */
+	    if (msstatus == TFREE ||
+		missile->ms_y > me->p_y + SCALE * WINSIDE / 2 ||
+		missile->ms_x > me->p_x + SCALE * WINSIDE / 2 ||
+		missile->ms_x < me->p_x - SCALE * WINSIDE / 2 ||
+		missile->ms_y < me->p_y - SCALE * WINSIDE / 2) {
+		if (msstatus == TFREE && clientThingyStatus[i] == TEXPLODE) {
+		    clientThingyStatus[i] = TFREE;
+		    continue;
+		}
+		if (clientThingyStatus[i] != TFREE) {
+		    clientThingyStatus[i] = TFREE;
+		    dpi->shape = htons(SHP_BLANK);
+		    sendClientPacket((struct player_spacket *) dpi);
+		}
+	    }
+	    else {		/* in view */
+		if (dp->x != htonl(missile->ms_x) ||
+		    dp->y != htonl(missile->ms_y)) {
+		    dp->x = htonl(missile->ms_x);
+		    dp->y = htonl(missile->ms_y);
+		    sendClientPacket((struct player_spacket *) dp);
+		}
+		if (msstatus != clientThingyStatus[i] ||
+		    (missile->ms_war & me->p_team) != dpi->war) {
+		    /* Let the client fade away the explosion on its own */
+		    dpi->war = missile->ms_war & me->p_team;
+		    clientThingyStatus[i] = msstatus;
+		    sendClientPacket((struct player_spacket *) dpi);
+		}
+	    }
+	}
+    }
+}
+
+static void 
+fill_thingy_info_packet(struct thingy *thing, 
+                        struct thingy_info_spacket *packet)
+{
+    switch (thing->type) {
+    case TT_NONE:
+	packet->war = 0;
+	packet->shape = htons(SHP_BLANK);
+	packet->owner = 0;
+	break;
+    case TT_WARP_BEACON:
+	packet->war = 0;
+	if (thing->u.wbeacon.owner == me->p_team) {
+	    packet->shape = htons(SHP_WARP_BEACON);
+	    packet->owner = htons(thing->u.wbeacon.owner);
+	}
+	else {
+	    packet->shape = htons(SHP_BLANK);
+	    packet->owner = 0;
+	}
+	break;
+    default:
+	printf("Unknown thingy type: %d\n", (int) thing->type);
+	break;
+    }
+}
+
+static void 
+fill_thingy_packet(struct thingy *thing, 
+                   struct thingy_spacket *packet)
+{
+    switch (thing->type) {
+    case TT_NONE:
+	packet->dir = 0;
+	packet->x = packet->y = htonl(0);
+	break;
+    case TT_WARP_BEACON:
+	packet->dir = 0;
+	if (thing->u.wbeacon.owner == me->p_team) {
+	    packet->x = htonl(thing->u.wbeacon.x);
+	    packet->y = htonl(thing->u.wbeacon.y);
+	}
+	else {
+	    packet->x = packet->y = htonl(0);
+	}
+	break;
+    default:
+	printf("Unknown thingy type: %d\n", (int) thing->type);
+	break;
+    }
+}
+
+static void 
+updateThingies(void)
+{
+    struct thingy *thing;
+    struct thingy_info_spacket *tip;
+    struct thingy_spacket *tp;
+    int     i;
+
+    for (i = 0; i < NGTHINGIES; i++) {
+	struct thingy_info_spacket ti1;
+	struct thingy_spacket t2;
+
+	thing = &thingies[i];
+	tip = &clientThingysInfo[i + MAXPLAYER * NPTHINGIES];
+	tp = &clientThingys[i + MAXPLAYER * NPTHINGIES];
+
+	ti1.type = SP_THINGY_INFO;
+	ti1.tnum = htons(i + MAXPLAYER * NPTHINGIES);
+	fill_thingy_info_packet(thing, &ti1);
+
+	if (0 != memcmp((char*)tip, (char*)&ti1, sizeof(ti1))) {
+	    memcpy(tip, &ti1, sizeof(ti1));
+	    sendClientPacket((struct player_spacket *) tip);
+	}
+
+	if (tip->shape != htons(SHP_BLANK)) {
+	    t2.type = SP_THINGY;
+	    t2.tnum = htons(i + MAXPLAYER * NPTHINGIES);
+	    fill_thingy_packet(thing, &t2);
+
+	    if (0 != memcmp(tp, &t2, sizeof(t2))) {
+		memcpy(tp, &t2, sizeof(t2));
+		sendClientPacket((struct player_spacket *) tp);
+	    }
+	}
+    }
+
+}
+
+static void
+updatePlasmas(void)
+{
+    register struct plasmatorp *torp;
+    register int i;
+    register struct plasma_info_spacket *tpi;
+    register struct plasma_spacket *tp;
+
+    for (i = 0, torp = plasmatorps, tpi = clientPlasmasInfo, tp = clientPlasmas;
+	 i < MAXPLAYER * MAXPLASMA;
+	 i++, torp++, tpi++, tp++) {
+	if (torp->pt_owner == me->p_no) {
+	    if (torp->pt_war != tpi->war ||
+		torp->pt_status != tpi->status) {
+		tpi->type = SP_PLASMA_INFO;
+		tpi->war = torp->pt_war;
+		tpi->status = torp->pt_status;
+		tpi->pnum = htons(i);
+		sendClientPacket((struct player_spacket *) tpi);
+	    }
+	    if (tp->x != htonl(torp->pt_x) ||
+		tp->y != htonl(torp->pt_y)) {
+		tp->type = SP_PLASMA;
+		tp->x = htonl(torp->pt_x);
+		tp->y = htonl(torp->pt_y);
+		tp->pnum = htons(i);
+		sendClientPacket((struct player_spacket *) tp);
+	    }
+	}
+	else {			/* Someone else's torp... */
+	    enum torp_status_e ptstatus = torp->pt_status;
+
+	    if (status2->paused &&
+		players[torp->pt_owner].p_team != me->p_team)
+		ptstatus = TFREE;	/* enemy torps are invisible during
+					   game pause */
+	    if (torp->pt_y > me->p_y + SCALE * WINSIDE / 2 ||
+		torp->pt_x > me->p_x + SCALE * WINSIDE / 2 ||
+		torp->pt_x < me->p_x - SCALE * WINSIDE / 2 ||
+		torp->pt_y < me->p_y - SCALE * WINSIDE / 2 ||
+		ptstatus == PTFREE) {
+		if (ptstatus == PTFREE && tpi->status == PTEXPLODE) {
+		    tpi->status = PTFREE;
+		    continue;
+		}
+		if (tpi->status != PTFREE) {
+		    tpi->status = PTFREE;
+		    tpi->pnum = htons(i);
+		    tpi->type = SP_PLASMA_INFO;
+		    sendClientPacket((struct player_spacket *) tpi);
+		}
+	    }
+	    else {		/* in view */
+		/* Send torp (we assume it moved) */
+		tp->x = htonl(torp->pt_x);
+		tp->y = htonl(torp->pt_y);
+		tp->pnum = htons(i);
+		tp->type = SP_PLASMA;
+		sendClientPacket((struct player_spacket *) tp);
+		if (ptstatus != tpi->status ||
+		    (torp->pt_war & me->p_team) != tpi->war) {
+		    tpi->war = torp->pt_war & me->p_team;
+		    tpi->type = SP_PLASMA_INFO;
+		    tpi->pnum = htons(i);
+		    tpi->status = ptstatus;
+		    sendClientPacket((struct player_spacket *) tpi);
+		}
+	    }
+	}
+    }
+}
+
+static void
+updatePhasers(void)
+{
+    register int i;
+    register struct phaser_spacket *ph;
+    register struct phaser *phase;
+    register struct player *pl;
+
+    for (i = 0, ph = clientPhasers, phase = phasers, pl = players;
+	 i < MAXPLAYER; i++, ph++, phase++, pl++) {
+	if (pl->p_y > me->p_y + SCALE * WINSIDE / 2 ||
+	    pl->p_x > me->p_x + SCALE * WINSIDE / 2 ||
+	    pl->p_x < me->p_x - SCALE * WINSIDE / 2 ||
+	    pl->p_y < me->p_y - SCALE * WINSIDE / 2) {
+	    if (ph->status != PHFREE) {
+		ph->pnum = i;
+		ph->type = SP_PHASER;
+		ph->status = PHFREE;
+		sendClientPacket((struct player_spacket *) ph);
+	    }
+	}
+	else {
+	    if (phase->ph_status == PHHIT) {
+		mustUpdate[phase->ph_target] = 1;
+	    }
+	    if (ph->status != phase->ph_status ||
+		ph->dir != phase->ph_dir ||
+		ph->target != htonl(phase->ph_target)) {
+		ph->pnum = i;
+		ph->type = SP_PHASER;
+		ph->status = phase->ph_status;
+		ph->dir = phase->ph_dir;
+		ph->x = htonl(phase->ph_x);
+		ph->y = htonl(phase->ph_y);
+		ph->target = htonl(phase->ph_target);
+		sendClientPacket((struct player_spacket *) ph);
+	    }
+	}
+    }
+}
+
+
+#define PLFLAGMASK (PLRESMASK|PLATMASK|PLSURMASK|PLPARADISE|PLTYPEMASK)
+
+void
+updatePlanets(void)
+{
+    register int i;
+    register struct planet *plan;
+    register struct planet_loc_spacket *pll;
+    register struct planet_spacket2 *pl;
+    int     dx, dy;
+    int     d2x, d2y;
+    char   *name;
+
+    for (i = 0, pl = clientPlanets2, plan = planets, pll = clientPlanetLocs;
+	 i < MAXPLANETS;
+	 i++, pl++, plan++, pll++) {
+	/*
+	   Send him info about him not having info if he doesn't but thinks
+	   he does. Also send him info on every fifth cycle if the planet
+	   needs to be redrawn.
+	*/
+	if (((plan->pl_hinfo & me->p_team) == 0) && (pl->info & me->p_team)) {
+	    pl->type = SP_PLANET2;
+	    pl->pnum = i;
+	    pl->info = 0;
+	    pl->flags = PLPARADISE;
+	    sendClientPacket((struct player_spacket *) pl);
+	}
+	else {
+	    struct teaminfo temp, *ptr;
+	    if (configvals->durablescouting) {
+		temp.owner = plan->pl_owner;
+		temp.armies = plan->pl_armies;
+		temp.flags = plan->pl_flags;
+		temp.timestamp = status->clock;
+		ptr = &temp;
+	    }
+	    else
+		ptr = &plan->pl_tinfo[me->p_team];
+
+	    if (pl->info != plan->pl_hinfo ||
+		pl->armies != htonl(ptr->armies) ||
+		pl->owner != ptr->owner ||
+		pl->flags != htonl(ptr->flags & PLFLAGMASK)
+		|| ((pl->timestamp != htonl(ptr->timestamp))
+		    && (me->p_team != plan->pl_owner))) {
+		pl->type = SP_PLANET2;
+		pl->pnum = (char) i;
+		pl->info = (char) plan->pl_hinfo;
+		pl->flags = htonl(ptr->flags & PLFLAGMASK);
+		pl->armies = htonl(ptr->armies);
+		pl->owner = (char) ptr->owner;
+		pl->timestamp = htonl(ptr->timestamp);
+		sendClientPacket((struct player_spacket *) pl);
+	    }
+	}
+	/* Assume that the planet only needs to be updated once... */
+
+	/* Odd, changes in pl_y not supported.  5/31/92 TC */
+
+	dx = ntohl(pll->x) - plan->pl_x;
+	if (dx < 0)
+	    dx = -dx;
+	dy = ntohl(pll->y) - plan->pl_y;
+	if (dy < 0)
+	    dy = -dy;
+
+	d2x = plan->pl_x - me->p_x;
+	d2y = plan->pl_y - me->p_y;
+	if (d2x < 0)
+	    d2x = -d2x;
+	if (d2y < 0)
+	    d2y = -d2y;
+
+	if (1 || plan->pl_hinfo & me->p_team)
+	    name = plan->pl_name;
+	else
+	    name = "   ";
+	/*
+	   if ((pll->x != htonl(plan->pl_x)) || (pll->y !=
+	   htonl(plan->pl_y))) {
+	*/
+	if (strcmp((char *) pll->name, name) ||
+	    ((dx > 400 || dy > 400) ||
+	     ((dx >= 20 || dy >= 20) && (d2x < 10000 && d2y < 10000)))) {
+	    pll->x = htonl(plan->pl_x);
+	    pll->y = htonl(plan->pl_y);
+	    pll->pnum = i;
+	    if (plan->pl_system == 0)
+		pll->pad2 = 255;
+	    else
+		pll->pad2 = (char) stars[plan->pl_system];
+	    strcpy((char *) pll->name, name);
+	    pll->type = SP_PLANET_LOC;
+	    sendClientPacket((struct player_spacket *) pll);
+	}
+    }
+}
+
+static void
+updateMessages(void)
+{
+    int     i;
+    struct message *cur;
+    struct mesg_spacket msg;
+
+    for (i = msgCurrent; i != (mctl->mc_current + 1) % MAXMESSAGE; i = (i + 1) % MAXMESSAGE) {
+	if (i == MAXMESSAGE)
+	    i = 0;
+	cur = &messages[i];
+
+	if (cur->m_flags & MVALID &&
+	    (cur->m_flags & MALL ||
+	     (cur->m_flags & MTEAM && cur->m_recpt == me->p_team) ||
+	     (cur->m_flags & MINDIV && cur->m_recpt == me->p_no) ||
+	     (cur->m_flags & MGOD && cur->m_from == me->p_no))) {
+	    msg.type = SP_MESSAGE;
+	    strncpy(msg.mesg, cur->m_data, 80);
+	    msg.mesg[79] = '\0';
+	    msg.m_flags = cur->m_flags;
+	    msg.m_recpt = cur->m_recpt;
+	    msg.m_from = cur->m_from;
+
+	    if ((cur->m_from < 0)
+		|| (cur->m_from > MAXPLAYER)
+		|| (cur->m_flags & MGOD && cur->m_from == me->p_no)
+		|| (cur->m_flags & MALL && !(ignored[cur->m_from] & MALL))
+		|| (cur->m_flags & MTEAM && !(ignored[cur->m_from] & MTEAM)))
+		sendClientPacket((struct player_spacket *) & msg);
+	    else if (cur->m_flags & MINDIV) {
+
+		/* session stats now parsed here.  parseQuery == true */
+		/* means eat message 4/17/92 TC */
+
+		if (!parseQuery(&msg))
+		    if (ignored[cur->m_from] & MINDIV)
+			bounce("That player is currently ignoring you.",
+			       cur->m_from);
+		    else
+			sendClientPacket((struct player_spacket *) & msg);
+	    }
+	}
+	msgCurrent = (msgCurrent + 1) % MAXMESSAGE;
+    }
+}
+
+/* Asteroid/Nebulae socket code (5/16/95 rpg) */
+
+#define DIM (MAX_GWIDTH/TGRID_GRANULARITY)
+
+void
+updateTerrain(void){
+    int i;
+    int j, maxfor;
+#if defined(T_DIAG) || defined(T_DIAG2)
+    int status;
+#endif
+    int npkts;
+    struct terrain_packet2 tpkt;
+    struct terrain_info_packet2 tinfo_pkt;
+    unsigned long olen = DIM*DIM, dlen = DIM*DIM/1000+DIM*DIM+13;
+#if defined(T_DIAG) || defined(T_DIAG2)
+    char buf[80];
+#endif
+    unsigned char origBuf[DIM*DIM];
+    unsigned char gzipBuf[DIM*DIM/1000+
+		          DIM*DIM+13];
+    /* Don't ask me.  The compression libs need (original size + 0.1% +
+       12 bytes). */
+    /* Note - this will have to be RADICALLY changed if alt1/alt2 are sent 
+       as well. */
+
+  /* check to see if client can handle the terrain data first */
+  if( F_terrain ){
+    if( galaxyValid[me->p_no] )	{	/* if we've already submitted a galaxy to client.. */
+      return;				/* ... then don't do anything */
+    }
+     
+#if defined(T_DIAG) || defined(T_DIAG2)
+    { 
+       char buf[80];
+       sprintf( buf, "pno: %d gIsense: %d", me->p_no, galaxyValid[me->p_no] );
+       pmessage( buf, 0, MALL, MSERVA );
+    }
+#endif
+    galaxyValid[me->p_no] = 1;
+    /* Send initial packet. */
+    tinfo_pkt.type = SP_TERRAIN_INFO2;
+    tinfo_pkt.xdim = htons(DIM);
+    tinfo_pkt.ydim = htons(DIM);
+    sendClientPacket( (struct player_spacket *) &tinfo_pkt );
+    for( i = 0; i < DIM*DIM; i++ ){
+      origBuf[i] = terrain_grid[i].types;	/* pack types field into array */
+    }
+#if defined(T_DIAG) || defined(T_DIAG2)
+    status = compress( gzipBuf, &dlen, origBuf, olen );
+    if( status != Z_OK ){
+      pmessage( "TERRAIN: Cannot gzip terrain grid.", 0, MALL, MSERVA );
+      return;
+    }
+    else{
+      sprintf( buf, "TERRAIN: Original length %d, compressed length %d", DIM*DIM, dlen );
+      pmessage( buf, 0, MALL, MSERVA );
+    }
+#else
+    compress(gzipBuf, &dlen, (Byte *)origBuf, olen );
+#endif
+    npkts = (dlen>>LOG2NTERRAIN);
+    if( dlen&TERRAIN_MASK ){
+      npkts++;		/* require a partial packet */
+    }
+    for( i = 1; i <= npkts; i++ ){
+      tpkt.type = SP_TERRAIN2;
+      tpkt.sequence = (unsigned char)i;
+      tpkt.total_pkts = (unsigned char)npkts;
+      if( i < npkts ){
+        maxfor = tpkt.length = NTERRAIN;
+      }
+      else{
+        maxfor = tpkt.length = (dlen&TERRAIN_MASK);
+      }
+      for( j = 0; j < maxfor; j++ ){
+        tpkt.terrain_type[j] = gzipBuf[((i-1)<<LOG2NTERRAIN) + j];
+      }
+      /* ok, packet is filled in, send it */
+#ifdef T_DIAG2
+      sprintf( buf, "Sending terrain packet %d of %d", tpkt.sequence, tpkt.total_pkts );
+      pmessage( buf, 0, MALL, MSERVA );
+#endif
+      sendClientPacket( (struct player_spacket *) &tpkt );
+    }
+  }
+}
+
+void
+updateMOTD(void)
+{
+    static int spinner = 0;
+
+    if (--spinner < 0) {
+	static struct stat oldstat;
+	static int firsttime = 1;
+
+	char   *path;
+	struct stat newstat;
+	struct obvious_packet pkt;
+
+	spinner = 10;
+
+	if (!firsttime) {
+	    path = build_path(MOTD);
+	    stat(path, &newstat);
+	    if (newstat.st_ino == oldstat.st_ino &&
+		newstat.st_mtime == oldstat.st_mtime)
+		return;
+	    oldstat.st_ino = newstat.st_ino;
+	    oldstat.st_mtime = newstat.st_mtime;
+
+	    pkt.type = SP_NEW_MOTD;
+	    sendClientPacket((struct player_spacket *) & pkt);
+	}
+	else {
+	    sendMotd();		/* can't build_path before this */
+	    path = build_path(MOTD);
+	    stat(path, &oldstat);
+	    /*printf("%s: %d, %d\n", path, oldstat.st_ino, oldstat.st_mtime);*/
+	    firsttime = 0;
+	}
+    }
+}
+
+
 void 
 updateClient(void)
 {
@@ -470,7 +1466,7 @@ updateStatus(void)
     }
 }
 
-struct player *
+static struct player *
 maybe_watching(struct player *p)
 {
     struct player *tg = &players[me->p_playerl];
@@ -482,7 +1478,7 @@ maybe_watching(struct player *p)
 	tg : p;
 }
 
-struct planet *
+static struct planet *
 maybe_watching_planet(void)
 {
     return (me->p_status == POBSERVE && (me->p_flags & PFPLLOCK)) ?
@@ -779,1080 +1775,13 @@ updateShips(void)
     }
 }
 
-void
-updateTorpInfos(void)
-{
-    register struct torp *torp;
-    register int i;
-    register struct torp_info_spacket *tpi;
-
-    for (i = 0, torp = torps, tpi = clientTorpsInfo;
-	 i < MAXPLAYER * MAXTORP;
-	 i++, torp++, tpi++) {
-	if (torp->t_owner == me->p_no) {
-	    if (torp->t_war != tpi->war ||
-		torp->t_status != tpi->status) {
-		tpi->type = SP_TORP_INFO;
-		tpi->war = torp->t_war;
-		tpi->status = torp->t_status;
-		tpi->tnum = htons(i);
-		sendClientPacket((struct player_spacket *) tpi);
-	    }
-	}
-	else {			/* Someone else's torp... */
-	    if (torp->t_y > me->p_y + SCALE * WINSIDE / 2 ||
-		torp->t_x > me->p_x + SCALE * WINSIDE / 2 ||
-		torp->t_x < me->p_x - SCALE * WINSIDE / 2 ||
-		torp->t_y < me->p_y - SCALE * WINSIDE / 2 ||
-		torp->t_status == TFREE) {
-		if (torp->t_status == TFREE && tpi->status == TEXPLODE) {
-		    tpi->status = TFREE;
-		    continue;
-		}
-		if (tpi->status != TFREE) {
-		    tpi->status = TFREE;
-		    tpi->tnum = htons(i);
-		    tpi->type = SP_TORP_INFO;
-		    sendClientPacket((struct player_spacket *) tpi);
-		}
-	    }
-	    else {		/* in view */
-		enum torp_status_e tstatus = torp->t_status;
-
-		if (status2->paused
-		    && players[torp->t_owner].p_team != me->p_team)
-		    tstatus = TFREE;	/* enemy torps are invisible during
-					   game pause */
-
-		if (tstatus != tpi->status ||
-		    (torp->t_war & me->p_team) != tpi->war) {
-		    /* Let the client fade away the explosion on its own */
-		    tpi->war = torp->t_war & me->p_team;
-		    tpi->type = SP_TORP_INFO;
-		    tpi->tnum = htons(i);
-		    tpi->status = tstatus;
-		    sendClientPacket((struct player_spacket *) tpi);
-		}
-	    }
-	}
-    }
-}
-
-
-
-void
-updateTorps(void)
-{
-    register struct torp *torp;
-    register int i;
-    register struct torp_spacket *tp;
-
-    for (i = 0, torp = torps, tp = clientTorps;
-	 i < MAXPLAYER * MAXTORP;
-	 i++, torp++, tp++) {
-	if (torp->t_owner == me->p_no) {
-
-	    if (tp->x != htonl(torp->t_x) ||
-		tp->y != htonl(torp->t_y)) {
-		tp->type = SP_TORP;
-		tp->x = htonl(torp->t_x);
-		tp->y = htonl(torp->t_y);
-		tp->dir = torp->t_dir;
-		tp->tnum = htons(i);
-		sendClientPacket((struct player_spacket *) tp);
-	    }
-	}
-	else {			/* Someone else's torp... */
-	    if (torp->t_y > me->p_y + SCALE * WINSIDE / 2 ||
-		torp->t_x > me->p_x + SCALE * WINSIDE / 2 ||
-		torp->t_x < me->p_x - SCALE * WINSIDE / 2 ||
-		torp->t_y < me->p_y - SCALE * WINSIDE / 2 ||
-		torp->t_status == TFREE) {
-	      /* do nothing */
-	    }
-	    else {		/* in view */
-		enum torp_status_e tstatus = torp->t_status;
-
-		if (status2->paused
-		    && players[torp->t_owner].p_team != me->p_team)
-		    tstatus = TFREE;	/* enemy torps are invisible during
-					   game pause */
-
-		if (tstatus==TFREE)
-		    continue;	/* no need to transmit position */
-
-		if (tp->x != htonl(torp->t_x) ||
-		    tp->y != htonl(torp->t_y)) {
-		    tp->x = htonl(torp->t_x);
-		    tp->y = htonl(torp->t_y);
-		    tp->dir = torp->t_dir;
-		    tp->tnum = htons(i);
-		    tp->type = SP_TORP;
-		    sendClientPacket((struct player_spacket *) tp);
-		}
-	    }
-	}
-    }
-}
-
-#define NIBBLE()	*(*data)++ = (torp->t_war & 0xf) | (torp->t_status << 4)
-
-int
-encode_torp_status(struct torp *torp, int pnum, char **data, 
-                   struct torp_info_spacket *tpi, 
-		   struct torp_spacket *tp, 
-		   int *mustsend)
-{
-    if (pnum!=me->p_no) {
-	int	dx,dy;
-	int	i = SCALE*WINSIDE/2;
-	dx = me->p_x-torp->t_x;
-	dy = me->p_y-torp->t_y;
-	if (dx<-i  || dx > i || dy < -i || dy > i || torp->t_status==TFREE) {
-	    if (torp->t_status==TFREE && tpi->status==TEXPLODE)
-		tpi->status=TFREE;
-	    else if (tpi->status != TFREE) {
-		tpi->status=TFREE; 
-		*mustsend=1;
-	    }
-	    return 0;
-	}
-    }
-
-    if (torp->t_war != tpi->war) {
-	tpi->war = torp->t_war;
-	tpi->status = torp->t_status;
-	NIBBLE();
-	return 1;
-    } else if (torp->t_status != tpi->status) {
-	switch (torp->t_status) {
-	case TFREE:
-	    {
-		int	rval=0;
-		if (tpi->status==TEXPLODE) {
-		    NIBBLE();
-		    rval = 1;
-		} else 
-		    *mustsend=1;
-		tpi->status = torp->t_status;
-		tp->x = htonl(torp->t_x);
-		tp->y = htonl(torp->t_y);
-		return rval;
-	    }
-	    break;
-	case TMOVE:
-	case TSTRAIGHT:
-	    tpi->status = torp->t_status;
-	    break;
-	default:
-	    NIBBLE();
-	    tpi->status = torp->t_status;
-	    return 1;
-	    break;
-	}
-    }
-    return 0;
-}
-
-#define	TORP_INVISIBLE(tstatus) ( \
-				 (tstatus)== TFREE || \
-				 (tstatus) == TOFF || \
-				 (tstatus) == TLAND)
-
-int
-encode_torp_position(struct torp *torp, int pnum, char **data, int *shift, 
-                     struct torp_spacket *cache)
-{
-    int	x,y;
-
-    if (htonl(torp->t_x) == cache->x &&
-	htonl(torp->t_y) == cache->y)
-	return 0;
-
-    cache->x = htonl(torp->t_x);
-    cache->y = htonl(torp->t_y);
-
-    if (TORP_INVISIBLE(torp->t_status)
-	|| ( status2->paused &&
-	    players[pnum].p_team != me->p_team)
-	)
-	return 0;
-
-    x = torp->t_x/SCALE - me->p_x/SCALE + WINSIDE/2;
-    y = torp->t_y/SCALE - me->p_y/SCALE + WINSIDE/2;
-
-    if (x<0 || x >=WINSIDE ||
-	y<0 || y >=WINSIDE) {
-	if (pnum != me->p_no)
-	    return 0;
-	x = y = 501;
-    }
-
-    **data |= x<<*shift;
-    *(++(*data)) = (0x1ff&x)>> (8-*shift);
-    (*shift)++;
-    **data |= y<<*shift;
-    *(++(*data)) = (0x1ff&y)>> (8-*shift);
-    (*shift)++;
-    if (*shift==8) {
-	*shift=0;
-	*(++(*data))=0;
-    }
-    return 1;
-}
-
-void
-short_updateTorps(void)
-{
-    register int i;
-
-    for (i = 0; i <= (MAXPLAYER*MAXTORP-1)/8; i++) {
-	struct torp *torp = &torps[i*8];
-	int	j;
-	char	packet[2	/* packet type and player number */
-		       +1	/* torp mask */
-		       +1	/* torp info mask */
-		       +18	/* 2*8 9-bit numbers */
-                       +8       /* 8 torp info bytes */
-		       ];
-	char	*data = packet+4;
-	char	info[8];
-	char	*ip=info;
-	int	shift=0;
-	int	torppos_mask = 0;
-	int	torpinfo_mask = 0;
-	int	mustsend;
-
-	/* encode screen x and y coords */
-	data[0]=0;
-#define TIDX	(j+i*8)
-#define PNUM	((int)((j+i*8)/MAXTORP))
-	for (j=0; j<8 && TIDX<MAXPLAYER*MAXTORP; j++) {
-	    torpinfo_mask |= encode_torp_status
-		(&torp[j], PNUM, &ip, &clientTorpsInfo[TIDX], &clientTorps[TIDX], &mustsend) << j;
-	    torppos_mask |= encode_torp_position
-		(&torp[j], PNUM, &data, &shift, &clientTorps[TIDX]) << j;
-	}
-
-/*	if (!torppos_mask)
-	    continue; */
-
-	if (torpinfo_mask) {
-	    if (shift)
-		data++;
-	    for (j=0; j<8 && &info[j] < ip; j++)
-		data[j] = info[j];
-	    packet[0] = SP_S_TORP_INFO;
-	    packet[1] = torppos_mask;
-	    packet[2] = i;
-	    packet[3] = torpinfo_mask;
-	    sendClientSizedPacket(packet, (data-packet + j));
-	} else if (torppos_mask==0xff) {
-	    /* what a disgusting hack */
-	    packet[2] = SP_S_8_TORP;
-	    packet[3] = i;
-	    sendClientSizedPacket(packet+2, 20);
-	} else if (mustsend || torppos_mask != 0) {
-	    packet[1] = SP_S_TORP;
-	    packet[2] = torppos_mask&0xff;
-	    packet[3] = i;
-	    sendClientSizedPacket(packet+1, (data-(packet+1) + (shift!=0)));
-	}
-    }
-#undef PNUM
-#undef TIDX
-}
-
-void
-updateMissiles(void)
-{
-    register struct missile *missile;
-    register int i;
-    register struct thingy_info_spacket *dpi;
-    register struct thingy_spacket *dp;
-
-    for (i = 0, missile = missiles, dpi = clientThingysInfo, dp = clientThingys;
-	 i < MAXPLAYER * NPTHINGIES;
-	 i++, missile++, dpi++, dp++) {
-	enum torp_status_e msstatus = missile->ms_status;
-
-	if (status2->paused &&
-	    players[missile->ms_owner].p_team != me->p_team)
-	    msstatus = TFREE;	/* enemy torps are invisible during game
-				   pause */
-
-	switch (msstatus) {
-	case TFREE:
-	case TLAND:
-	case TOFF:
-	    dpi->shape = htons(SHP_BLANK);
-	    break;
-	case TMOVE:
-	case TRETURN:
-	case TSTRAIGHT:
-	    dpi->shape = htons((missile->ms_type == FIGHTERTHINGY)
-			       ? SHP_FIGHTER
-			       : SHP_MISSILE);
-	    break;
-	case TEXPLODE:
-	case TDET:
-	    dpi->shape = htons(SHP_PBOOM);
-	    break;
-	}
-
-	dpi->type = SP_THINGY_INFO;
-	dpi->tnum = htons(i);
-
-	dp->type = SP_THINGY;
-	dp->tnum = htons(i);
-	dp->dir = missile->ms_dir;
-
-	if (missile->ms_owner == me->p_no) {
-	    if (missile->ms_war != dpi->war ||
-		msstatus != clientThingyStatus[i]) {
-		dpi->war = missile->ms_war;
-		clientThingyStatus[i] = msstatus;
-		sendClientPacket((struct player_spacket *) dpi);
-	    }
-	    if (dp->x != htonl(missile->ms_x) ||
-		dp->y != htonl(missile->ms_y)) {
-		dp->x = htonl(missile->ms_x);
-		dp->y = htonl(missile->ms_y);
-		/* printf("missile at %d,%d\n", dp->x, dp->y); */
-		sendClientPacket((struct player_spacket *) dp);
-	    }
-	}
-	else {			/* Someone else's missile... */
-	    if (msstatus == TFREE ||
-		missile->ms_y > me->p_y + SCALE * WINSIDE / 2 ||
-		missile->ms_x > me->p_x + SCALE * WINSIDE / 2 ||
-		missile->ms_x < me->p_x - SCALE * WINSIDE / 2 ||
-		missile->ms_y < me->p_y - SCALE * WINSIDE / 2) {
-		if (msstatus == TFREE && clientThingyStatus[i] == TEXPLODE) {
-		    clientThingyStatus[i] = TFREE;
-		    continue;
-		}
-		if (clientThingyStatus[i] != TFREE) {
-		    clientThingyStatus[i] = TFREE;
-		    dpi->shape = htons(SHP_BLANK);
-		    sendClientPacket((struct player_spacket *) dpi);
-		}
-	    }
-	    else {		/* in view */
-		if (dp->x != htonl(missile->ms_x) ||
-		    dp->y != htonl(missile->ms_y)) {
-		    dp->x = htonl(missile->ms_x);
-		    dp->y = htonl(missile->ms_y);
-		    sendClientPacket((struct player_spacket *) dp);
-		}
-		if (msstatus != clientThingyStatus[i] ||
-		    (missile->ms_war & me->p_team) != dpi->war) {
-		    /* Let the client fade away the explosion on its own */
-		    dpi->war = missile->ms_war & me->p_team;
-		    clientThingyStatus[i] = msstatus;
-		    sendClientPacket((struct player_spacket *) dpi);
-		}
-	    }
-	}
-    }
-}
-
-static void 
-fill_thingy_info_packet(struct thingy *thing, 
-                        struct thingy_info_spacket *packet)
-{
-    switch (thing->type) {
-    case TT_NONE:
-	packet->war = 0;
-	packet->shape = htons(SHP_BLANK);
-	packet->owner = 0;
-	break;
-    case TT_WARP_BEACON:
-	packet->war = 0;
-	if (thing->u.wbeacon.owner == me->p_team) {
-	    packet->shape = htons(SHP_WARP_BEACON);
-	    packet->owner = htons(thing->u.wbeacon.owner);
-	}
-	else {
-	    packet->shape = htons(SHP_BLANK);
-	    packet->owner = 0;
-	}
-	break;
-    default:
-	printf("Unknown thingy type: %d\n", (int) thing->type);
-	break;
-    }
-}
-
-static void 
-fill_thingy_packet(struct thingy *thing, 
-                   struct thingy_spacket *packet)
-{
-    switch (thing->type) {
-    case TT_NONE:
-	packet->dir = 0;
-	packet->x = packet->y = htonl(0);
-	break;
-    case TT_WARP_BEACON:
-	packet->dir = 0;
-	if (thing->u.wbeacon.owner == me->p_team) {
-	    packet->x = htonl(thing->u.wbeacon.x);
-	    packet->y = htonl(thing->u.wbeacon.y);
-	}
-	else {
-	    packet->x = packet->y = htonl(0);
-	}
-	break;
-    default:
-	printf("Unknown thingy type: %d\n", (int) thing->type);
-	break;
-    }
-}
-
-void 
-updateThingies(void)
-{
-    struct thingy *thing;
-    struct thingy_info_spacket *tip;
-    struct thingy_spacket *tp;
-    int     i;
-
-    for (i = 0; i < NGTHINGIES; i++) {
-	struct thingy_info_spacket ti1;
-	struct thingy_spacket t2;
-
-	thing = &thingies[i];
-	tip = &clientThingysInfo[i + MAXPLAYER * NPTHINGIES];
-	tp = &clientThingys[i + MAXPLAYER * NPTHINGIES];
-
-	ti1.type = SP_THINGY_INFO;
-	ti1.tnum = htons(i + MAXPLAYER * NPTHINGIES);
-	fill_thingy_info_packet(thing, &ti1);
-
-	if (0 != memcmp((char*)tip, (char*)&ti1, sizeof(ti1))) {
-	    memcpy(tip, &ti1, sizeof(ti1));
-	    sendClientPacket((struct player_spacket *) tip);
-	}
-
-	if (tip->shape != htons(SHP_BLANK)) {
-	    t2.type = SP_THINGY;
-	    t2.tnum = htons(i + MAXPLAYER * NPTHINGIES);
-	    fill_thingy_packet(thing, &t2);
-
-	    if (0 != memcmp(tp, &t2, sizeof(t2))) {
-		memcpy(tp, &t2, sizeof(t2));
-		sendClientPacket((struct player_spacket *) tp);
-	    }
-	}
-    }
-
-}
-
-void
-updatePlasmas(void)
-{
-    register struct plasmatorp *torp;
-    register int i;
-    register struct plasma_info_spacket *tpi;
-    register struct plasma_spacket *tp;
-
-    for (i = 0, torp = plasmatorps, tpi = clientPlasmasInfo, tp = clientPlasmas;
-	 i < MAXPLAYER * MAXPLASMA;
-	 i++, torp++, tpi++, tp++) {
-	if (torp->pt_owner == me->p_no) {
-	    if (torp->pt_war != tpi->war ||
-		torp->pt_status != tpi->status) {
-		tpi->type = SP_PLASMA_INFO;
-		tpi->war = torp->pt_war;
-		tpi->status = torp->pt_status;
-		tpi->pnum = htons(i);
-		sendClientPacket((struct player_spacket *) tpi);
-	    }
-	    if (tp->x != htonl(torp->pt_x) ||
-		tp->y != htonl(torp->pt_y)) {
-		tp->type = SP_PLASMA;
-		tp->x = htonl(torp->pt_x);
-		tp->y = htonl(torp->pt_y);
-		tp->pnum = htons(i);
-		sendClientPacket((struct player_spacket *) tp);
-	    }
-	}
-	else {			/* Someone else's torp... */
-	    enum torp_status_e ptstatus = torp->pt_status;
-
-	    if (status2->paused &&
-		players[torp->pt_owner].p_team != me->p_team)
-		ptstatus = TFREE;	/* enemy torps are invisible during
-					   game pause */
-	    if (torp->pt_y > me->p_y + SCALE * WINSIDE / 2 ||
-		torp->pt_x > me->p_x + SCALE * WINSIDE / 2 ||
-		torp->pt_x < me->p_x - SCALE * WINSIDE / 2 ||
-		torp->pt_y < me->p_y - SCALE * WINSIDE / 2 ||
-		ptstatus == PTFREE) {
-		if (ptstatus == PTFREE && tpi->status == PTEXPLODE) {
-		    tpi->status = PTFREE;
-		    continue;
-		}
-		if (tpi->status != PTFREE) {
-		    tpi->status = PTFREE;
-		    tpi->pnum = htons(i);
-		    tpi->type = SP_PLASMA_INFO;
-		    sendClientPacket((struct player_spacket *) tpi);
-		}
-	    }
-	    else {		/* in view */
-		/* Send torp (we assume it moved) */
-		tp->x = htonl(torp->pt_x);
-		tp->y = htonl(torp->pt_y);
-		tp->pnum = htons(i);
-		tp->type = SP_PLASMA;
-		sendClientPacket((struct player_spacket *) tp);
-		if (ptstatus != tpi->status ||
-		    (torp->pt_war & me->p_team) != tpi->war) {
-		    tpi->war = torp->pt_war & me->p_team;
-		    tpi->type = SP_PLASMA_INFO;
-		    tpi->pnum = htons(i);
-		    tpi->status = ptstatus;
-		    sendClientPacket((struct player_spacket *) tpi);
-		}
-	    }
-	}
-    }
-}
-
-void
-updatePhasers(void)
-{
-    register int i;
-    register struct phaser_spacket *ph;
-    register struct phaser *phase;
-    register struct player *pl;
-
-    for (i = 0, ph = clientPhasers, phase = phasers, pl = players;
-	 i < MAXPLAYER; i++, ph++, phase++, pl++) {
-	if (pl->p_y > me->p_y + SCALE * WINSIDE / 2 ||
-	    pl->p_x > me->p_x + SCALE * WINSIDE / 2 ||
-	    pl->p_x < me->p_x - SCALE * WINSIDE / 2 ||
-	    pl->p_y < me->p_y - SCALE * WINSIDE / 2) {
-	    if (ph->status != PHFREE) {
-		ph->pnum = i;
-		ph->type = SP_PHASER;
-		ph->status = PHFREE;
-		sendClientPacket((struct player_spacket *) ph);
-	    }
-	}
-	else {
-	    if (phase->ph_status == PHHIT) {
-		mustUpdate[phase->ph_target] = 1;
-	    }
-	    if (ph->status != phase->ph_status ||
-		ph->dir != phase->ph_dir ||
-		ph->target != htonl(phase->ph_target)) {
-		ph->pnum = i;
-		ph->type = SP_PHASER;
-		ph->status = phase->ph_status;
-		ph->dir = phase->ph_dir;
-		ph->x = htonl(phase->ph_x);
-		ph->y = htonl(phase->ph_y);
-		ph->target = htonl(phase->ph_target);
-		sendClientPacket((struct player_spacket *) ph);
-	    }
-	}
-    }
-}
-
-
-#define PLFLAGMASK (PLRESMASK|PLATMASK|PLSURMASK|PLPARADISE|PLTYPEMASK)
-
-void
-updatePlanets(void)
-{
-    register int i;
-    register struct planet *plan;
-    register struct planet_loc_spacket *pll;
-    register struct planet_spacket2 *pl;
-    int     dx, dy;
-    int     d2x, d2y;
-    char   *name;
-
-    for (i = 0, pl = clientPlanets2, plan = planets, pll = clientPlanetLocs;
-	 i < MAXPLANETS;
-	 i++, pl++, plan++, pll++) {
-	/*
-	   Send him info about him not having info if he doesn't but thinks
-	   he does. Also send him info on every fifth cycle if the planet
-	   needs to be redrawn.
-	*/
-	if (((plan->pl_hinfo & me->p_team) == 0) && (pl->info & me->p_team)) {
-	    pl->type = SP_PLANET2;
-	    pl->pnum = i;
-	    pl->info = 0;
-	    pl->flags = PLPARADISE;
-	    sendClientPacket((struct player_spacket *) pl);
-	}
-	else {
-	    struct teaminfo temp, *ptr;
-	    if (configvals->durablescouting) {
-		temp.owner = plan->pl_owner;
-		temp.armies = plan->pl_armies;
-		temp.flags = plan->pl_flags;
-		temp.timestamp = status->clock;
-		ptr = &temp;
-	    }
-	    else
-		ptr = &plan->pl_tinfo[me->p_team];
-
-	    if (pl->info != plan->pl_hinfo ||
-		pl->armies != htonl(ptr->armies) ||
-		pl->owner != ptr->owner ||
-		pl->flags != htonl(ptr->flags & PLFLAGMASK)
-		|| ((pl->timestamp != htonl(ptr->timestamp))
-		    && (me->p_team != plan->pl_owner))) {
-		pl->type = SP_PLANET2;
-		pl->pnum = (char) i;
-		pl->info = (char) plan->pl_hinfo;
-		pl->flags = htonl(ptr->flags & PLFLAGMASK);
-		pl->armies = htonl(ptr->armies);
-		pl->owner = (char) ptr->owner;
-		pl->timestamp = htonl(ptr->timestamp);
-		sendClientPacket((struct player_spacket *) pl);
-	    }
-	}
-	/* Assume that the planet only needs to be updated once... */
-
-	/* Odd, changes in pl_y not supported.  5/31/92 TC */
-
-	dx = ntohl(pll->x) - plan->pl_x;
-	if (dx < 0)
-	    dx = -dx;
-	dy = ntohl(pll->y) - plan->pl_y;
-	if (dy < 0)
-	    dy = -dy;
-
-	d2x = plan->pl_x - me->p_x;
-	d2y = plan->pl_y - me->p_y;
-	if (d2x < 0)
-	    d2x = -d2x;
-	if (d2y < 0)
-	    d2y = -d2y;
-
-	if (1 || plan->pl_hinfo & me->p_team)
-	    name = plan->pl_name;
-	else
-	    name = "   ";
-	/*
-	   if ((pll->x != htonl(plan->pl_x)) || (pll->y !=
-	   htonl(plan->pl_y))) {
-	*/
-	if (strcmp((char *) pll->name, name) ||
-	    ((dx > 400 || dy > 400) ||
-	     ((dx >= 20 || dy >= 20) && (d2x < 10000 && d2y < 10000)))) {
-	    pll->x = htonl(plan->pl_x);
-	    pll->y = htonl(plan->pl_y);
-	    pll->pnum = i;
-	    if (plan->pl_system == 0)
-		pll->pad2 = 255;
-	    else
-		pll->pad2 = (char) stars[plan->pl_system];
-	    strcpy((char *) pll->name, name);
-	    pll->type = SP_PLANET_LOC;
-	    sendClientPacket((struct player_spacket *) pll);
-	}
-    }
-}
-
-void
-updateMessages(void)
-{
-    int     i;
-    struct message *cur;
-    struct mesg_spacket msg;
-
-    for (i = msgCurrent; i != (mctl->mc_current + 1) % MAXMESSAGE; i = (i + 1) % MAXMESSAGE) {
-	if (i == MAXMESSAGE)
-	    i = 0;
-	cur = &messages[i];
-
-	if (cur->m_flags & MVALID &&
-	    (cur->m_flags & MALL ||
-	     (cur->m_flags & MTEAM && cur->m_recpt == me->p_team) ||
-	     (cur->m_flags & MINDIV && cur->m_recpt == me->p_no) ||
-	     (cur->m_flags & MGOD && cur->m_from == me->p_no))) {
-	    msg.type = SP_MESSAGE;
-	    strncpy(msg.mesg, cur->m_data, 80);
-	    msg.mesg[79] = '\0';
-	    msg.m_flags = cur->m_flags;
-	    msg.m_recpt = cur->m_recpt;
-	    msg.m_from = cur->m_from;
-
-	    if ((cur->m_from < 0)
-		|| (cur->m_from > MAXPLAYER)
-		|| (cur->m_flags & MGOD && cur->m_from == me->p_no)
-		|| (cur->m_flags & MALL && !(ignored[cur->m_from] & MALL))
-		|| (cur->m_flags & MTEAM && !(ignored[cur->m_from] & MTEAM)))
-		sendClientPacket((struct player_spacket *) & msg);
-	    else if (cur->m_flags & MINDIV) {
-
-		/* session stats now parsed here.  parseQuery == true */
-		/* means eat message 4/17/92 TC */
-
-		if (!parseQuery(&msg))
-		    if (ignored[cur->m_from] & MINDIV)
-			bounce("That player is currently ignoring you.",
-			       cur->m_from);
-		    else
-			sendClientPacket((struct player_spacket *) & msg);
-	    }
-	}
-	msgCurrent = (msgCurrent + 1) % MAXMESSAGE;
-    }
-}
-
-/* Asteroid/Nebulae socket code (5/16/95 rpg) */
-
-#define DIM (MAX_GWIDTH/TGRID_GRANULARITY)
-
-void
-updateTerrain(void){
-    int i;
-    int j, maxfor;
-#if defined(T_DIAG) || defined(T_DIAG2)
-    int status;
-#endif
-    int npkts;
-    struct terrain_packet2 tpkt;
-    struct terrain_info_packet2 tinfo_pkt;
-    unsigned long olen = DIM*DIM, dlen = DIM*DIM/1000+DIM*DIM+13;
-#if defined(T_DIAG) || defined(T_DIAG2)
-    char buf[80];
-#endif
-    unsigned char origBuf[DIM*DIM];
-    unsigned char gzipBuf[DIM*DIM/1000+
-		          DIM*DIM+13];
-    /* Don't ask me.  The compression libs need (original size + 0.1% +
-       12 bytes). */
-    /* Note - this will have to be RADICALLY changed if alt1/alt2 are sent 
-       as well. */
-
-  /* check to see if client can handle the terrain data first */
-  if( F_terrain ){
-    if( galaxyValid[me->p_no] )	{	/* if we've already submitted a galaxy to client.. */
-      return;				/* ... then don't do anything */
-    }
-     
-#if defined(T_DIAG) || defined(T_DIAG2)
-    { 
-       char buf[80];
-       sprintf( buf, "pno: %d gIsense: %d", me->p_no, galaxyValid[me->p_no] );
-       pmessage( buf, 0, MALL, MSERVA );
-    }
-#endif
-    galaxyValid[me->p_no] = 1;
-    /* Send initial packet. */
-    tinfo_pkt.type = SP_TERRAIN_INFO2;
-    tinfo_pkt.xdim = htons(DIM);
-    tinfo_pkt.ydim = htons(DIM);
-    sendClientPacket( (struct player_spacket *) &tinfo_pkt );
-    for( i = 0; i < DIM*DIM; i++ ){
-      origBuf[i] = terrain_grid[i].types;	/* pack types field into array */
-    }
-#if defined(T_DIAG) || defined(T_DIAG2)
-    status = compress( gzipBuf, &dlen, origBuf, olen );
-    if( status != Z_OK ){
-      pmessage( "TERRAIN: Cannot gzip terrain grid.", 0, MALL, MSERVA );
-      return;
-    }
-    else{
-      sprintf( buf, "TERRAIN: Original length %d, compressed length %d", DIM*DIM, dlen );
-      pmessage( buf, 0, MALL, MSERVA );
-    }
-#else
-    compress(gzipBuf, &dlen, (Byte *)origBuf, olen );
-#endif
-    npkts = (dlen>>LOG2NTERRAIN);
-    if( dlen&TERRAIN_MASK ){
-      npkts++;		/* require a partial packet */
-    }
-    for( i = 1; i <= npkts; i++ ){
-      tpkt.type = SP_TERRAIN2;
-      tpkt.sequence = (unsigned char)i;
-      tpkt.total_pkts = (unsigned char)npkts;
-      if( i < npkts ){
-        maxfor = tpkt.length = NTERRAIN;
-      }
-      else{
-        maxfor = tpkt.length = (dlen&TERRAIN_MASK);
-      }
-      for( j = 0; j < maxfor; j++ ){
-        tpkt.terrain_type[j] = gzipBuf[((i-1)<<LOG2NTERRAIN) + j];
-      }
-      /* ok, packet is filled in, send it */
-#ifdef T_DIAG2
-      sprintf( buf, "Sending terrain packet %d of %d", tpkt.sequence, tpkt.total_pkts );
-      pmessage( buf, 0, MALL, MSERVA );
-#endif
-      sendClientPacket( (struct player_spacket *) &tpkt );
-    }
-  }
-}
-
-void
-updateMOTD(void)
-{
-    static int spinner = 0;
-
-    if (--spinner < 0) {
-	static struct stat oldstat;
-	static int firsttime = 1;
-
-	char   *path;
-	struct stat newstat;
-	struct obvious_packet pkt;
-
-	spinner = 10;
-
-	if (!firsttime) {
-	    path = build_path(MOTD);
-	    stat(path, &newstat);
-	    if (newstat.st_ino == oldstat.st_ino &&
-		newstat.st_mtime == oldstat.st_mtime)
-		return;
-	    oldstat.st_ino = newstat.st_ino;
-	    oldstat.st_mtime = newstat.st_mtime;
-
-	    pkt.type = SP_NEW_MOTD;
-	    sendClientPacket((struct player_spacket *) & pkt);
-	}
-	else {
-	    sendMotd();		/* can't build_path before this */
-	    path = build_path(MOTD);
-	    stat(path, &oldstat);
-	    /*printf("%s: %d, %d\n", path, oldstat.st_ino, oldstat.st_mtime);*/
-	    firsttime = 0;
-	}
-    }
-}
-
-void
-sendQueuePacket(short int pos)
-{
-    struct queue_spacket qPacket;
-
-    qPacket.type = SP_QUEUE;
-    qPacket.pos = htons(pos);
-    sendClientPacket((struct player_spacket *) & qPacket);
-    flushSockBuf();
-}
-
-void
-sendClientPacket(struct player_spacket *packet)
-{
-    sendClientSizedPacket(packet, -1);
-}
-
-void
-sendClientSizedPacket(struct player_spacket *packet, int size)
- /* Pick a random type for the packet */
-{
-    int     orig_type;
-    int     issc;
-    static int oldStatus = POUTFIT;
-
-#ifdef SHOW_PACKETS
-    {
-	FILE   *logfile;
-	char   *paths;
-	paths = build_path("logs/metaserver.log");
-	logfile=fopen(paths, "a");
-	if (logfile) {
-	    fprintf(logfile, "Sending packet type %d\n", (int)packet->type);
-	    fclose(logfile);
-        }
-
-    }
-#endif
-
-#ifdef T_DIAG2
-    if( (packet->type == SP_TERRAIN2) || (packet->type == SP_TERRAIN_INFO2) ){
-      pmessage( "Sending TERRAIN packet\n", 0, MALL, MSERVA );
-    }
-#endif
-
-    orig_type = packet->type;
-    packet->type &= (char) 0x3f;
-
-    /* if we're not given the size, calculate it */
-    if (size<0) {
-	if (size_of_spacket(packet) == 0) {
-	    printf("Attempt to send strange packet %d\n", packet->type);
-	    return;
-	}
-	size = size_of_spacket(packet);
-    } else {
-	/* pad to 32-bits */
-	size = ((size-1)/4 + 1) * 4;
-    }
-
-    packetsSent[packet->type]++;
-
-
-    if (commMode == COMM_TCP
-	|| (commMode == COMM_UDP && udpMode == MODE_TCP)) {
-	switch(orig_type) {
-	case SP_MOTD:
-	case SP_MOTD_PIC:
-	    /* these can afford to be delayed */
-	    sendTCPdeferred((void*)packet, size);
-	    break;
-
-	default:
-	    /* business as usual, TCP */
-	    sendTCPbuffered((void*)packet, size);
-	    break;
-	}
-    }
-    else {
-	/*
-	   do UDP stuff unless it's a "critical" packet (note that both kinds
-	   get a sequence number appended) (FIX)
-	*/
-	issc = 0;
-	switch (orig_type) {
-	case SP_KILLS:
-	case SP_TORP_INFO:
-	case SP_THINGY_INFO:
-	case SP_PHASER:
-	case SP_PLASMA_INFO:
-	case SP_YOU | 0x40:	/* ??? what is this? */
-	case SP_STATUS:
-	case SP_STATUS2:
-	case SP_PLANET:
-	case SP_PLANET2:
-	case SP_FLAGS:
-	case SP_HOSTILE:
-	    /*
-	       these are semi-critical; flag as semi-critical and fall
-	       through
-	    */
-	    issc = 1;
-
-	case SP_PLAYER:
-	case SP_TORP:
-	case SP_S_TORP:
-	case SP_S_8_TORP:
-	case SP_THINGY:
-	case SP_YOU:
-	case SP_PLASMA:
-	case SP_STATS:
-	case SP_STATS2:
-/*	case SP_SCAN:*/
-	case SP_PING:
-	case SP_UDP_REPLY:	/* only reply when COMM_UDP is SWITCH_VERIFY */
-	    /* these are non-critical updates; send them via UDP */
-	    V_UDPDIAG(("Sending type %d\n", packet->type));
-	    packets_sent++;
-	    sendUDPbuffered(issc, (void*)packet, size);
-	    break;
-
-	case SP_MOTD:
-	case SP_MOTD_PIC:
-	    sendTCPdeferred((void*)packet, size);
-	    break;
-
-	default:
-	    sendTCPbuffered((void*)packet, size);
-	    break;
-	}
-    }
-
-    if (me != NULL)
-	oldStatus = me->p_status;
-}
-
 /* flushSockBuf, socketPause, socketWait
    were here */
-
-/* Find out if client has any requests */
-int 
-readFromClient(void)
-{
-    struct timeval timeout;
-    fd_set  readfds, writefds;
-    int     retval = 0;
-
-    if (clientDead)
-	return (0);
-
-    timeout.tv_sec = 0;
-    timeout.tv_usec = 0;
-
-    build_select_masks(&readfds, &writefds);
-
-    if (select(32, &readfds, &writefds, (fd_set*)0, &timeout) != 0) {
-	/* Read info from the xtrek client */
-	if (FD_ISSET(sock, &readfds)) {
-	    retval += doRead(sock);
-	}
-	if (udpSock >= 0 && FD_ISSET(udpSock, &readfds)) {
-	    V_UDPDIAG(("Activity on UDP socket\n"));
-	    retval += doRead(udpSock);
-	}
-	if (retval==0 &&	/* no other traffic */
-	    FD_ISSET(sock, &writefds)) {
-	    flushDeferred();	/* we have an eye in the packet hurricane */
-	}
-    }
-    return (retval != 0);	/* convert to 1/0 */
-}
-
-static int 
-input_allowed(int packettype)
-{
-    switch (packettype) {
-    case CP_MESSAGE:
-    case CP_SOCKET:
-    case CP_OPTIONS:
-    case CP_BYE:
-    case CP_UPDATES:
-    case CP_RESETSTATS:
-    case CP_RESERVED:
-    case CP_RSA_KEY:
-    case CP_ASK_MOTD:
-    case CP_PING_RESPONSE:
-    case CP_UDP_REQ:
-    case CP_FEATURE:
-    case CP_S_MESSAGE:
-	return 1;
-    default:
-	if (!me)
-		return 0;
-
-	if (me->p_status == PTQUEUE)
-	    return (packettype == CP_OUTFIT
-		);
-	else if (me->p_status == POBSERVE)
-	    return (packettype == CP_QUIT
-		    || packettype == CP_PLANLOCK
-		    || packettype == CP_PLAYLOCK
-		    || packettype == CP_SCAN
-		    || packettype == CP_SEQUENCE	/* whatever this is */
-		);
-
-	if (inputMask >= 0 && inputMask != packettype)
-	    return 0;
-	if (me == NULL)
-	    return 1;
-	if (!(me->p_flags & (PFWAR | PFREFITTING)))
-	    return 1;
-
-	return 0;
-    }
-}
 
 static int rsock;		/* ping stuff */
 
 /* ripped out of above routine */
-int
+static int
 doRead(int asock)
 {
     struct timeval timeout;
@@ -2002,6 +1931,83 @@ doRead(int asock)
 	}
     }
     return (1);
+}
+
+/* Find out if client has any requests */
+int 
+readFromClient(void)
+{
+    struct timeval timeout;
+    fd_set  readfds, writefds;
+    int     retval = 0;
+
+    if (clientDead)
+	return (0);
+
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 0;
+
+    build_select_masks(&readfds, &writefds);
+
+    if (select(32, &readfds, &writefds, (fd_set*)0, &timeout) != 0) {
+	/* Read info from the xtrek client */
+	if (FD_ISSET(sock, &readfds)) {
+	    retval += doRead(sock);
+	}
+	if (udpSock >= 0 && FD_ISSET(udpSock, &readfds)) {
+	    V_UDPDIAG(("Activity on UDP socket\n"));
+	    retval += doRead(udpSock);
+	}
+	if (retval==0 &&	/* no other traffic */
+	    FD_ISSET(sock, &writefds)) {
+	    flushDeferred();	/* we have an eye in the packet hurricane */
+	}
+    }
+    return (retval != 0);	/* convert to 1/0 */
+}
+
+static int 
+input_allowed(int packettype)
+{
+    switch (packettype) {
+    case CP_MESSAGE:
+    case CP_SOCKET:
+    case CP_OPTIONS:
+    case CP_BYE:
+    case CP_UPDATES:
+    case CP_RESETSTATS:
+    case CP_RESERVED:
+    case CP_RSA_KEY:
+    case CP_ASK_MOTD:
+    case CP_PING_RESPONSE:
+    case CP_UDP_REQ:
+    case CP_FEATURE:
+    case CP_S_MESSAGE:
+	return 1;
+    default:
+	if (!me)
+		return 0;
+
+	if (me->p_status == PTQUEUE)
+	    return (packettype == CP_OUTFIT
+		);
+	else if (me->p_status == POBSERVE)
+	    return (packettype == CP_QUIT
+		    || packettype == CP_PLANLOCK
+		    || packettype == CP_PLAYLOCK
+		    || packettype == CP_SCAN
+		    || packettype == CP_SEQUENCE	/* whatever this is */
+		);
+
+	if (inputMask >= 0 && inputMask != packettype)
+	    return 0;
+	if (me == NULL)
+	    return 1;
+	if (!(me->p_flags & (PFWAR | PFREFITTING)))
+	    return 1;
+
+	return 0;
+    }
 }
 
 static void 
@@ -2449,9 +2455,6 @@ handleMessageReq(struct mesg_cpacket *packet)
     static long lasttime = 0 /* , time() */ ;
     static int balance = 0;	/* make sure he doesn't get carried away */
     long    thistime;
-
-    int     isCensured();	/* "shut up and play" code 7/21/91 TC */
-    int     parseIgnore();	/* still more code, 7/24/91 TC */
 
     /*
        Some random code to make sure the player doesn't get carried away
@@ -2980,6 +2983,68 @@ handleSMessageReq(struct mesg_s_cpacket *packet)
  * ---------------------------------------------------------------------------
  */
 
+int
+connUdpConn(void)
+{
+    struct sockaddr_in addr;
+    int     len;
+
+    if (udpSock > 0) {
+	fprintf(stderr, "ntserv: tried to open udpSock twice\n");
+	return (0);		/* pretend we succeeded (this could be bad) */
+    }
+    resetUDPbuffer();
+    if ((udpSock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+	perror("ntserv: unable to create DGRAM socket");
+	return (-1);
+    }
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = remoteaddr;	/* addr of our client */
+    addr.sin_port = htons(udpClientPort);	/* client's port */
+
+    if (connect(udpSock, (struct sockaddr *) & addr, sizeof(addr)) < 0) {
+	perror("ntserv: connect to client UDP port");
+	UDPDIAG(("Unable to connect() to %s on port %d\n", me->p_name,
+		 udpClientPort));
+	close(udpSock);
+	udpSock = -1;
+	return (-1);
+    }
+    UDPDIAG(("connect to %s's port %d on 0x%x succeded\n",
+	     me->p_name, udpClientPort, remoteaddr));
+
+    /* determine what our port is */
+    len = sizeof(addr);
+    if (getsockname(udpSock, (struct sockaddr *) & addr, &len) < 0) {
+	perror("netrek: unable to getsockname(UDP)");
+	UDPDIAG(("Can't get our own socket; connection failed\n"));
+	close(udpSock);
+	udpSock = -1;
+	return (-1);
+    }
+    udpLocalPort = (int) ntohs(addr.sin_port);
+
+    if (configvals->udpAllowed > 2)	/* verbose debug mode? */
+	printUdpInfo();
+
+    return (0);
+}
+
+int
+closeUdpConn(void)
+{
+    V_UDPDIAG(("Closing UDP socket\n"));
+    if (udpSock < 0) {
+	fprintf(stderr, "ntserv: tried to close a closed UDP socket\n");
+	return (-1);
+    }
+    shutdown(udpSock, 2);	/* wham */
+    close(udpSock);		/* bam */
+    udpSock = -1;		/* (nah) */
+
+    return (0);
+}
+
 static void
 handleUdpReq(struct udp_req_cpacket *packet)
 {
@@ -3174,68 +3239,6 @@ send:
 }
 
 
-int
-connUdpConn(void)
-{
-    struct sockaddr_in addr;
-    int     len;
-
-    if (udpSock > 0) {
-	fprintf(stderr, "ntserv: tried to open udpSock twice\n");
-	return (0);		/* pretend we succeeded (this could be bad) */
-    }
-    resetUDPbuffer();
-    if ((udpSock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-	perror("ntserv: unable to create DGRAM socket");
-	return (-1);
-    }
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = remoteaddr;	/* addr of our client */
-    addr.sin_port = htons(udpClientPort);	/* client's port */
-
-    if (connect(udpSock, (struct sockaddr *) & addr, sizeof(addr)) < 0) {
-	perror("ntserv: connect to client UDP port");
-	UDPDIAG(("Unable to connect() to %s on port %d\n", me->p_name,
-		 udpClientPort));
-	close(udpSock);
-	udpSock = -1;
-	return (-1);
-    }
-    UDPDIAG(("connect to %s's port %d on 0x%x succeded\n",
-	     me->p_name, udpClientPort, remoteaddr));
-
-    /* determine what our port is */
-    len = sizeof(addr);
-    if (getsockname(udpSock, (struct sockaddr *) & addr, &len) < 0) {
-	perror("netrek: unable to getsockname(UDP)");
-	UDPDIAG(("Can't get our own socket; connection failed\n"));
-	close(udpSock);
-	udpSock = -1;
-	return (-1);
-    }
-    udpLocalPort = (int) ntohs(addr.sin_port);
-
-    if (configvals->udpAllowed > 2)	/* verbose debug mode? */
-	printUdpInfo();
-
-    return (0);
-}
-
-int
-closeUdpConn(void)
-{
-    V_UDPDIAG(("Closing UDP socket\n"));
-    if (udpSock < 0) {
-	fprintf(stderr, "ntserv: tried to close a closed UDP socket\n");
-	return (-1);
-    }
-    shutdown(udpSock, 2);	/* wham */
-    close(udpSock);		/* bam */
-    udpSock = -1;		/* (nah) */
-
-    return (0);
-}
-
 /* used for debugging */
 void
 printUdpInfo(void)
@@ -3333,7 +3336,7 @@ sendSC(void)
  * No, because as soon as the player hits the "update all" key it's gonna
  * happen anyway...)
  */
-void 
+static void 
 forceUpdate(void)
 {
     static time_t lastone = 0;
@@ -3383,7 +3386,7 @@ forceUpdate(void)
 
 /* note - this should really be replaced with a conf.whatever file that
    lists the logins of people that can't shut up */
-int 
+static int 
 isCensured(char *s)		/* return true if cannot message opponents */
 {
     return (
@@ -3401,7 +3404,7 @@ isCensured(char *s)		/* return true if cannot message opponents */
 
 /* return true if you should eat message */
 
-int 
+static int 
 parseIgnore(struct mesg_cpacket *packet)
 {
     char   *s;
@@ -3497,7 +3500,7 @@ parseIgnore(struct mesg_cpacket *packet)
 /* merged RSA query '#' here, too (HAK) */
 /* return true if you should eat message */
 
-int 
+static int 
 parseQuery(struct mesg_spacket *packet)
 {
     char    buf[80];
@@ -3565,7 +3568,7 @@ parseQuery(struct mesg_spacket *packet)
     /* NOTREACHED */
 }
 
-int 
+static int 
 bouncePingStats(struct mesg_spacket *packet)
 {
     char    buf[80];
@@ -3588,7 +3591,7 @@ bouncePingStats(struct mesg_spacket *packet)
 }
 
 /* new code, sends bouncemsg to bounceto from GOD 4/17/92 TC */
-void 
+static void 
 bounce(char *bouncemsg, int bounceto)
 {
     char    buf[10];
@@ -3706,7 +3709,7 @@ sendMissileNum(int num)
 
 */
 
-int
+static int
 convert_hostname(char *name, struct in_addr *addr)
 {
     struct hostent   *hp;

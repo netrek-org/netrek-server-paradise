@@ -29,7 +29,7 @@ FILE   *tlog = NULL;
 
 #define TOURNEYMODE	(status2->league > 2)
 
-void 
+static void 
 opentlog(void)
 {
     tlog = fopen(TLOGNAME, "a");
@@ -48,7 +48,7 @@ opentlog(void)
 /* Return a string identifying the player and his ship.
    Uses a ring of buffers so that it can be used multiple times
    in a printf */
-char *
+static char *
 id_player(struct player *p)
 {
     static char bufs[16][80];
@@ -69,7 +69,7 @@ id_player(struct player *p)
 /* Return a string identifying the player and his ship.
    Uses a ring of buffers so that it can be used multiple times
    in a printf */
-char *
+static char *
 id_planet(struct planet *p)
 {
     static char bufs[16][80];
@@ -97,7 +97,7 @@ id_planet(struct planet *p)
 enum player_status_e status_cache[MAXPLAYER];
 enum ship_types_e ship_cache[MAXPLAYER];
 
-void 
+static void 
 tlog_refit(struct player *pl)
 {
     if (!TOURNEYMODE)
@@ -138,7 +138,7 @@ tlog_plkill(struct player *victim, struct player *killer1,
 /* player changed status from ALIVE to
    something else without telling us.
    call before erasing armies */
-void 
+static void 
 tlog_plquit(struct player *victim)
 {
     if (!TOURNEYMODE)
@@ -213,6 +213,7 @@ tlog_planaban(struct planet *pl, struct player *killer)
 	    id_player(killer));
 }
 
+#ifdef USED
 void 
 tlog_jsassist(struct player *js)
 {
@@ -223,6 +224,7 @@ tlog_jsassist(struct player *js)
 
     fprintf(tlog, "%ld\tjsassist %s\n", status->clock, id_player(js));
 }
+#endif
 
 /* call before transferring the army */
 void 
@@ -380,7 +382,7 @@ scan_for_unexpected_tourny_events(void)
    */
 
 
-void 
+static void 
 closetlog(void)
 {
     if (tlog != NULL) {
@@ -391,7 +393,7 @@ closetlog(void)
 }
 
 
-void 
+static void 
 tlog_all(void)
 {
     int     i;

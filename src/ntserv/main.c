@@ -45,7 +45,137 @@ int     overload = 0;		/* global 7/31/91 TC */
 
 int     indie = 0;		/* always be indie 8/28/91 TC */
 
-static void atexitfunc(void);
+static void 
+atexitfunc(void)
+{
+    me->p_ntspid = 0;
+    me->p_status = PFREE;
+}
+
+RETSIGTYPE
+reaper(int unused)
+{
+#ifdef HAVE_WAIT3
+    while (wait3((int *) 0, (int) WNOHANG, (struct rusage *) 0) > 0);
+#else
+    while (waitpid(0, NULL, WNOHANG) > 0);
+#endif				/* SVR4 */
+    return 0;
+}
+
+void
+printStats(void)
+{
+    FILE   *logfile;
+    time_t  curtime;
+    char   *paths;		/* added 1/18/93 KAO */
+
+    paths = build_path(LOGFILENAME);
+    logfile = fopen(paths, "a");
+    if (!logfile)
+	return;
+    curtime = time(NULL);
+
+    fprintf(logfile, "Leaving: %-16s (%s) %3dP %3dA %3dW/%3dL %3dmin %drtt %dsdv %dls %dplan <%s@%s> %s",
+	    me->p_name,
+	    twoletters(me),
+	    me->p_stats.st_tplanets - startTplanets,
+	    me->p_stats.st_tarmsbomb - startTarms,
+	    me->p_stats.st_tkills - startTkills,
+	    me->p_stats.st_tlosses - startTlosses,
+	    (me->p_stats.st_tticks - startTticks) / 600,
+            me->p_avrt, me->p_stdv, me->p_pkls,
+	    numPlanets(me->p_team),
+
+	    me->p_login,
+	    me->p_full_hostname,
+	    ctime((time_t *) &curtime));
+
+    if (goAway)
+	fprintf(logfile, "^^^ 2 players/1 slot.  was %s (%s)\n",
+		start_name, start_login);
+    fclose(logfile);
+}
+
+
+/*
+ * .pics file format:
+ *
+ * name
+ * x y page
+ * name
+ * x y page
+ * etc
+ */
+
+void 
+doMotdPics(void)
+{
+    FILE   *ptr, *ftemp;
+    char    buf[128], fname[128];
+    unsigned char *bits;
+    char   *result;
+    int     x, y, page, w, h;
+    int     bytesperline=0;	/* pad the width to a byte */
+    int     linesperblock=0;	/* how many lines in 1016 bytes? */
+    int     i;
+    char   *paths;
+
+    paths = build_path(PICS);
+    ptr = fopen(paths, "r");
+    if (ptr == NULL)
+	return;
+    while (1) {
+	result = fgets(fname, 125, ptr);
+	if (result == NULL)
+	    /* must fclose ptr */
+	    break;
+
+	if (fname[strlen(fname) - 1] == '\n')
+	    fname[strlen(fname) - 1] = 0;
+
+	paths = build_path(fname);
+	ftemp = fopen(paths, "r");
+	bits = 0;
+	if (ftemp == 0) {
+	    fprintf(stderr, "ntserv: couldn't open file %s.  skipping\n", paths);
+	}
+	else {
+	    ParseXbmFile(ftemp, &w, &h, &bits);	/* parsexbm.c */
+
+	    bytesperline = (w - 1) / 8 + 1;
+	    linesperblock = 1016 /* packets.h */ / bytesperline;
+	}
+
+	fgets(buf, 125, ptr);
+
+	if (3 != sscanf(buf, "%d %d %d", &x, &y, &page)) {
+	    printf("Format error in .pics file\n");
+	    if (bits)
+		free(bits);
+	    bits = NULL;
+	}
+
+	if (bits) {
+	    if (me!=0 && (me->p_stats.st_flags & ST_NOBITMAPS)) {
+		sendMotdNopic(x, y, page, w, h);
+	    }
+	    else
+		for (i = 0; i * linesperblock < h; i++) {
+		    int     nlines;
+		    if ((i + 1) * linesperblock > h)
+			nlines = h - i * linesperblock;
+		    else
+			nlines = linesperblock;
+		    sendMotdPic(x, y + i * linesperblock,
+				bits + bytesperline * linesperblock * i,
+				page, w, nlines);
+		}
+	    free(bits);
+	}
+    }
+    fclose(ptr);
+}
 
 int 
 main(int argc, char **argv)
@@ -475,13 +605,6 @@ exitGame(void)
     exit(0);
 }
 
-static void 
-atexitfunc(void)
-{
-    me->p_ntspid = 0;
-    me->p_status = PFREE;
-}
-
 #define	PLURAL(n)	(((n)==1)?"":"s")
 
 static char *weapon_types[WP_MAX] = {
@@ -491,7 +614,7 @@ static char *weapon_types[WP_MAX] = {
     "Fighters",
 };
 
-void 
+static void 
 sendSysDefs(void)
 {
     char    buf[200], buf2[200];
@@ -795,129 +918,4 @@ sendMotd(void)
     /* wait till the end for the pictures */
     if(!blk_metaserver)
 	doMotdPics();
-}
-
-RETSIGTYPE
-reaper(int unused)
-{
-#ifdef HAVE_WAIT3
-    while (wait3((int *) 0, (int) WNOHANG, (struct rusage *) 0) > 0);
-#else
-    while (waitpid(0, NULL, WNOHANG) > 0);
-#endif				/* SVR4 */
-    return 0;
-}
-
-void
-printStats(void)
-{
-    FILE   *logfile;
-    time_t  curtime;
-    char   *paths;		/* added 1/18/93 KAO */
-
-    paths = build_path(LOGFILENAME);
-    logfile = fopen(paths, "a");
-    if (!logfile)
-	return;
-    curtime = time(NULL);
-
-    fprintf(logfile, "Leaving: %-16s (%s) %3dP %3dA %3dW/%3dL %3dmin %drtt %dsdv %dls %dplan <%s@%s> %s",
-	    me->p_name,
-	    twoletters(me),
-	    me->p_stats.st_tplanets - startTplanets,
-	    me->p_stats.st_tarmsbomb - startTarms,
-	    me->p_stats.st_tkills - startTkills,
-	    me->p_stats.st_tlosses - startTlosses,
-	    (me->p_stats.st_tticks - startTticks) / 600,
-            me->p_avrt, me->p_stdv, me->p_pkls,
-	    numPlanets(me->p_team),
-
-	    me->p_login,
-	    me->p_full_hostname,
-	    ctime((time_t *) &curtime));
-
-    if (goAway)
-	fprintf(logfile, "^^^ 2 players/1 slot.  was %s (%s)\n",
-		start_name, start_login);
-    fclose(logfile);
-}
-
-
-/*
- * .pics file format:
- *
- * name
- * x y page
- * name
- * x y page
- * etc
- */
-
-void 
-doMotdPics(void)
-{
-    FILE   *ptr, *ftemp;
-    char    buf[128], fname[128];
-    unsigned char *bits;
-    char   *result;
-    int     x, y, page, w, h;
-    int     bytesperline=0;	/* pad the width to a byte */
-    int     linesperblock=0;	/* how many lines in 1016 bytes? */
-    int     i;
-    char   *paths;
-
-    paths = build_path(PICS);
-    ptr = fopen(paths, "r");
-    if (ptr == NULL)
-	return;
-    while (1) {
-	result = fgets(fname, 125, ptr);
-	if (result == NULL)
-	    /* must fclose ptr */
-	    break;
-
-	if (fname[strlen(fname) - 1] == '\n')
-	    fname[strlen(fname) - 1] = 0;
-
-	paths = build_path(fname);
-	ftemp = fopen(paths, "r");
-	bits = 0;
-	if (ftemp == 0) {
-	    fprintf(stderr, "ntserv: couldn't open file %s.  skipping\n", paths);
-	}
-	else {
-	    ParseXbmFile(ftemp, &w, &h, &bits);	/* parsexbm.c */
-
-	    bytesperline = (w - 1) / 8 + 1;
-	    linesperblock = 1016 /* packets.h */ / bytesperline;
-	}
-
-	fgets(buf, 125, ptr);
-
-	if (3 != sscanf(buf, "%d %d %d", &x, &y, &page)) {
-	    printf("Format error in .pics file\n");
-	    if (bits)
-		free(bits);
-	    bits = NULL;
-	}
-
-	if (bits) {
-	    if (me!=0 && (me->p_stats.st_flags & ST_NOBITMAPS)) {
-		sendMotdNopic(x, y, page, w, h);
-	    }
-	    else
-		for (i = 0; i * linesperblock < h; i++) {
-		    int     nlines;
-		    if ((i + 1) * linesperblock > h)
-			nlines = h - i * linesperblock;
-		    else
-			nlines = linesperblock;
-		    sendMotdPic(x, y + i * linesperblock,
-				bits + bytesperline * linesperblock * i,
-				page, w, nlines);
-		}
-	    free(bits);
-	}
-    }
-    fclose(ptr);
 }

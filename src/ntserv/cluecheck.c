@@ -30,7 +30,7 @@ suitability of this software for any purpose.  This software is provided
 
 static char	clueword[40];
 
-void
+static void
 set_clue_word(char *word)
 {
   strncpy(clueword, word, sizeof(clueword));
@@ -40,6 +40,66 @@ set_clue_word(char *word)
 #ifdef MOTD_SUPPORT
 static char	*motdstring=0;
 static int	motdlen=0;
+
+static int	line, wordn;
+
+/* structures for the internal representation of the MOTD */
+#define LINESPERPAGE	38
+
+struct word {
+    char	*s;
+};
+
+struct line {
+    struct word *words;
+  int	nwords;
+};
+
+struct page {
+    struct line	lines[LINESPERPAGE];
+  int	nlines;
+    struct page *next;
+};
+
+struct page	*motdhead=0;
+
+
+static void 
+free_word(struct word *wd)
+{
+  free(wd->s);
+}
+
+static void
+free_line(struct line *ln)
+{
+  int	i;
+  for (i=0; i<ln->nwords; i++)
+    free_word(&ln->words[i]);
+  free(ln->words);
+}
+
+static void
+free_page(struct page *pg)
+{
+  int	i;
+  for (i=0; i<LINESPERPAGE; i++) {
+    free_line(&pg->lines[i]);
+  }
+}
+
+static void 
+free_motdstruct(void)
+{
+    struct page	*temp;
+    while (motdhead) {
+	temp = motdhead;
+	motdhead = temp->next;
+
+	free_page(temp);
+	free(temp);
+    }
+}
 #endif
 
 /* read the MOTD into core so we can parse it later */
@@ -84,32 +144,9 @@ static int	isfirst;
 
 #ifdef MOTD_SUPPORT
 
-static int	line, wordn;
-
-/* structures for the internal representation of the MOTD */
-#define LINESPERPAGE	38
-
-struct word {
-    char	*s;
-};
-
-struct line {
-    struct word *words;
-  int	nwords;
-};
-
-struct page {
-    struct line	lines[LINESPERPAGE];
-  int	nlines;
-    struct page *next;
-};
-
-struct page	*motdhead=0;
-
-
 
 #define MAXATTEMPTS	10
-void
+static void
 find_suitable_motd_word(void)
 {
     int	attempts;
@@ -212,7 +249,7 @@ void printout_motd()
 #endif
 
 
-void
+static void
 parse_motd(void)
 {
     struct page **currp;
@@ -302,7 +339,7 @@ parse_motd(void)
 char **phrases=0;
 int	num_phrases=0;
 
-void
+static void
 parse_clue_phrases(void)
 {
     char	*s;
@@ -329,7 +366,7 @@ parse_clue_phrases(void)
 #define BERATE(msg)	pmessage( (msg), me->p_no, MINDIV, "   CC")
 
 /* print the message that tells the person how to respond to the clue check */
-void
+static void
 remind_cluecheck(void)
 {
     char	buf[120];
@@ -385,7 +422,7 @@ static char *fallback_cluewords[] = {
 
 /* Once in a great while (hour?) the server demands a clue check from
    the player.  This makes sure you are paying attention. */
-void
+static void
 demand_clue(void)
 {
     clueword[0] = 0;
@@ -494,45 +531,6 @@ accept_cluecheck(char *word)
 
 /**********************************************************************/
 
-#ifdef MOTD_SUPPORT
-void 
-free_word(struct word *wd)
-{
-  free(wd->s);
-}
-
-void
-free_line(struct line *ln)
-{
-  int	i;
-  for (i=0; i<ln->nwords; i++)
-    free_word(&ln->words[i]);
-  free(ln->words);
-}
-
-void
-free_page(struct page *pg)
-{
-  int	i;
-  for (i=0; i<LINESPERPAGE; i++) {
-    free_line(&pg->lines[i]);
-  }
-}
-
-void 
-free_motdstruct(void)
-{
-    struct page	*temp;
-    while (motdhead) {
-	temp = motdhead;
-	motdhead = temp->next;
-
-	free_page(temp);
-	free(temp);
-    }
-}
-#endif
-
 #endif /* CLUECHECK1 */
 
 #ifdef CLUECHECK2
@@ -575,14 +573,14 @@ static char *fallback_cluewords[] = {
 
 /* -------------------------[ Functions ]------------------------- */
 
-void
+static void
 set_clue_word(char *word)
 {
   strncpy(clueword, word, sizeof(clueword));
   clueword[sizeof(clueword)-1] = 0;
 }
 
-void 
+static void
 parse_clue_phrases(void)
 {
     char    *s;
@@ -606,7 +604,7 @@ parse_clue_phrases(void)
 /*
 // print the message that tells the person how to respond to the clue check
 */
-void
+static void
 remind_cluecheck(void)
 {
     char    buf[120];
@@ -632,7 +630,7 @@ remind_cluecheck(void)
 }
 
 /* called the first time */
-void
+static void
 demand_clue(void)
 {
     char    buf[255];

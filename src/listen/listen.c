@@ -90,6 +90,394 @@ int     extraargc = 0;
 
 char	*ntserv_binary=NTSERV;
 
+/***********************************************************************
+ * Returns a string containing the date and time.  String area is static
+ * and reused.
+ */
+
+static char *
+dateTime(void)
+{
+    time_t  t;
+    char   *s;
+
+    time(&t);
+    s = ctime(&t);
+    s[24] = '\0';		/* wipe-out the newline */
+    return s;
+}
+
+/***********************************************************************
+ * Close all file descriptors except the ones specified in the argument list.
+ * The list of file descriptors is terminated with -1 as the last arg.
+ */
+
+static void
+multClose(va_alist) va_dcl
+{
+    va_list args;
+    int     fds[100], nfds, fd, ts, i, j;
+
+    /* get all descriptors to be saved into the array fds */
+    va_start(args);
+    for (nfds = 0; nfds < 99; nfds++) {
+	if ((fd = va_arg(args, int)) == -1)
+	    break;
+	else
+	    fds[nfds] = fd;
+    }
+
+#ifdef HAVE_SYSCONF
+    ts = sysconf(_SC_OPEN_MAX);
+    if (ts < 0)			/* value for OPEN_MAX is indeterminate, */
+	ts = 32;		/* so make a guess */
+#else
+    ts = getdtablesize();
+#endif
+
+    /*
+       close all descriptors, but first check the fds array to see if this
+       one is an exception
+    */
+    for (i = 0; i < ts; i++) {
+	for (j = 0; j < nfds; j++)
+	    if (i == fds[j])
+		break;
+	if (j == nfds)
+	    close(i);
+    }
+}
+
+/***********************************************************************
+ * Error reporting functions taken from my library.
+ */
+
+static void
+syserr(va_alist) va_dcl
+{
+    va_list args;
+    int     rc;
+
+    va_start(args);
+    rc = va_arg(args, int);
+    err(args);
+    if (errno < sys_nerr)
+	fprintf(stderr, "     system message: %s\n", sys_errlist[errno]);
+
+    exit(rc);
+}
+
+static void
+warnerr(va_alist) va_dcl
+{
+    va_list args;
+
+    va_start(args);
+    err(args);
+}
+
+static void
+fatlerr(va_alist) va_dcl
+{
+    va_list args;
+    int     rc;
+
+    va_start(args);
+    rc = va_arg(args, int);
+    err(args);
+
+    exit(rc);
+}
+
+static void
+err(args)
+    va_list args;
+{
+
+    char   *func, *fmt;
+
+    if (program != 0)
+	fprintf(stderr, "%s", program);
+    func = va_arg(args, char *);
+    if (func != 0 && strcmp(func, "") != 0)
+	fprintf(stderr, "(%s)", func);
+    fprintf(stderr, ": ");
+
+    fmt = va_arg(args, char *);
+    vfprintf(stderr, fmt, args);
+    fputc('\n', stderr);
+    fflush(stderr);
+}
+
+#ifdef USED
+char *
+lasterr(void)
+{
+    if (errno < sys_nerr)
+	return sys_errlist[errno];
+    else
+	return "No message text for this error.";
+}
+#endif
+
+
+/***********************************************************************
+ * Detach process in various ways.
+ */
+
+static void 
+detach(void)
+{
+    int     fd, rc, mode;
+    char   *fname;
+
+    mode = S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR;
+    fname = build_path("logs/startup.log");
+    if ((fd = open(fname, O_WRONLY | O_CREAT | O_APPEND, mode)) == -1)
+	syserr(1, "detach", "couldn't open log file. [%s]", dateTime());
+    dup2(fd, 2);
+    dup2(fd, 1);
+    multClose(1, 2, -1);	/* close all other file descriptors */
+    warnerr(0, "started at %s on port %d.", dateTime(), port);
+
+    /* fork once to escape the shells job control */
+    if ((rc = fork()) > 0)
+	exit(0);
+    else if (rc < 0)
+	syserr(1, "detach", "couldn't fork. [%s]", dateTime());
+
+    /* now detach from the controlling terminal */
+    /* NOTE -- newer versions of setsid() automatically release the
+       controlling terminal of the process.  If for some reason yours
+       doesn't, define SETSID_DOESNT_DETACH_TERMINAL and add or modify
+       the code below.  At this point you're on your own. */
+#ifdef SETSID_DOESNT_DETACH_TERMINAL
+#ifdef _SEQUENT_
+    if ((fd = open("/dev/tty", O_RDWR | O_NOCTTY, 0)) >= 0) {
+	(void) close(fd);
+    }
+#else
+    if ((fd = open("/dev/tty", O_RDWR, 0)) == -1) {
+	warnerr("detach", "couldn't open tty, assuming still okay. [%s]",
+		dateTime());
+	return;
+    }
+#if defined(SYSV) && defined(TIOCTTY)
+    {
+	int     zero = 0;
+	ioctl(fd, TIOCTTY, &zero);
+    }
+#else
+    ioctl(fd, TIOCNOTTY, 0);
+#endif
+    close(fd);
+#endif				/* _SEQUENT_ */
+#endif
+
+    setsid();			/* make us a new process group/session */
+}
+
+/***********************************************************************
+ */
+
+static void 
+getListenSock(void)
+{
+    struct sockaddr_in addr;
+
+    if ((listenSock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+	syserr(1, "getListenSock", "can't create listen socket. [%s]",
+	       dateTime());
+
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_port = htons(port);
+    {
+/* added this so we could handle nuking listen. KAO 3/26/93 */
+	int     foo = 1;
+	if (setsockopt(listenSock, SOL_SOCKET, SO_REUSEADDR, (char *) &foo,
+		       sizeof(foo)) == -1) {
+	    fprintf(stderr, "Error setting socket options in listen.\n");
+	    exit(1);
+	}
+    }
+    if (bind(listenSock, (struct sockaddr *) & addr, sizeof(addr)) < 0)
+	syserr(1, "getListenSock", "can't bind listen socket. [%s]",
+	       dateTime());
+
+    if (listen(listenSock, 5) != 0)
+	syserr(1, "getListenSock", "can't listen to socket. [%s]", dateTime());
+}
+
+/***********************************************************************
+ */
+
+static void
+getConnections(void)
+{
+    int     len, sock, pid, pa;
+    struct sockaddr_in addr;
+    struct hostent *he;
+    char    host[100];
+
+    len = sizeof(addr);
+    while ((sock = accept(listenSock, (struct sockaddr *) & addr, &len)) < 0) {
+	/* if we got interrupted by a dying child, just try again */
+	if (errno == EINTR)
+	    continue;
+	else
+	    syserr(1, "getConnections",
+		   "accept() on listen socket failed. [%s]", dateTime());
+    }
+
+    /* get the host name */
+    he = gethostbyaddr((char *) &addr.sin_addr.s_addr,
+		       sizeof(addr.sin_addr.s_addr), AF_INET);
+    if (he != 0) {
+	strcpy(host, he->h_name);
+	pa = *((int *) he->h_addr);
+    }
+    else {
+	strcpy(host, inet_ntoa( addr.sin_addr ));
+	pa = (int) addr.sin_addr.s_addr;
+    }
+
+    if (pa == meta_addr)
+	metaserverflag = 1;
+    /* else */
+    warnerr(0, "connect: %-33s[%s][%d]", host, dateTime(), metaserverflag);
+
+    /* fork off a server */
+    if ((pid = fork()) == 0) {
+	char   *newargv[10];
+	int     newargc = 0;
+	int     i;
+	char   *binname;
+	binname = build_path(ntserv_binary);
+	dup2(sock, 0);
+	multClose(0, 1, 2, -1);	/* close everything else */
+
+	newargv[newargc++] = "ntserv";
+	if (metaserverflag == 1)
+	    newargv[newargc++] = "-M";
+	for (i = 0; i < extraargc; i++)
+	    newargv[newargc++] = extraargs[i];
+	newargv[newargc++] = host;
+	newargv[newargc] = 0;
+
+	execv(binname, newargv);
+
+	syserr(1, "getConnections",
+	       "couldn't execv %s as the server. [%s]",
+	       binname, dateTime());
+	exit(1);
+    }
+    else if (pid < 0)
+	syserr(1, "getConnections", "can't fork. [%s]", dateTime());
+
+    close(sock);
+    metaserverflag = 0;
+}
+
+/***********************************************************************
+ * Adds "var=value" to environment list
+ */
+
+static void
+set_env(char *var, char *value)
+{
+    char   *buf;
+    buf = malloc(strlen(var) + strlen(value) + 2);
+    if (!buf)
+	syserr(1, "set_env", "malloc() failed. [%s]", dateTime());
+
+    strcpy(buf, var);
+    strcat(buf, "=");
+    strcat(buf, value);
+
+    putenv(buf);
+}
+
+
+/***********************************************************************
+ * Handler for SIGTERM.  Closes and shutdowns everything.
+ */
+
+static RETSIGTYPE 
+terminate(int unused)
+{
+    int     s;
+
+    fatlerr(1, "terminate", "killed. [%s]", dateTime());
+#ifdef HAVE_SYSCONF
+    s = sysconf(_SC_OPEN_MAX);
+    if (s < 0)			/* value for OPEN_MAX is indeterminate, */
+	s = 32;			/* so make a guess */
+#else
+    s = getdtablesize();
+#endif
+    /* shutdown and close everything */
+    for (; s >= 0; s--) {
+	shutdown(s, 2);
+	close(s);
+    }
+}
+
+/***********************************************************************
+ * Waits on zombie children.
+ */
+
+static RETSIGTYPE
+reaper(int unused)
+{
+#ifdef HAVE_WAIT3
+    while (wait3(0, WNOHANG, 0) > 0);
+#else
+    while (waitpid(0, 0, WNOHANG) > 0);
+#endif				/* SVR4 */
+}
+
+/*---------------------[ prints the usage of listen ]---------------------*/
+
+static void
+printlistenUsage(char *name)
+{
+    int x;
+    char message[][255] = {
+        "\n\t'%s [options]'\n\n",
+        "Options:\n",
+        "\t-h      help (this usage message)\n",
+        "\t-p      port other than default port\n",
+        "\t-k n    use n as shared memory key number\n\n",
+        "Any unrecognized options are passed through to ntserv. For an up\n",
+        "to date listing of available ntserv options check the binary.\n",
+        "\nNOTE: in league play you must start up two listen processes, ",
+        "one for each port.\n\n",
+        "\0"
+    };
+
+    fprintf(stderr, "-- NetrekII (Paradise), %s --\n", PARAVERS);
+    for (x=0; *message[x] != '\0'; x++)
+        fprintf(stderr, message[x], name);
+
+    exit(1);
+}
+
+/*--------------------------[ printlistenUsage ]--------------------------*/
+
+/* set the pid logfile (BG) */
+static void
+print_pid(void)
+{
+	char *fname;
+	FILE *fptr;
+
+	fname = build_path("logs/listen.pid");
+	fptr = fopen(fname, "w+");
+	fprintf(fptr, "%d", getpid());
+	fclose(fptr);
+}
+
 int 
 main(argc, argv)
     int     argc;
@@ -165,387 +553,3 @@ main(argc, argv)
     }
 }
 
-/***********************************************************************
- * Detach process in various ways.
- */
-
-void 
-detach(void)
-{
-    int     fd, rc, mode;
-    char   *fname;
-
-    mode = S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR;
-    fname = build_path("logs/startup.log");
-    if ((fd = open(fname, O_WRONLY | O_CREAT | O_APPEND, mode)) == -1)
-	syserr(1, "detach", "couldn't open log file. [%s]", dateTime());
-    dup2(fd, 2);
-    dup2(fd, 1);
-    multClose(1, 2, -1);	/* close all other file descriptors */
-    warnerr(0, "started at %s on port %d.", dateTime(), port);
-
-    /* fork once to escape the shells job control */
-    if ((rc = fork()) > 0)
-	exit(0);
-    else if (rc < 0)
-	syserr(1, "detach", "couldn't fork. [%s]", dateTime());
-
-    /* now detach from the controlling terminal */
-    /* NOTE -- newer versions of setsid() automatically release the
-       controlling terminal of the process.  If for some reason yours
-       doesn't, define SETSID_DOESNT_DETACH_TERMINAL and add or modify
-       the code below.  At this point you're on your own. */
-#ifdef SETSID_DOESNT_DETACH_TERMINAL
-#ifdef _SEQUENT_
-    if ((fd = open("/dev/tty", O_RDWR | O_NOCTTY, 0)) >= 0) {
-	(void) close(fd);
-    }
-#else
-    if ((fd = open("/dev/tty", O_RDWR, 0)) == -1) {
-	warnerr("detach", "couldn't open tty, assuming still okay. [%s]",
-		dateTime());
-	return;
-    }
-#if defined(SYSV) && defined(TIOCTTY)
-    {
-	int     zero = 0;
-	ioctl(fd, TIOCTTY, &zero);
-    }
-#else
-    ioctl(fd, TIOCNOTTY, 0);
-#endif
-    close(fd);
-#endif				/* _SEQUENT_ */
-#endif
-
-    setsid();			/* make us a new process group/session */
-}
-
-/***********************************************************************
- */
-
-void 
-getListenSock(void)
-{
-    struct sockaddr_in addr;
-
-    if ((listenSock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-	syserr(1, "getListenSock", "can't create listen socket. [%s]",
-	       dateTime());
-
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons(port);
-    {
-/* added this so we could handle nuking listen. KAO 3/26/93 */
-	int     foo = 1;
-	if (setsockopt(listenSock, SOL_SOCKET, SO_REUSEADDR, (char *) &foo,
-		       sizeof(foo)) == -1) {
-	    fprintf(stderr, "Error setting socket options in listen.\n");
-	    exit(1);
-	}
-    }
-    if (bind(listenSock, (struct sockaddr *) & addr, sizeof(addr)) < 0)
-	syserr(1, "getListenSock", "can't bind listen socket. [%s]",
-	       dateTime());
-
-    if (listen(listenSock, 5) != 0)
-	syserr(1, "getListenSock", "can't listen to socket. [%s]", dateTime());
-}
-
-/***********************************************************************
- */
-
-void 
-getConnections(void)
-{
-    int     len, sock, pid, pa;
-    struct sockaddr_in addr;
-    struct hostent *he;
-    char    host[100];
-
-    len = sizeof(addr);
-    while ((sock = accept(listenSock, (struct sockaddr *) & addr, &len)) < 0) {
-	/* if we got interrupted by a dying child, just try again */
-	if (errno == EINTR)
-	    continue;
-	else
-	    syserr(1, "getConnections",
-		   "accept() on listen socket failed. [%s]", dateTime());
-    }
-
-    /* get the host name */
-    he = gethostbyaddr((char *) &addr.sin_addr.s_addr,
-		       sizeof(addr.sin_addr.s_addr), AF_INET);
-    if (he != 0) {
-	strcpy(host, he->h_name);
-	pa = *((int *) he->h_addr);
-    }
-    else {
-	strcpy(host, inet_ntoa( addr.sin_addr ));
-	pa = (int) addr.sin_addr.s_addr;
-    }
-
-    if (pa == meta_addr)
-	metaserverflag = 1;
-    /* else */
-    warnerr(0, "connect: %-33s[%s][%d]", host, dateTime(), metaserverflag);
-
-    /* fork off a server */
-    if ((pid = fork()) == 0) {
-	char   *newargv[10];
-	int     newargc = 0;
-	int     i;
-	char   *binname;
-	binname = build_path(ntserv_binary);
-	dup2(sock, 0);
-	multClose(0, 1, 2, -1);	/* close everything else */
-
-	newargv[newargc++] = "ntserv";
-	if (metaserverflag == 1)
-	    newargv[newargc++] = "-M";
-	for (i = 0; i < extraargc; i++)
-	    newargv[newargc++] = extraargs[i];
-	newargv[newargc++] = host;
-	newargv[newargc] = 0;
-
-	execv(binname, newargv);
-
-	syserr(1, "getConnections",
-	       "couldn't execv %s as the server. [%s]",
-	       binname, dateTime());
-	exit(1);
-    }
-    else if (pid < 0)
-	syserr(1, "getConnections", "can't fork. [%s]", dateTime());
-
-    close(sock);
-    metaserverflag = 0;
-}
-
-/***********************************************************************
- * Adds "var=value" to environment list
- */
-
-void 
-set_env(char *var, char *value)
-{
-    char   *buf;
-    buf = malloc(strlen(var) + strlen(value) + 2);
-    if (!buf)
-	syserr(1, "set_env", "malloc() failed. [%s]", dateTime());
-
-    strcpy(buf, var);
-    strcat(buf, "=");
-    strcat(buf, value);
-
-    putenv(buf);
-}
-
-
-/***********************************************************************
- * Returns a string containing the date and time.  String area is static
- * and reused.
- */
-
-char *
-dateTime(void)
-{
-    time_t  t;
-    char   *s;
-
-    time(&t);
-    s = ctime(&t);
-    s[24] = '\0';		/* wipe-out the newline */
-    return s;
-}
-
-/***********************************************************************
- * Handler for SIGTERM.  Closes and shutdowns everything.
- */
-
-void 
-terminate()
-{
-    int     s;
-
-    fatlerr(1, "terminate", "killed. [%s]", dateTime());
-#ifdef HAVE_SYSCONF
-    s = sysconf(_SC_OPEN_MAX);
-    if (s < 0)			/* value for OPEN_MAX is indeterminate, */
-	s = 32;			/* so make a guess */
-#else
-    s = getdtablesize();
-#endif
-    /* shutdown and close everything */
-    for (; s >= 0; s--) {
-	shutdown(s, 2);
-	close(s);
-    }
-}
-
-/***********************************************************************
- * Waits on zombie children.
- */
-
-void 
-reaper()
-{
-#ifdef HAVE_WAIT3
-    while (wait3(0, WNOHANG, 0) > 0);
-#else
-    while (waitpid(0, 0, WNOHANG) > 0);
-#endif				/* SVR4 */
-}
-
-/***********************************************************************
- * Close all file descriptors except the ones specified in the argument list.
- * The list of file descriptors is terminated with -1 as the last arg.
- */
-
-void 
-multClose(va_alist) va_dcl
-{
-    va_list args;
-    int     fds[100], nfds, fd, ts, i, j;
-
-    /* get all descriptors to be saved into the array fds */
-    va_start(args);
-    for (nfds = 0; nfds < 99; nfds++) {
-	if ((fd = va_arg(args, int)) == -1)
-	    break;
-	else
-	    fds[nfds] = fd;
-    }
-
-#ifdef HAVE_SYSCONF
-    ts = sysconf(_SC_OPEN_MAX);
-    if (ts < 0)			/* value for OPEN_MAX is indeterminate, */
-	ts = 32;		/* so make a guess */
-#else
-    ts = getdtablesize();
-#endif
-
-    /*
-       close all descriptors, but first check the fds array to see if this
-       one is an exception
-    */
-    for (i = 0; i < ts; i++) {
-	for (j = 0; j < nfds; j++)
-	    if (i == fds[j])
-		break;
-	if (j == nfds)
-	    close(i);
-    }
-}
-
-/***********************************************************************
- * Error reporting functions taken from my library.
- */
-
-void 
-syserr(va_alist) va_dcl
-{
-    va_list args;
-    int     rc;
-
-    va_start(args);
-    rc = va_arg(args, int);
-    err(args);
-    if (errno < sys_nerr)
-	fprintf(stderr, "     system message: %s\n", sys_errlist[errno]);
-
-    exit(rc);
-}
-
-void 
-warnerr(va_alist) va_dcl
-{
-    va_list args;
-
-    va_start(args);
-    err(args);
-}
-
-void 
-fatlerr(va_alist) va_dcl
-{
-    va_list args;
-    int     rc;
-
-    va_start(args);
-    rc = va_arg(args, int);
-    err(args);
-
-    exit(rc);
-}
-
-void 
-err(args)
-    va_list args;
-{
-
-    char   *func, *fmt;
-
-    if (program != 0)
-	fprintf(stderr, "%s", program);
-    func = va_arg(args, char *);
-    if (func != 0 && strcmp(func, "") != 0)
-	fprintf(stderr, "(%s)", func);
-    fprintf(stderr, ": ");
-
-    fmt = va_arg(args, char *);
-    vfprintf(stderr, fmt, args);
-    fputc('\n', stderr);
-    fflush(stderr);
-}
-
-char *
-lasterr(void)
-{
-    if (errno < sys_nerr)
-	return sys_errlist[errno];
-    else
-	return "No message text for this error.";
-}
-
-/*---------------------[ prints the usage of listen ]---------------------*/
-
-void
-printlistenUsage(char *name)
-{
-    int x;
-    char message[][255] = {
-        "\n\t'%s [options]'\n\n",
-        "Options:\n",
-        "\t-h      help (this usage message)\n",
-        "\t-p      port other than default port\n",
-        "\t-k n    use n as shared memory key number\n\n",
-        "Any unrecognized options are passed through to ntserv. For an up\n",
-        "to date listing of available ntserv options check the binary.\n",
-        "\nNOTE: in league play you must start up two listen processes, ",
-        "one for each port.\n\n",
-        "\0"
-    };
-
-    fprintf(stderr, "-- NetrekII (Paradise), %s --\n", PARAVERS);
-    for (x=0; *message[x] != '\0'; x++)
-        fprintf(stderr, message[x], name);
-
-    exit(1);
-}
-
-/*--------------------------[ printlistenUsage ]--------------------------*/
-
-/* set the pid logfile (BG) */
-void
-print_pid(void)
-{
-	char *fname;
-	FILE *fptr;
-
-	fname = build_path("logs/listen.pid");
-	fptr = fopen(fname, "w+");
-	fprintf(fptr, "%d", getpid());
-	fclose(fptr);
-}

@@ -62,85 +62,7 @@ struct {
 }       ping_sent[HASHSIZE];
 
 
-/*
- * response from client
- */
-
-void
-pingResponse(struct ping_cpacket *packet)
-{
-    register i;
-    static int last_num;
-
-    if (!ping || packet->pingme != 1)
-	return;			/* oops, garbage */
-
-    ping_ghostbust = 0;		/* don't ghostbust, client is alive */
-
-    /* throw out out-of-order packets */
-    i = uchar_diff((int) packet->number, last_num);
-    if (i < 0) {
-#if PING_DEBUG >= 1
-	fprintf(stderr, "out-of-order response ignored: %d (last: %d)\n",
-		packet->number, last_num);
-	fflush(stderr);
-#endif
-	return;
-    }
-    last_num = packet->number;
-    i = PITH(last_num);
-
-    /* calculate roundtrip */
-    ping_lag = mstime() - ping_sent[i].time;
-
-#ifdef INL_STATS
-    /* fill in lag stats fields */
-    update_lag_stats();
-#endif
-
-    /* watch out for div by 0 */
-    if (!packets_received || !ping_sent[i].packets_sent_at_ping)
-	return;
-
-    /* calculate total packet loss */
-    calc_loss(i, packet);
-
-#ifdef INL_STATS
-    update_loss_stats();
-#endif
-}
-
-/*
- * request from server
- */
-
-void
-sendClientPing(void)
-{
-    struct ping_spacket packet;
-
-    ping_ghostbust++;
-    ping_id++;			/* ok to wrap */
-
-    packet.type = SP_PING;
-    packet.number = (unsigned char) ping_id;
-    packet.lag = htons((unsigned short) ping_lag);
-    packet.tloss_sc = tloss_sc;
-    packet.tloss_cs = tloss_cs;
-    packet.iloss_sc = iloss_sc;
-    packet.iloss_cs = iloss_cs;
-
-    ping_sent[PITH(ping_id)].time = mstime();
-    /*
-       printf("ping sent at %d\n", msetime());
-    */
-
-    sendClientPacket(&packet);
-
-    ping_sent[PITH(ping_id)].packets_sent_at_ping = packets_sent;
-}
-
-void
+static void
 calc_loss(int i, struct ping_cpacket *packet)
 {
     /* tloss vars */
@@ -287,7 +209,7 @@ calc_loss(int i, struct ping_cpacket *packet)
 static int sum, n, s2;
 static int M, var;
 
-void
+static void
 update_lag_stats(void)
 {
     n++;
@@ -306,7 +228,7 @@ update_lag_stats(void)
 	me->p_stdv = (int) isqrt(var);
 }
 
-void
+static void
 update_loss_stats(void)
 {
     /*
@@ -320,7 +242,7 @@ update_loss_stats(void)
 /* utilities */
 
 /* ms time from start */
-int
+static int
 mstime(void)
 {
     static struct timeval tv_base = {0, 0};
@@ -336,7 +258,7 @@ mstime(void)
 }
 
 /* debugging */
-int
+static int
 msetime(void)
 {
     struct timeval tv;
@@ -344,7 +266,7 @@ msetime(void)
     return (tv.tv_sec - 732737182) * 1000 + tv.tv_usec / 1000;
 }
 
-int
+static int
 uchar_diff(int x, int y)
 {
     register int res;
@@ -357,4 +279,82 @@ uchar_diff(int x, int y)
 	return res + 256;
     else
 	return res;
+}
+
+/*
+ * response from client
+ */
+
+void
+pingResponse(struct ping_cpacket *packet)
+{
+    register i;
+    static int last_num;
+
+    if (!ping || packet->pingme != 1)
+	return;			/* oops, garbage */
+
+    ping_ghostbust = 0;		/* don't ghostbust, client is alive */
+
+    /* throw out out-of-order packets */
+    i = uchar_diff((int) packet->number, last_num);
+    if (i < 0) {
+#if PING_DEBUG >= 1
+	fprintf(stderr, "out-of-order response ignored: %d (last: %d)\n",
+		packet->number, last_num);
+	fflush(stderr);
+#endif
+	return;
+    }
+    last_num = packet->number;
+    i = PITH(last_num);
+
+    /* calculate roundtrip */
+    ping_lag = mstime() - ping_sent[i].time;
+
+#ifdef INL_STATS
+    /* fill in lag stats fields */
+    update_lag_stats();
+#endif
+
+    /* watch out for div by 0 */
+    if (!packets_received || !ping_sent[i].packets_sent_at_ping)
+	return;
+
+    /* calculate total packet loss */
+    calc_loss(i, packet);
+
+#ifdef INL_STATS
+    update_loss_stats();
+#endif
+}
+
+/*
+ * request from server
+ */
+
+void
+sendClientPing(void)
+{
+    struct ping_spacket packet;
+
+    ping_ghostbust++;
+    ping_id++;			/* ok to wrap */
+
+    packet.type = SP_PING;
+    packet.number = (unsigned char) ping_id;
+    packet.lag = htons((unsigned short) ping_lag);
+    packet.tloss_sc = tloss_sc;
+    packet.tloss_cs = tloss_cs;
+    packet.iloss_sc = iloss_sc;
+    packet.iloss_cs = iloss_cs;
+
+    ping_sent[PITH(ping_id)].time = mstime();
+    /*
+       printf("ping sent at %d\n", msetime());
+    */
+
+    sendClientPacket(&packet);
+
+    ping_sent[PITH(ping_id)].packets_sent_at_ping = packets_sent;
 }

@@ -64,6 +64,20 @@ static char *systemtypes[SHIPS_SYSTEMS] = {
 
 /*-----------------------------INTERNAL FUNCTIONS-------------------------*/
 
+static int 
+touch(char *file)
+{
+#ifdef HAVE_UTIME_NULL
+    return(utime(file, NULL));
+#else
+    time_t  now[2];
+
+    now[0] = now[1] = time(0);
+
+    return(utime(file, (void *) now));
+#endif
+}
+
 static void 
 load_clue_phrases(void)
 {
@@ -107,7 +121,7 @@ same length.  */
     char  **keys;		 the array of key strings
     int    *array;		 the array tofill with 1's
     int     max;		 the size of the array */
-void 
+static void 
 readstrings(char *type, char *string, char **keys, int *array, int max)
 {
     int     i;			/* looping var */
@@ -134,7 +148,7 @@ readstrings(char *type, char *string, char **keys, int *array, int max)
 
 
 /* modifies flagp to return result */
-void 
+static void 
 read_longflags(long *flagp, char *str, char **names)
 {
     char    buf[80];
@@ -171,7 +185,7 @@ stops when it encounters a line with "end" on it.   It places the values
 into the shipvals so that the next time getship is called, the new values
 will be used.  */
 
-void 
+static void 
 shipdefs(int s, FILE *f)
 {
     struct ship *currship = shipvals + s;
@@ -247,7 +261,7 @@ shipdefs(int s, FILE *f)
 }
 
 /*--------------------------------------------------------------------------*/
-void 
+static void 
 initteamvals(void)
 {
     strcpy(teams[NOBODY].nickname, "Independent");

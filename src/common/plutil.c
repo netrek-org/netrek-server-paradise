@@ -46,6 +46,7 @@ mask_to_idx(int m)
     return i;
 }
 
+#ifdef USED
 /*
  *
  */
@@ -59,6 +60,7 @@ in_warp(struct player *pl)
     }
     return (pl->p_flags & PFWARP) || pl->p_warptime;
 }
+#endif
 
 
 int 

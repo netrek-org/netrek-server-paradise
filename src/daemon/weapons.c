@@ -37,7 +37,7 @@ suitability of this software for any purpose.  This software is provided
 1 if we are hostile or at war with the object  */
 
 
-int 
+static int 
 hostile_to(int warmask, int team, struct player *pl)
     int     warmask, team;
     struct player *pl;
@@ -52,7 +52,7 @@ hostile_to(int warmask, int team, struct player *pl)
 /*  This function decides which players to inflict damage on when a torp
 explodes.  */
 
-void 
+static void 
 explode_damage(struct basetorp *torp, int radius, int why)
 {
     register int i;		/* looping var */
@@ -99,7 +99,7 @@ explode_damage(struct basetorp *torp, int radius, int why)
     }
 }
 
-void
+static void
 explode(struct basetorp *torp)	/* pointer to exploding torp's struct */
 {
     explode_damage(torp, DAMDIST, KTORP);
@@ -114,7 +114,7 @@ explode(struct basetorp *torp)	/* pointer to exploding torp's struct */
 /*  This function does the explosion of a plasma torp.  It goes through all
 players and damages them if they are close enough to get damaged*/
 
-void
+static void
 pexplode(struct plasmatorp *plasmatorp)	/* ptr to plasma to explode */
 {
     explode_damage(&plasmatorp->pt_base, PLASDAMDIST, KPLASMA);
@@ -166,7 +166,7 @@ udphaser(void)
 /*   This function checks for objects within *dist* of a weapon.           */
 /* this function will use the space grid */
 
-int 
+static int
 weap_near_object(struct basetorp *torp, int type, int dist)
 {
     register struct planet *pl;	/* to point to the planets */
@@ -186,7 +186,7 @@ weap_near_object(struct basetorp *torp, int type, int dist)
     return 0;			/* return that it should continue */
 }
 
-int 
+static int
 near_player(struct basetorp *torp, int dist)
 {
     register int i;		/* looping var */
@@ -213,7 +213,7 @@ near_player(struct basetorp *torp, int dist)
 }
 
 /* the fighter landing function */
-int 
+static int
 f_land(struct missile *mis)	/* the fighter to check for */
 {
     int     dx, dy;		/* to calc fighter-player distance */
@@ -240,18 +240,124 @@ close enough for a plasma torp to explode on.  This function returns a 1
 if the plasma should explode and a 0 if it should continue to travel through
 spac.  */
 
-int 
+static int
 pnear(struct plasmatorp *plasmatorp)	/* the plasma torp to check for */
 {
     return near_player(&plasmatorp->pt_base, EXPDIST);
 }
 
-
+#ifdef USED
 int 
 outofbounds(int x, int y)
 {
     return x < 0 || x > GWIDTH || y < 0 || y > GWIDTH;
 }
+#endif
+
+
+/*--------------------------------GET_BEARING------------------------------*/
+/*  This function takes two set of coordinates and a direction.  One set
+of coordinates is the current coords of a trop.  The other set is some other
+coords you want to get a change in direction for.  The direction is the
+current direction of the torp.  The function returns the angle that the dir
+need to be changed by to travel to the new points.  */
+
+/* args:
+    int     dx, dy;		delta x, y coords
+    int     dir;		current direction travelling */
+unsigned char 
+get_bearing(int dx, int dy, int dir)
+{
+    int     phi;		/* to hold angle */
+
+    phi = (int) (atan2((double) dx, (double) -dy) / 3.14159 * 128.0);
+    if (phi < 0)		/* make phi positive */
+	phi = 256 + phi;
+    if (phi >= dir)
+	return ((unsigned char) (phi - dir));
+    else
+	return ((unsigned char) (256 + phi - dir));
+}
+
+
+/*----------------------------TORP_TRACK_OPPORTUNITY----------------------*/
+/*  This function finds the closest ship to a torp and returns -1 if the
+ship is to the left of the torp on its current heading and a 1 if the ship
+is to the right.  If no target is found then a 0 is return indicating the
+torp should go straight.  */
+
+/* args:
+    struct basetorp *torp;	the torp to check for
+    int     turnspeed;
+    int	    smart;		which tracking algorithm? */
+static int 
+torp_track_opportunity(struct basetorp *torp, int turnspeed, int smart)
+{
+    int     i;			/* looping var */
+    int     closest;		/* to hold closest player */
+    int	    clbearing=0;	/* bearing to closest player */
+    int     min_distsq;		/* to hold closest distance */
+    int     war_mask;		/* who torp own is at war with */
+    int     x, y;		/* to hold torps x, y coords */
+    int     bearing;		/* to get bearing to hit player */
+    int     dir;		/* to hold torps direction */
+    int     range;
+
+    closest = -1;		/* initialize closest player--no plyr */
+    x = torp->bt_x;		/* get the coords of torp */
+    y = torp->bt_y;
+    dir = torp->bt_dir;		/* get torp's directions */
+    war_mask = torp->bt_war;	/* and who he as war with */
+
+    range = torp->bt_fuse * torp->bt_speed * WARP1;
+
+    min_distsq = range*range * 4; /* intialize closest player distance */
+
+    for (i = 0; i < MAXPLAYER; i++) {	/* check all other players */
+	int     dx, dy;
+	if (!(isAlive(&players[i]) &&
+	      hostile_to(war_mask, torp->bt_team, &players[i])))
+	    continue;		/* only do if player alive and at war */
+
+	dx = players[i].p_x - x;
+	dy = players[i].p_y - y;
+
+	if (ABS(dx) > range || ABS(dy) > range)
+	    continue;		/* clearly out of range */
+
+	if (smart) {
+	    bearing = anticipate_impact(torp->bt_speed, dx, dy,
+				    players[i].p_speed, players[i].p_dir);
+	    if (bearing<0)
+	      bearing = get_bearing(dx, dy, dir);
+	    else 
+	      bearing = (unsigned char)(bearing-dir);
+	} else {
+	    bearing = get_bearing(dx, dy, dir);
+	}
+	/* torps will only track to targets they have a reasonable chance */
+	/* of hitting */
+	if ((turnspeed * torp->bt_fuse > 127) ||
+	    (bearing < ((unsigned char) turnspeed * torp->bt_fuse)) ||
+	  (bearing > ((unsigned char) (256 - turnspeed * torp->bt_fuse)))) {
+	    int	distsq;
+	    distsq = dx*dx + dy*dy;
+	    if (distsq < min_distsq) { /* record it if it is */
+		min_distsq = distsq; /* less than current closest */
+		closest = i;	/* player */
+		clbearing = bearing;
+	    }
+	}
+    }
+    if (closest >= 0) {		/* if a target found then */
+	if (clbearing > 128)
+	    return (-1);	/* Target is on the left */
+	else
+	    return (1);		/* Target is on the right */
+    }
+    return (0);			/* No target ... go straight. */
+}
+
 
 /*--------------------------------UDTORPS----------------------------------*/
 /*  This function updates the torps.  It goes through all torps and checks
@@ -351,6 +457,166 @@ udtorps(void)
 	}			/* end of switch */
     }				/* end of for */
 }
+
+/*------------------------------------------------------------------------*/
+/*--------------------------FIGHTER_TRACK_TARGET--------------------------*/
+/*  This function finds the closest ship to a fighter and returns -1 if the
+ship is to the left of the fighter on its current heading and a 1 if the ship
+is to the right.  If no target is found then a 0 is return indicating the
+fighter should go straight.  Also returns fighters to the CV.
+    If the player is locked onto an enemy ship, that's the only ship that
+gets checked.  */
+
+static int
+fighter_track_target(struct missile *mis, int turnspeed)
+{
+    int     i;			/* looping var */
+    int     closest;		/* to hold closest player */
+    int     min_dist;		/* to hold closest distance */
+    int     dist;		/* temp var to hold distance */
+    int     war_mask;		/* who fighter own is at war with */
+    int     x, y;		/* to hold fighters x, y coords */
+    int     owner;		/* to hold fighters owner */
+    int     bearing;		/* to get bearing to hit player */
+    int     dir;		/* to hold fighters direction */
+    int     range;
+    int     dx, dy;
+
+    min_dist = GWIDTH * 2;	/* intialize closest player distance */
+    closest = -1;		/* initialize closest player--no plyr */
+    x = mis->ms_x;		/* get the coords of torp */
+    y = mis->ms_y;
+    dir = mis->ms_dir;		/* get fighter's directions */
+    owner = mis->ms_owner;	/* get the fighter's owner */
+    war_mask = mis->ms_war;	/* and who he as war with */
+
+    range = mis->ms_fuse * mis->ms_speed * WARP1;
+
+    for (i = 0; i < MAXPLAYER; i++) {	/* check all other players */
+	if (mis->ms_status == TRETURN) {
+	    if (!(isAlive(&players[i])) || (owner != i))
+		continue;
+	}			/* if returning, only check owning player */
+	else if ((players[owner].p_flags & PFPLOCK) &&
+		 (players[owner].p_playerl != i))
+	    continue;		/* if player is locked onto a player, only
+				   check that player */
+	else if (!(isAlive(&players[i]) &&
+		   hostile_to(war_mask, mis->ms_team, &players[i])))
+	    continue;		/* only do if player alive and at war */
+
+	dx = players[i].p_x - x;
+	dy = players[i].p_y - y;
+
+	if (ABS(dx) > range || ABS(dy) > range)
+	    continue;		/* clearly out of range */
+
+	bearing = get_bearing(dx, dy, dir);
+	if ((turnspeed * mis->ms_fuse > 127) ||
+	    (bearing < ((unsigned char) turnspeed * mis->ms_fuse)) ||
+	    (bearing > ((unsigned char) (256 - turnspeed * mis->ms_fuse)))) {
+	    dist = ihypot(dx, dy);
+	    if (dist < min_dist) {	/* record it if it is */
+		min_dist = dist;/* less than current closest */
+		closest = i;	/* player */
+	    }
+	}
+    }
+    if (closest >= 0) {		/* if a target found then */
+	if (get_bearing(players[closest].p_x - x,
+			players[closest].p_y - y, dir) > 128) {
+	    return (-1);	/* Target is on the left */
+	}
+	else
+	    return (1);		/* Target is on the right */
+    }
+    return (0);			/* No target ... go straight. */
+}
+
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------------F_TORP--------------------------------*/
+/*   Checks to see if a valid target is within a certain forward firing angle*/
+/* then fires a torpedo at that target.  A return value of 1 indicates firing*/
+
+static int 
+f_torp(struct missile *mis)
+{
+    register int i;
+    int     torp2fire = -1, targetdist = FSTRIKEDIST + 1, tdist, target;
+    unsigned char bearing;
+    register struct torp *k;
+    int     dx, dy;
+    register struct player *j;	/* to point to players */
+
+    for (i = mis->ms_owner * MAXTORP, k = &torps[i];	/* Find a free torp */
+	 i < mis->ms_owner * MAXTORP + MAXTORP; i++, k++)
+	if (k->t_status == TFREE) {
+	    torp2fire = i;
+	    break;
+	}
+    if (torp2fire == -1)
+	return 0;
+
+
+    for (i = 0, j = &players[i]; i < MAXPLAYER; i++, j++) {
+	if (j->p_status != PALIVE)
+	    continue;		/* don't check players not alive */
+	if (j->p_no == mis->ms_owner)
+	    continue;		/* no firing on self */
+	if (!hostile_to(mis->ms_war, mis->ms_team, j))
+	    continue;		/* disregard if both teams not at war */
+	if ((players[mis->ms_owner].p_flags & PFPLOCK) &&
+	    (players[mis->ms_owner].p_playerl != i))
+	    continue;		/* ignore if this isn't the target */
+
+	dx = mis->ms_x - j->p_x;/* calc delta coords */
+	dy = mis->ms_y - j->p_y;
+	if (ABS(dx) > FSTRIKEDIST || ABS(dy) > FSTRIKEDIST)
+	    continue;		/* disregard if obviously too far */
+
+	tdist = ihypot(dx, dy);
+	if (tdist < FSTRIKEDIST) {
+	    bearing = (int) get_bearing(dx, dy, mis->ms_dir);
+	    targetdist = tdist;	/* record the target ship */
+	    target = i;
+	}
+    }
+
+    if (targetdist < FSTRIKEDIST) {
+	j = &players[mis->ms_owner];
+	k = &torps[torp2fire];
+	k->t_no = torp2fire;
+	k->t_status = TMOVE;
+	k->t_owner = mis->ms_owner;
+	k->t_team = mis->ms_team;
+
+	move_torp(torp2fire, mis->ms_x, mis->ms_y, 0);
+
+	k->t_damage = FTORP_DAMAGE;
+	k->t_speed = FTORP_SPEED;
+	k->t_war = j->p_hostile |
+	    j->p_swar;
+	k->t_fuse = FTORP_FUSE + (lrand48() % 20);
+	k->t_turns = FTORP_TRACK;
+
+	/*
+	   here's the biggie -- what angle do I fire this torp at, so I have
+	   a reasonable chance of hitting?  Especially since I only get one
+	   shot. But, then, I have a bunch of buddies, too...
+	*/
+
+	if ((mis->ms_no % MAXPLAYER % 3) == 0)
+	    k->t_dir = mis->ms_dir;
+	else if ((mis->ms_no % MAXPLAYER % 3) == 1)
+	    k->t_dir = mis->ms_dir - 8;
+	else if ((mis->ms_no % MAXPLAYER % 3) == 2)
+	    k->t_dir = mis->ms_dir + 8;
+	return 1;
+    }
+    return 0;
+}
+
 
 void 
 udmissiles(void)
@@ -488,7 +754,7 @@ udmissiles(void)
     int	w;		 speed of torp
     int	dx,dy;		 distance to target
     int	s, dir;		 speed of target */
-int
+static int
 anticipate_impact(int w, int dx, int dy, int s, int dir)
 {
     float	sdx, sdy;
@@ -541,85 +807,6 @@ anticipate_impact(int w, int dx, int dy, int s, int dir)
     theta = atan2(tdx, -tdy);
     return (unsigned char) (int) (theta * 128 / 3.14159);
 }
-
-/*----------------------------TORP_TRACK_OPPORTUNITY----------------------*/
-/*  This function finds the closest ship to a torp and returns -1 if the
-ship is to the left of the torp on its current heading and a 1 if the ship
-is to the right.  If no target is found then a 0 is return indicating the
-torp should go straight.  */
-
-/* args:
-    struct basetorp *torp;	the torp to check for
-    int     turnspeed;
-    int	    smart;		which tracking algorithm? */
-int 
-torp_track_opportunity(struct basetorp *torp, int turnspeed, int smart)
-{
-    int     i;			/* looping var */
-    int     closest;		/* to hold closest player */
-    int	    clbearing=0;	/* bearing to closest player */
-    int     min_distsq;		/* to hold closest distance */
-    int     war_mask;		/* who torp own is at war with */
-    int     x, y;		/* to hold torps x, y coords */
-    int     bearing;		/* to get bearing to hit player */
-    int     dir;		/* to hold torps direction */
-    int     range;
-
-    closest = -1;		/* initialize closest player--no plyr */
-    x = torp->bt_x;		/* get the coords of torp */
-    y = torp->bt_y;
-    dir = torp->bt_dir;		/* get torp's directions */
-    war_mask = torp->bt_war;	/* and who he as war with */
-
-    range = torp->bt_fuse * torp->bt_speed * WARP1;
-
-    min_distsq = range*range * 4; /* intialize closest player distance */
-
-    for (i = 0; i < MAXPLAYER; i++) {	/* check all other players */
-	int     dx, dy;
-	if (!(isAlive(&players[i]) &&
-	      hostile_to(war_mask, torp->bt_team, &players[i])))
-	    continue;		/* only do if player alive and at war */
-
-	dx = players[i].p_x - x;
-	dy = players[i].p_y - y;
-
-	if (ABS(dx) > range || ABS(dy) > range)
-	    continue;		/* clearly out of range */
-
-	if (smart) {
-	    bearing = anticipate_impact(torp->bt_speed, dx, dy,
-				    players[i].p_speed, players[i].p_dir);
-	    if (bearing<0)
-	      bearing = get_bearing(dx, dy, dir);
-	    else 
-	      bearing = (unsigned char)(bearing-dir);
-	} else {
-	    bearing = get_bearing(dx, dy, dir);
-	}
-	/* torps will only track to targets they have a reasonable chance */
-	/* of hitting */
-	if ((turnspeed * torp->bt_fuse > 127) ||
-	    (bearing < ((unsigned char) turnspeed * torp->bt_fuse)) ||
-	  (bearing > ((unsigned char) (256 - turnspeed * torp->bt_fuse)))) {
-	    int	distsq;
-	    distsq = dx*dx + dy*dy;
-	    if (distsq < min_distsq) { /* record it if it is */
-		min_distsq = distsq; /* less than current closest */
-		closest = i;	/* player */
-		clbearing = bearing;
-	    }
-	}
-    }
-    if (closest >= 0) {		/* if a target found then */
-	if (clbearing > 128)
-	    return (-1);	/* Target is on the left */
-	else
-	    return (1);		/* Target is on the right */
-    }
-    return (0);			/* No target ... go straight. */
-}
-
 
 
 
@@ -700,196 +887,5 @@ udplasmatorps(void)
 	}
     }
 }
-
-
-
-/*--------------------------------GET_BEARING------------------------------*/
-/*  This function takes two set of coordinates and a direction.  One set
-of coordinates is the current coords of a trop.  The other set is some other
-coords you want to get a change in direction for.  The direction is the
-current direction of the torp.  The function returns the angle that the dir
-need to be changed by to travel to the new points.  */
-
-/* args:
-    int     dx, dy;		delta x, y coords
-    int     dir;		current direction travelling */
-unsigned char 
-get_bearing(int dx, int dy, int dir)
-{
-    int     phi;		/* to hold angle */
-
-    phi = (int) (atan2((double) dx, (double) -dy) / 3.14159 * 128.0);
-    if (phi < 0)		/* make phi positive */
-	phi = 256 + phi;
-    if (phi >= dir)
-	return ((unsigned char) (phi - dir));
-    else
-	return ((unsigned char) (256 + phi - dir));
-}
-
-/*------------------------------------------------------------------------*/
-
-
-
-
- /*------------------------------------------------------------------------*/
-/*--------------------------FIGHTER_TRACK_TARGET--------------------------*/
-/*  This function finds the closest ship to a fighter and returns -1 if the
-ship is to the left of the fighter on its current heading and a 1 if the ship
-is to the right.  If no target is found then a 0 is return indicating the
-fighter should go straight.  Also returns fighters to the CV.
-    If the player is locked onto an enemy ship, that's the only ship that
-gets checked.  */
-
-int 
-fighter_track_target(struct missile *mis, int turnspeed)
-{
-    int     i;			/* looping var */
-    int     closest;		/* to hold closest player */
-    int     min_dist;		/* to hold closest distance */
-    int     dist;		/* temp var to hold distance */
-    int     war_mask;		/* who fighter own is at war with */
-    int     x, y;		/* to hold fighters x, y coords */
-    int     owner;		/* to hold fighters owner */
-    int     bearing;		/* to get bearing to hit player */
-    int     dir;		/* to hold fighters direction */
-    int     range;
-    int     dx, dy;
-
-    min_dist = GWIDTH * 2;	/* intialize closest player distance */
-    closest = -1;		/* initialize closest player--no plyr */
-    x = mis->ms_x;		/* get the coords of torp */
-    y = mis->ms_y;
-    dir = mis->ms_dir;		/* get fighter's directions */
-    owner = mis->ms_owner;	/* get the fighter's owner */
-    war_mask = mis->ms_war;	/* and who he as war with */
-
-    range = mis->ms_fuse * mis->ms_speed * WARP1;
-
-    for (i = 0; i < MAXPLAYER; i++) {	/* check all other players */
-	if (mis->ms_status == TRETURN) {
-	    if (!(isAlive(&players[i])) || (owner != i))
-		continue;
-	}			/* if returning, only check owning player */
-	else if ((players[owner].p_flags & PFPLOCK) &&
-		 (players[owner].p_playerl != i))
-	    continue;		/* if player is locked onto a player, only
-				   check that player */
-	else if (!(isAlive(&players[i]) &&
-		   hostile_to(war_mask, mis->ms_team, &players[i])))
-	    continue;		/* only do if player alive and at war */
-
-	dx = players[i].p_x - x;
-	dy = players[i].p_y - y;
-
-	if (ABS(dx) > range || ABS(dy) > range)
-	    continue;		/* clearly out of range */
-
-	bearing = get_bearing(dx, dy, dir);
-	if ((turnspeed * mis->ms_fuse > 127) ||
-	    (bearing < ((unsigned char) turnspeed * mis->ms_fuse)) ||
-	    (bearing > ((unsigned char) (256 - turnspeed * mis->ms_fuse)))) {
-	    dist = ihypot(dx, dy);
-	    if (dist < min_dist) {	/* record it if it is */
-		min_dist = dist;/* less than current closest */
-		closest = i;	/* player */
-	    }
-	}
-    }
-    if (closest >= 0) {		/* if a target found then */
-	if (get_bearing(players[closest].p_x - x,
-			players[closest].p_y - y, dir) > 128) {
-	    return (-1);	/* Target is on the left */
-	}
-	else
-	    return (1);		/* Target is on the right */
-    }
-    return (0);			/* No target ... go straight. */
-}
-
-
-/*--------------------------------------------------------------------------*/
-/*------------------------------------F_TORP--------------------------------*/
-/*   Checks to see if a valid target is within a certain forward firing angle*/
-/* then fires a torpedo at that target.  A return value of 1 indicates firing*/
-
-int 
-f_torp(struct missile *mis)
-{
-    register int i;
-    int     torp2fire = -1, targetdist = FSTRIKEDIST + 1, tdist, target;
-    unsigned char bearing;
-    register struct torp *k;
-    int     dx, dy;
-    register struct player *j;	/* to point to players */
-
-    for (i = mis->ms_owner * MAXTORP, k = &torps[i];	/* Find a free torp */
-	 i < mis->ms_owner * MAXTORP + MAXTORP; i++, k++)
-	if (k->t_status == TFREE) {
-	    torp2fire = i;
-	    break;
-	}
-    if (torp2fire == -1)
-	return 0;
-
-
-    for (i = 0, j = &players[i]; i < MAXPLAYER; i++, j++) {
-	if (j->p_status != PALIVE)
-	    continue;		/* don't check players not alive */
-	if (j->p_no == mis->ms_owner)
-	    continue;		/* no firing on self */
-	if (!hostile_to(mis->ms_war, mis->ms_team, j))
-	    continue;		/* disregard if both teams not at war */
-	if ((players[mis->ms_owner].p_flags & PFPLOCK) &&
-	    (players[mis->ms_owner].p_playerl != i))
-	    continue;		/* ignore if this isn't the target */
-
-	dx = mis->ms_x - j->p_x;/* calc delta coords */
-	dy = mis->ms_y - j->p_y;
-	if (ABS(dx) > FSTRIKEDIST || ABS(dy) > FSTRIKEDIST)
-	    continue;		/* disregard if obviously too far */
-
-	tdist = ihypot(dx, dy);
-	if (tdist < FSTRIKEDIST) {
-	    bearing = (int) get_bearing(dx, dy, mis->ms_dir);
-	    targetdist = tdist;	/* record the target ship */
-	    target = i;
-	}
-    }
-
-    if (targetdist < FSTRIKEDIST) {
-	j = &players[mis->ms_owner];
-	k = &torps[torp2fire];
-	k->t_no = torp2fire;
-	k->t_status = TMOVE;
-	k->t_owner = mis->ms_owner;
-	k->t_team = mis->ms_team;
-
-	move_torp(torp2fire, mis->ms_x, mis->ms_y, 0);
-
-	k->t_damage = FTORP_DAMAGE;
-	k->t_speed = FTORP_SPEED;
-	k->t_war = j->p_hostile |
-	    j->p_swar;
-	k->t_fuse = FTORP_FUSE + (lrand48() % 20);
-	k->t_turns = FTORP_TRACK;
-
-	/*
-	   here's the biggie -- what angle do I fire this torp at, so I have
-	   a reasonable chance of hitting?  Especially since I only get one
-	   shot. But, then, I have a bunch of buddies, too...
-	*/
-
-	if ((mis->ms_no % MAXPLAYER % 3) == 0)
-	    k->t_dir = mis->ms_dir;
-	else if ((mis->ms_no % MAXPLAYER % 3) == 1)
-	    k->t_dir = mis->ms_dir - 8;
-	else if ((mis->ms_no % MAXPLAYER % 3) == 2)
-	    k->t_dir = mis->ms_dir + 8;
-	return 1;
-    }
-    return 0;
-}
-
 
 /*----------END OF FILE--------*/

@@ -75,7 +75,7 @@ void resetUDPsequence(void)
  * because mixed TCP packets and UDP packets rarely arrive in the order
  * in which they were sent.
  */
-int 
+static int 
 addSequence(char *outbuf)
 {
     struct sequence_spacket *ssp;
@@ -147,6 +147,22 @@ foo:
 #endif
     if (udpMode == MODE_FAT)
 	fatMerge();
+}
+
+/* Transmission of some packets can be delayed indefinitely */
+
+struct deferred_packet {
+    void	*data;
+    int	size;
+    struct deferred_packet	*next;
+};
+
+struct deferred_packet	*df_head, *df_tail;
+
+static int
+haveDeferredPackets(void)
+{
+    return df_head != 0;
 }
 
 void
@@ -290,22 +306,6 @@ sendTCPbuffered(void *packet, int size)
     }
     memcpy(bufptr, packet, size);
     bufptr += size;
-}
-
-/* Transmission of some packets can be delayed indefinitely */
-
-struct deferred_packet {
-    void	*data;
-    int	size;
-    struct deferred_packet	*next;
-};
-
-struct deferred_packet	*df_head, *df_tail;
-
-int
-haveDeferredPackets(void)
-{
-    return df_head != 0;
 }
 
 /* Put a packet on the deferred queue. */

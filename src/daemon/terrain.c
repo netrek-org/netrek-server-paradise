@@ -31,71 +31,11 @@ express or implied warranty.
 #define X 0
 #define Y 1
 
-/* Generates terrain based on specs in the system configuration.
-   Places a number of "seeds" into the terrain grid, and then generates an
-   "altitude" map based on those seeds' positions (which correspond to
-   star positions).  Place_nebula generates another altitude map for 
-   nebulae -- the first map is used for asteroids and generating the 
-   second map.
-
-   This function is called within the galaxy generation stuff.
-
-   10/26/94 MM */
-void 
-generate_terrain(void)
-{
-  int i/*,j,k*/;  /* counters */
-  int x,y;    /* more counters, different purpose */
-  double dist, val;   /* for distance calculations */
-  int num_seeds = 0;
-  int seed_xy[MAXSTARS][2];
-
-/* place seeds -- this would be easy to change if you just had a number
-   of seeds you wanted to place, instead of basing it on stars.  I won't
-   bother doing it, even though it might be cool to see it work in a bronco
-   game...  MM*/
-
-  for (i=0; i < NUMPLANETS; i++)
-    if (PL_TYPE(planets[i]) == PLSTAR) {
-      terrain_grid[(planets[i].pl_x/TGRID_GRANULARITY) * TGRID_SIZE +
-	           planets[i].pl_y/TGRID_GRANULARITY].alt1 = MAXALTITUDE;
-      
-      seed_xy[num_seeds][X] = planets[i].pl_x/TGRID_GRANULARITY;
-      seed_xy[num_seeds][Y] = planets[i].pl_y/TGRID_GRANULARITY;
-      num_seeds++;
-    }
-
-/* generate terrain -- simple, stupid version. */
-
-  
-  for (x=0; x < TGRID_SIZE; x++)
-    for (y=0; y < TGRID_SIZE; y++) 
-      if (terrain_grid[x*TGRID_SIZE + y].alt1 != MAXALTITUDE) {
-	val = 0.0;
-	for (i=0; i < num_seeds; i++) {
-	  dist = (double)MAXALTITUDE -
-	    sqrt((double)((x - seed_xy[i][X]) * (x - seed_xy[i][X]) +
-		 (y - seed_xy[i][Y]) * (y - seed_xy[i][Y])));
-	  if (dist > val) val = dist;
-	}
-	/* reset any previous terrain values */
-	terrain_grid[x * TGRID_SIZE + y].types = 0x00;
-
-	terrain_grid[x * TGRID_SIZE + y].alt1 = (int)val;
-	terrain_grid[x * TGRID_SIZE + y].alt2 = 0;
-      }
-  
-/* place nebula */
-  if (num_nebula)    place_nebula(*num_nebula, *nebula_subclouds, *nebula_density);
-/* place asteroids */
-  if (num_asteroid)  place_asteroids(MAXALTITUDE-(*asteroid_radius));
-}
-
 /* Values inbetween MAXALTITUDE and minalt are considered nebulous terrain.
    Tries to cluster seeds in groups based on num_nebula and num_seeds.
    ...the number of seeds per nebula being num_seeds. 
    10/26/94 MM */
-void 
+static void 
 place_nebula(int num_nebula, int num_seeds, int minalt)
 {
     int i = 0,j = 0,x,y,dx,dy, dist, lowdist = 2 * TGRID_SIZE;
@@ -188,7 +128,7 @@ place_nebula(int num_nebula, int num_seeds, int minalt)
    field random (like 90% or something), so that fields will appear less
    uniform, and holes may exist in them.  Makes for interesting terrain, IMO.
    10/26/94 MM */
-void 
+static void 
 place_asteroids(int altitude)
 {
   int x,y,i,j,numstars=0;
@@ -254,6 +194,66 @@ place_asteroids(int altitude)
 	     terrain_grid[x * TGRID_SIZE + y].types |= T_ASTEROIDS;
 	}
        }
+}
+
+/* Generates terrain based on specs in the system configuration.
+   Places a number of "seeds" into the terrain grid, and then generates an
+   "altitude" map based on those seeds' positions (which correspond to
+   star positions).  Place_nebula generates another altitude map for 
+   nebulae -- the first map is used for asteroids and generating the 
+   second map.
+
+   This function is called within the galaxy generation stuff.
+
+   10/26/94 MM */
+void 
+generate_terrain(void)
+{
+  int i/*,j,k*/;  /* counters */
+  int x,y;    /* more counters, different purpose */
+  double dist, val;   /* for distance calculations */
+  int num_seeds = 0;
+  int seed_xy[MAXSTARS][2];
+
+/* place seeds -- this would be easy to change if you just had a number
+   of seeds you wanted to place, instead of basing it on stars.  I won't
+   bother doing it, even though it might be cool to see it work in a bronco
+   game...  MM*/
+
+  for (i=0; i < NUMPLANETS; i++)
+    if (PL_TYPE(planets[i]) == PLSTAR) {
+      terrain_grid[(planets[i].pl_x/TGRID_GRANULARITY) * TGRID_SIZE +
+	           planets[i].pl_y/TGRID_GRANULARITY].alt1 = MAXALTITUDE;
+      
+      seed_xy[num_seeds][X] = planets[i].pl_x/TGRID_GRANULARITY;
+      seed_xy[num_seeds][Y] = planets[i].pl_y/TGRID_GRANULARITY;
+      num_seeds++;
+    }
+
+/* generate terrain -- simple, stupid version. */
+
+  
+  for (x=0; x < TGRID_SIZE; x++)
+    for (y=0; y < TGRID_SIZE; y++) 
+      if (terrain_grid[x*TGRID_SIZE + y].alt1 != MAXALTITUDE) {
+	val = 0.0;
+	for (i=0; i < num_seeds; i++) {
+	  dist = (double)MAXALTITUDE -
+	    sqrt((double)((x - seed_xy[i][X]) * (x - seed_xy[i][X]) +
+		 (y - seed_xy[i][Y]) * (y - seed_xy[i][Y])));
+	  if (dist > val) val = dist;
+	}
+	/* reset any previous terrain values */
+	terrain_grid[x * TGRID_SIZE + y].types = 0x00;
+
+	terrain_grid[x * TGRID_SIZE + y].alt1 = (int)val;
+	terrain_grid[x * TGRID_SIZE + y].alt2 = 0;
+      }
+  
+/* place nebula */
+  if (num_nebula)    place_nebula(*num_nebula, *nebula_subclouds, *nebula_density);
+/* place asteroids */
+  if (num_asteroid)  place_asteroids(MAXALTITUDE-(*asteroid_radius));
 }
 
 /* apply terrain effects to players 

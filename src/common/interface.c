@@ -28,6 +28,83 @@ suitability of this software for any purpose.  This software is provided
 #include "plutil.h"
 #include "imath.h"
 
+/*----------------------------------NUMSHIPS------------------------------*/
+/*  This function counts the number of players on a team.  */
+
+static int 
+numShips(int owner)		/* the team to count for */
+{
+    int     i;			/* looping var */
+    int     num;		/* to hold player count */
+    struct player *p;		/* to point to players */
+
+    num = 0;			/* zero the count */
+    for (i = 0, p = players; i < MAXPLAYER; i++, p++) {	/* go throgh players */
+	if (p->p_status != PFREE && p->p_team == owner)	/* if alive then */
+	    num++;		/* inc player count */
+    }
+    return (num);		/* return number of ships */
+}
+
+
+
+
+/*------------------------------NUMPLANETS--------------------------------*/
+/*  This function counts the number of planets a team has.  */
+
+int 
+numPlanets(int owner)		/* the team to check for */
+{
+    int     i;			/* looping var */
+    int     num;		/* to hold count */
+    struct planet *p;		/* to point to a planet */
+
+    num = 0;			/* no planets found yet */
+    for (i = 0, p = planets; i < MAXPLANETS; i++, p++) {
+	if (p->pl_owner == owner)	/* if planet owned by team then inc */
+	    num++;
+    }
+    return (num);		/* return number of planets */
+}
+
+/*-------------------------------------------------------------------------*/
+
+/*
+   Suspends warp prep [BDyess]
+*/
+static void 
+suspendPrep(void)
+{
+    /* check to see if the server allows warp prep to be suspended [BDyess] */
+    if (!configvals->warpprep_suspendable)
+	return;
+    if (me->p_flags & PFWARPPREP) {
+	me->p_flags |= PFWPSUSPENDED;	/* turn on suspended flag */
+	warning("Warp prep suspended.");
+    }
+    else {
+	warning("Not in warp prep!");
+    }
+}
+
+/*
+   Unsuspends warp prep [BDyess]
+*/
+static void
+unsuspendPrep(void)
+{
+    /* check to see if the server allows warp prep to be suspended [BDyess] */
+    if (!configvals->warpprep_suspendable)
+	return;
+    if (me->p_flags & PFWARPPREP) {
+	me->p_flags &= ~PFWPSUSPENDED;	/* turn off suspended flag */
+	warning("Warp prep continued.");
+    }
+    else {
+	warning("Not in warp prep!");
+    }
+}
+
 /*-----------------------------VISIBLE FUNCTIONS---------------------------*/
 
 /*--------------------------------SETSPEED---------------------------------*/
@@ -210,6 +287,7 @@ shield_down(void)
 /*--------------------------------SHIELD_TOGGLE---------------------------*/
 /*  This function toggles the players shields on and off.  */
 
+#ifdef USED
 void
 shield_tog(void)
 {
@@ -217,7 +295,7 @@ shield_tog(void)
     me->p_flags &= ~(PFBOMB | PFREPAIR | PFBEAMUP | PFBEAMDOWN);
     me->p_lastman = 0;
 }
-
+#endif
 
 
 
@@ -426,13 +504,14 @@ repair_off(void)
 /*---------------------------------REPEAT---------------------------------*/
 /* This function repeats the last message.  */
 
+#ifdef USED
 void 
 repeat_message(void)
 {
     if (++lastm == MAXMESSAGE)	/* go to next message */
 	lastm = 0;		/* account for rollover */
 }
-
+#endif
 
 
 
@@ -440,6 +519,7 @@ repeat_message(void)
 /*  This function toggles the cloak flag.  Tractors and pressor are turned
 off.  */
 
+#ifdef USED
 void 
 cloak(void)
 {
@@ -448,6 +528,7 @@ cloak(void)
     else
 	cloak_on();
 }
+#endif
 
 
 
@@ -640,6 +721,34 @@ pressor_player(int player)	/* the player to pressor */
 }
 
 
+/*-----------------------------------SENDWARN------------------------------*/
+/*  This function sends the warning message to the other players when a
+player switches his war status with that team.  */
+
+/* args:
+    char   *string;		 the name of the team changing status
+				   towards 
+    int     atwar;		 1 if declarig war 0 if decalring peace 
+    int     team;		 name of team we are switching in regards
+				   to */
+static void
+sendwarn(char *string, int atwar, int team)
+{
+    char    buf[BUFSIZ];	/* to hold sprintfed message */
+    char    addrbuf[10];	/* to hold ship number and team letter */
+
+    if (atwar) {		/* if decalring war */
+	(void) sprintf(buf, "%s (%s) declaring war on the %s",
+		       me->p_name, twoletters(me), string);
+    }
+    else {			/* else decalring peace */
+	(void) sprintf(buf, "%s (%s) declaring peace with the %s",
+		       me->p_name, twoletters(me), string);
+    }
+    (void) sprintf(addrbuf, " %s->%-3s", twoletters(me), teams[team].shortname);
+    pmessage2(buf, team, MTEAM, addrbuf, me->p_no);
+}
+
 
 
 /*-------------------------------DECLARE_WAR-----------------------------*/
@@ -687,37 +796,6 @@ declare_war(int mask)		/* who are we declaring war against */
 	warning("Pausing ten seconds to re-program battle computers.");
     }
     me->p_hostile = mask;	/* new hostile mask */
-}
-
-
-
-
-/*-----------------------------------SENDWARN------------------------------*/
-/*  This function sends the warning message to the other players when a
-player switches his war status with that team.  */
-
-/* args:
-    char   *string;		 the name of the team changing status
-				   towards 
-    int     atwar;		 1 if declarig war 0 if decalring peace 
-    int     team;		 name of team we are switching in regards
-				   to */
-void
-sendwarn(char *string, int atwar, int team)
-{
-    char    buf[BUFSIZ];	/* to hold sprintfed message */
-    char    addrbuf[10];	/* to hold ship number and team letter */
-
-    if (atwar) {		/* if decalring war */
-	(void) sprintf(buf, "%s (%s) declaring war on the %s",
-		       me->p_name, twoletters(me), string);
-    }
-    else {			/* else decalring peace */
-	(void) sprintf(buf, "%s (%s) declaring peace with the %s",
-		       me->p_name, twoletters(me), string);
-    }
-    (void) sprintf(addrbuf, " %s->%-3s", twoletters(me), teams[team].shortname);
-    pmessage2(buf, team, MTEAM, addrbuf, me->p_no);
 }
 
 
@@ -955,84 +1033,6 @@ allowed_ship(int team, int rank, int royal, int type)
 	return 0;		/* have enough planets? */
     }
     return 1;
-}
-
-
-/*----------------------------------NUMSHIPS------------------------------*/
-/*  This function counts the number of players on a team.  */
-
-int 
-numShips(int owner)		/* the team to count for */
-{
-    int     i;			/* looping var */
-    int     num;		/* to hold player count */
-    struct player *p;		/* to point to players */
-
-    num = 0;			/* zero the count */
-    for (i = 0, p = players; i < MAXPLAYER; i++, p++) {	/* go throgh players */
-	if (p->p_status != PFREE && p->p_team == owner)	/* if alive then */
-	    num++;		/* inc player count */
-    }
-    return (num);		/* return number of ships */
-}
-
-
-
-
-/*------------------------------NUMPLANETS--------------------------------*/
-/*  This function counts the number of planets a team has.  */
-
-int 
-numPlanets(int owner)		/* the team to check for */
-{
-    int     i;			/* looping var */
-    int     num;		/* to hold count */
-    struct planet *p;		/* to point to a planet */
-
-    num = 0;			/* no planets found yet */
-    for (i = 0, p = planets; i < MAXPLANETS; i++, p++) {
-	if (p->pl_owner == owner)	/* if planet owned by team then inc */
-	    num++;
-    }
-    return (num);		/* return number of planets */
-}
-
-/*-------------------------------------------------------------------------*/
-
-/*
-   Suspends warp prep [BDyess]
-*/
-void 
-suspendPrep(void)
-{
-    /* check to see if the server allows warp prep to be suspended [BDyess] */
-    if (!configvals->warpprep_suspendable)
-	return;
-    if (me->p_flags & PFWARPPREP) {
-	me->p_flags |= PFWPSUSPENDED;	/* turn on suspended flag */
-	warning("Warp prep suspended.");
-    }
-    else {
-	warning("Not in warp prep!");
-    }
-}
-
-/*
-   Unsuspends warp prep [BDyess]
-*/
-void
-unsuspendPrep(void)
-{
-    /* check to see if the server allows warp prep to be suspended [BDyess] */
-    if (!configvals->warpprep_suspendable)
-	return;
-    if (me->p_flags & PFWARPPREP) {
-	me->p_flags &= ~PFWPSUSPENDED;	/* turn off suspended flag */
-	warning("Warp prep continued.");
-    }
-    else {
-	warning("Not in warp prep!");
-    }
 }
 
 /*-------END OF LINE----*/

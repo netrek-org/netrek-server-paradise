@@ -34,7 +34,7 @@ extern jmp_buf env;		/* change 4/14/91 TC */
 
 
 #ifdef AUTHORIZE
-void 
+static void 
 check_authentication(void)
 {
     /* if (!configvals->binconfirm) testtime=0; */
@@ -80,46 +80,6 @@ check_authentication(void)
     }
 }
 #endif				/* AUTHORIZE */
-
-void
-intrupt(void)
-{
-#ifdef AUTHORIZE
-    check_authentication();
-#endif
-
-    if (me->p_status == PFREE) {
-	me->p_ghostbuster = 0;
-	me->p_status = PDEAD;
-    }
-    /* Change 4/14/91 TC: fixing 2 players/1 slot bug here, since this is */
-    /* where the ghostbust check is */
-
-#if 0
-    if ((strcmp(me->p_login, start_login) != 0) ||
-	(strcmp(me->p_name, start_name) != 0)) {
-	struct pstatus_spacket pstatus;
-	goAway = 1;		/* get rid of this client! */
-	warning("Sorry, your slot has been taken by another player.");
-	pstatus.type = SP_PSTATUS;
-	pstatus.pnum = 0;
-	pstatus.status = PDEAD;
-	sendClientPacket(&pstatus);
-	longjmp(env, 0);
-    }
-#endif
-
-    if (me->p_status == PEXPLODE || me->p_status == PDEAD) {
-	inputMask = 0;
-    }
-    if (((me->p_status == PDEAD) || (me->p_status == POUTFIT))
-	&& (me->p_ntorp <= 0) && (me->p_nplasmatorp <= 0)) {
-	death();
-    }
-    auto_features();
-    updateClient();
-}
-
 
 static void 
 selfdestruct_countdown(void)
@@ -496,7 +456,7 @@ follow_player(void)
 	}
     }
     if (me->p_flags & PFPLOCK)
-	set_course(newcourse(pl->p_x, pl->p_y));
+	set_course(getcourse(pl->p_x, pl->p_y, me->p_x, me->p_y));
 
 }
 
@@ -525,7 +485,7 @@ follow_planet(void)
 	me->p_flags &= ~PFPLLOCK;
     }
     else {
-	int     course = newcourse(pln->pl_x, pln->pl_y);
+	int     course = getcourse(pln->pl_x, pln->pl_y, me->p_x, me->p_y);
 	set_course(course);
     }
 }
@@ -570,12 +530,41 @@ auto_features(void)
 #endif
 }
 
-int
-newcourse(int x, int y)
+void
+intrupt(void)
 {
-    if (x == me->p_x && y == me->p_y)
-	return 0;
+#ifdef AUTHORIZE
+    check_authentication();
+#endif
 
-    return (int) (atan2((double) (x - me->p_x),
-			(double) (me->p_y - y)) / 3.14159 * 128.);
+    if (me->p_status == PFREE) {
+	me->p_ghostbuster = 0;
+	me->p_status = PDEAD;
+    }
+    /* Change 4/14/91 TC: fixing 2 players/1 slot bug here, since this is */
+    /* where the ghostbust check is */
+
+#if 0
+    if ((strcmp(me->p_login, start_login) != 0) ||
+	(strcmp(me->p_name, start_name) != 0)) {
+	struct pstatus_spacket pstatus;
+	goAway = 1;		/* get rid of this client! */
+	warning("Sorry, your slot has been taken by another player.");
+	pstatus.type = SP_PSTATUS;
+	pstatus.pnum = 0;
+	pstatus.status = PDEAD;
+	sendClientPacket(&pstatus);
+	longjmp(env, 0);
+    }
+#endif
+
+    if (me->p_status == PEXPLODE || me->p_status == PDEAD) {
+	inputMask = 0;
+    }
+    if (((me->p_status == PDEAD) || (me->p_status == POUTFIT))
+	&& (me->p_ntorp <= 0) && (me->p_nplasmatorp <= 0)) {
+	death();
+    }
+    auto_features();
+    updateClient();
 }

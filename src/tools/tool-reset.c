@@ -24,7 +24,42 @@ suitability of this software for any purpose.  This software is provided
 #include "data.h"
 
 #define STEP 10
-char   *myname;
+static char   *myname;
+
+static void
+Usage(void)
+{
+    int x;
+    char message[][255] = {
+	"\n\t'%s [n]'\n\n",
+        "Where n is the seconds until the galaxy is reset (default: 10)\n"
+        "\nThis tool resets the galaxy.\n",
+        ""
+    };
+
+    fprintf(stderr, "-- NetrekII (Paradise), %s --\n", PARAVERS);
+    for (x=0; *message[x] != '\0'; x++)
+        fprintf(stderr, message[x], myname);
+
+    exit(1);
+}
+
+static void
+zap(void)
+{
+    int     player;
+
+    for (player = 0; player < MAXPLAYER; player++) {
+	if (players[player].p_status == PFREE)
+	    continue;
+	players[player].p_whydead = KPROVIDENCE;
+	players[player].p_whodead = 0;
+	players[player].p_status = PEXPLODE;
+	players[player].p_explode = 10;
+	players[player].p_ntorp = 0;
+	players[player].p_nplasmatorp = 0;
+    }
+}
 
 int
 main(int argc, char **argv)
@@ -69,56 +104,4 @@ main(int argc, char **argv)
     /* *newgalaxy = 1;*/
     status2->newgalaxy = 1;
     exit(0);
-}
-
-void
-pmessage(char *str, int recip, int group)
-{
-    struct message *cur;
-    if (++(mctl->mc_current) >= MAXMESSAGE)
-	mctl->mc_current = 0;
-    cur = &messages[mctl->mc_current];
-    cur->m_no = mctl->mc_current;
-    cur->m_flags = group;
-    cur->m_time = 0;
-    cur->m_from = 255;		/* change 3/30/91 TC */
-    cur->m_recpt = recip;
-    (void) sprintf(cur->m_data, "%s", str);
-    cur->m_flags |= MVALID;
-}
-
-
-void
-Usage(void)
-{
-    int x;
-    char message[][255] = {
-	"\n\t'%s [n]'\n\n",
-        "Where n is the seconds until the galaxy is reset (default: 10)\n"
-        "\nThis tool resets the galaxy.\n",
-        ""
-    };
-
-    fprintf(stderr, "-- NetrekII (Paradise), %s --\n", PARAVERS);
-    for (x=0; *message[x] != '\0'; x++)
-        fprintf(stderr, message[x], myname);
-
-    exit(1);
-}
-
-void
-zap(void)
-{
-    int     player;
-
-    for (player = 0; player < MAXPLAYER; player++) {
-	if (players[player].p_status == PFREE)
-	    continue;
-	players[player].p_whydead = KPROVIDENCE;
-	players[player].p_whodead = 0;
-	players[player].p_status = PEXPLODE;
-	players[player].p_explode = 10;
-	players[player].p_ntorp = 0;
-	players[player].p_nplasmatorp = 0;
-    }
 }

@@ -49,7 +49,7 @@ struct itimerval udt;		/* derived from frequency RF */
 int     lastm;
 int     tno = 0;
 
-int 
+static int 
 choose_team(int team)
 {
     if (tno < 0)
@@ -61,10 +61,52 @@ choose_team(int team)
     return 1;
 }
 
+static int
+config(void)
+{
+    /* mostly not used */
+    myship->s_phaser.cost = 0;
+    myship->s_torp.cost = 0;
+    myship->s_cloakcost = 0;
+/*    myship->s_torp.fuse = MAX_SHORT;*/
+    myship->s_torp.fuse = 32767;
+    myship->s_torp.damage = 10;
+    myship->s_plasma.damage = 50;
+    myship->s_plasma.cost = 0;
+    myship->s_plasma.aux = 0;
+    myship->s_plasma.speed = 10;
+/*    myship->s_plasma.fuse = MAX_SHORT;*/
+    myship->s_torp.fuse = 32767;
+    myship->s_wpncoolrate = 100;
+    myship->s_egncoolrate = 100;
+    return 1;
+}
+
+/*---------------------[ prints the usage of snake ]---------------------*/
+
+static void
+printsnakeUsage(void)
+{
+    printf("Usage: snake [options]\n");
+    printf("Options:\n\
+  -u -- this usage message\n\
+  -p -- patrol\n\
+  -s -- noSmush (?)\n\
+  -b -- berserk\n\
+  -d -- debug\n\
+  -t -- target <player number>\n\
+  -T -- team [frkoi]\n\
+  -l -- length (in torps)\n\
+  -f -- frequency\n\
+  -g -- guardian:  -g <planet1> <planet2> (must be 2 planets listed,\n\
+                      by number).\n");
+}
+
+/*--------------------------[ printsnakeUsage ]--------------------------*/
+
 int main(int argc, char **argv)
 {
     register int i;
-    int     snakemove(), exitSnake();
     int     pno;
     char    tlet;
     int     usage = 0;
@@ -273,98 +315,3 @@ int main(int argc, char **argv)
     }
 }
 
-int
-findtestslot(void)
-{
-    register int i;
-
-    for (i = MAXPLAYER - configvals->ntesters; i < MAXPLAYER; i++) {
-	if (players[i].p_status == PFREE) {	/* We have a free slot */
-	    players[i].p_status = POUTFIT;	/* possible race code */
-	    break;
-	}
-    }
-    if (i == MAXPLAYER) {
-	return -1;		/* no room in tester slots */
-    }
-    memset(&players[i].p_stats, 0, sizeof(struct stats));
-    players[i].p_stats.st_tticks = 1;
-    return (i);
-}
-
-int
-findrslot(void)
-{
-    register int i;
-
-    /* look for tester slot first */
-    i = findtestslot();
-    if (i > -1)
-	return i;
-
-    for (i = 0; i < MAXPLAYER; i++) {
-	if (players[i].p_status == PFREE) {	/* We have a free slot */
-	    players[i].p_status = POUTFIT;	/* possible race code */
-	    break;
-	}
-    }
-    if ((i == MAXPLAYER) || (i == -1)) {
-	if (debug) {
-	    fprintf(stderr, "No more room in game\n");
-	}
-	return -1;
-    }
-    memset(&players[i].p_stats, 0, sizeof(struct stats));
-    players[i].p_stats.st_tticks = 1;
-    return (i);
-}
-
-void 
-warning(char *mess)
-{
-    if (debug)
-	fprintf(stderr, "warning: %s\n", mess);
-}
-
-int
-config(void)
-{
-    /* mostly not used */
-    myship->s_phaser.cost = 0;
-    myship->s_torp.cost = 0;
-    myship->s_cloakcost = 0;
-/*    myship->s_torp.fuse = MAX_SHORT;*/
-    myship->s_torp.fuse = 32767;
-    myship->s_torp.damage = 10;
-    myship->s_plasma.damage = 50;
-    myship->s_plasma.cost = 0;
-    myship->s_plasma.aux = 0;
-    myship->s_plasma.speed = 10;
-/*    myship->s_plasma.fuse = MAX_SHORT;*/
-    myship->s_torp.fuse = 32767;
-    myship->s_wpncoolrate = 100;
-    myship->s_egncoolrate = 100;
-    return 1;
-}
-
-/*---------------------[ prints the usage of snake ]---------------------*/
-
-void
-printsnakeUsage(void)
-{
-    printf("Usage: snake [options]\n");
-    printf("Options:\n\
-  -u -- this usage message\n\
-  -p -- patrol\n\
-  -s -- noSmush (?)\n\
-  -b -- berserk\n\
-  -d -- debug\n\
-  -t -- target <player number>\n\
-  -T -- team [frkoi]\n\
-  -l -- length (in torps)\n\
-  -f -- frequency\n\
-  -g -- guardian:  -g <planet1> <planet2> (must be 2 planets listed,\n\
-                      by number).\n");
-}
-
-/*--------------------------[ printsnakeUsage ]--------------------------*/

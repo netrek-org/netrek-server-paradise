@@ -44,17 +44,19 @@ remove_ctl(char *str)
     }
 }
 
-void 
-getname(void)
-/* Let person identify themselves from w */
+/* return true if we want a lockout */
+static int 
+lockout(void)
 {
-    *(me->p_name) = 0;
-    while (*(me->p_name) == 0) {
-	handleLogin();
-    }
+    return (
+/*
+	  (strncmp (login, "bozo", 4) == 0) ||
+*/
+	    0
+    );
 }
 
-void 
+static void 
 handleLogin(void)
 {
     static struct statentry player;
@@ -203,6 +205,16 @@ handleLogin(void)
 }
 
 void 
+getname(void)
+/* Let person identify themselves from w */
+{
+    *(me->p_name) = 0;
+    while (*(me->p_name) == 0) {
+	handleLogin();
+    }
+}
+
+void 
 savestats(void)
 {
     int     fd;
@@ -220,16 +232,4 @@ savestats(void)
 	write(fd, (char *) &me->p_stats, sizeof(struct stats));
 	close(fd);
     }
-}
-
-/* return true if we want a lockout */
-int 
-lockout(void)
-{
-    return (
-/*
-	  (strncmp (login, "bozo", 4) == 0) ||
-*/
-	    0
-    );
 }
