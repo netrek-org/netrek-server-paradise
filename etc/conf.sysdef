@@ -1,0 +1,100 @@
+TOURN=4
+SHIPS=SC,DD,BB,CA,CL,AS,SB,JS,FR,WB
+WEAPONS=PLASMA,TRACTOR,MISSILE
+PLKILLS=2
+MSKILLS=2
+HIDDEN=1
+MAXLOAD=5.0
+CONFIRM=0
+UDP=1
+WARPDECEL=0
+GALAXYGENERATOR=8
+FIREDURINGWARPPREP=0
+PLANETSINPLAY=17
+ORBITDIRPROB=1
+TESTERS=14
+POPSCHEME=1
+POPCHOICE=1
+POPSPEED%=14
+VARIABLE_WARP=1
+WARPPREP_SUSPENDABLE=1
+IMPROVED_TRACKING=MISSILE
+#CLUECHECK=25
+#CLUEDELAY=216000
+#CLUETIME=300
+#CLUESOURCE=2
+SUN_EFFECT=PHOTON,PLASMA,MISSILE,FIGHTER
+NOPREGAMEBEAMUP=1
+GAMESTARTNUKE=1
+NOTTIMEOUT=10
+
+## bronco style
+#WARPDRIVE=0
+#AFTERBURNERS=0
+#NEWARMYGROWTH=0
+#BRONCOSHIPVALS=1
+
+SHIP=0
+#SC s_armyperkill 1
+#SC s_warp.maxspeed 27
+#SC s_expldam 70
+#SC s_fueldam 10
+end
+
+SHIP=1
+DD s_maxarmies 4
+#DD s_warp.maxspeed 24
+#DD s_expldam 90
+#DD s_fueldam 20
+end
+
+#SHIP=10
+#CL s_warp.maxspeed 22
+#CL s_expldam 90
+#CL s_fueldam 20
+#end
+
+#SHIP=2
+#CA s_warp.maxspeed 20
+#CA s_expldam 90
+#CA s_fueldam 20
+#end
+
+#SHIP=8
+#FR s_warp.maxspeed 19
+#FR s_expldam 90
+#FR s_fueldam 25
+#end
+
+#SHIP=3
+#BB s_warp.maxspeed 18
+#BB s_warp.cost 34
+#BB s_expldam 90
+#BB s_fueldam 30
+#end
+
+#SHIP=4
+#AS s_warp.maxspeed 18
+#end
+
+SHIP=5
+SB s_warp.maxspeed 2
+end
+
+SHIP=7
+JS s_cloakcost 1250
+JS s_imp.maxspeed 12
+JS s_after.maxspeed 25
+JS s_after.etemp 200000
+JS s_after.cost 1500
+JS s_warp.maxspeed 40
+JS s_warpprepspeed 0
+JS s_warpinittime 30
+JS s_warp.cost 200
+JS s_tractstr 4500
+JS s_tractrng 1
+end
+
+SHIP=9
+WB s_warp.maxspeed 6
+end

@@ -1,0 +1,8 @@
+#!/bin/sh
+#
+# Called upon reboot, change this to whatever your NETREKDIR should be
+# if the system is starting the server on reboot.
+#
+NETREKDIR=/export/home/netrek/server/
+cd ${NETREKDIR}/bin
+./ntstop

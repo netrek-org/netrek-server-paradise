@@ -1,0 +1,93 @@
+
+
+
+
+
+
+
+ (cug-uh dyarg, Blood War)
+
+
+
+
+  System: Intel Pentium 120mhz
+  Memory: 64MB
+  OS:     FreeBSD 2.2.5-R
+
+
+
+
+
+
+
+
+  Maintained by Brandon Gillespie
+    (brandon@roguetrader.com)
+
+
+
+  NOTE: THIS CONFIGURATION IS
+  STILL IN THE WORKS, GIVE ME
+  TIME TO CLEAN IT UP (YOUR
+  COMMENTS HELP!)
+
+  ******* READ NOTES ON NEXT PAGE *******
+
+   (artwork by Richard Russell)
+	@@b
+Ok, alread a list of known bugs is being made.
+
+   ++ [Jan-27-1998] There is a galaxy width problem--you can go past
+                    the right and bottom boundaries.  I'll fix this
+                    as soon as possible.
+    - [Jan-29-1998] Fixed -- Brandon
+   ++ [Jan-27-1998] Some people have reported that they cannot see, torps.
+                    Please report the problem if it happens to you.
+
+And to answer a few other questions:
+
+      No, this is not the standard paradise source--a few years ago I
+      branched the paradise source to create paradise 3.  Recently I blew
+      the dust off that branch and merged it with the latest paradise 2
+      source from Eric Dorman (2.4p10A).  In addition to that I cleaned
+      up a lot of crap--it now compiles under strict ANSI compliance, and
+      its much easier to install and manage.  Eventually I will release
+      the source.
+
+	@@b
+And for those interested, here is my heavilly customized keymap.  It is
+designed to keep all combat necessary keys on the left hand (so you dont
+have to move your right hand away from the mouse)
+
+    q-Q-w4W3e#E#r%R`tiTIuSUwIUA$s_S$ftFtgfGCkVKBZ;XlVsvsBXnFHE`R~ra^:Q;q[~jZ
+
+Explained:
+
+     q or Q   warp
+     w        impulse 4
+     W        impulse 3
+     e or E   middle impulse speed
+     r        max impulse
+     R        afterburners
+     t/T      get info/full info
+     a/A      pressors on/off
+     s/S      tractors on/off
+     j        beamup armies
+     f or F   fire torp
+     g        fire special weapons
+     G        toggle special weapons
+     k        toggle planet display type
+     K        toggle galactic display type
+     Z        lock onto planet
+     X        lock onto player/planet
+     v or V   shield toggle
+     B        macro mode
+     n        send armies carried report
+     H        send distress
+     `        enter repair mode
+     ~        refit ship
+     :/;      quit / fast quit
+     u        status graph
+     U        war window
+     I        rank list
+     [        packet window

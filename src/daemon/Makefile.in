@@ -1,0 +1,57 @@
+# Makefile.in for Paradise server src/common 3.1
+# @configure_input@
+
+@SET_MAKE@
+
+bindir=@bindir@
+datadir=@datadir@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+libexecdir=@libexecdir@
+mandir=@mandir@
+prefix=@prefix@
+srcdir=@srcdir@
+top_srcdir=@top_srcdir@
+
+AR=ar
+ARFLAGS=cruv
+RANLIB=@RANLIB@
+
+CC=@CC@
+CPP=@CPP@
+
+CFLAGS=@CFLAGS@
+CPPFLAGS=@CPPFLAGS@ -I../include
+DEFS=@AUTH_DEFS@ @DEFS@
+LDFLAGS=@LDFLAGS@
+LIBS=@LIBS@ -lm
+
+INSTALL=@INSTALL@
+INSTALL_SCRIPT=@INSTALL_SCRIPT@
+INSTALL_DATA=@INSTALL_DATA@
+
+VPATH=pl_gen:../common:../rsa
+
+####
+
+DAEMON_OBJS=daemonII.o dutil.o conquer.o shipvals.o \
+	    sysdefaults.o weapons.o planets.o player.o stats.o misc.o \
+	    tourny.o terrain.o
+
+all: generators daemonII
+
+generators:
+	@cd pl_gen && $(MAKE)
+
+daemonII: pl_gen.a common.a $(DAEMON_OBJS)
+	$(CC) $(CFLAGS) -o $@ $(DAEMON_OBJS) pl_gen/pl_gen.a ../common/common.a $(LDFLAGS) $(LIBS)
+
+clean:
+	-rm -f daemonII $(DAEMON_OBJS)
+	@cd pl_gen && $(MAKE) clean
+
+install:
+	$(INSTALL) daemonII $(bindir)
+
+distclean: clean
+	-rm -f Makefile

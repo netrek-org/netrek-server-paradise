@@ -1,0 +1,610 @@
+/*--------------------------------------------------------------------------
+NETREK II -- Paradise
+
+Permission to use, copy, modify, and distribute this software and its
+documentation, or any derivative works thereof, for any NON-COMMERCIAL
+purpose and without fee is hereby granted, provided that this copyright
+notice appear in all copies.  No representations are made about the
+suitability of this software for any purpose.  This software is provided
+"as is" without express or implied warranty.
+
+    Xtrek Copyright 1986                            Chris Guthrie
+    Netrek (Xtrek II) Copyright 1989                Kevin P. Smith
+                                                    Scott Silvey
+    Paradise II (Netrek II) Copyright 1993          Larry Denys
+                                                    Kurt Olsen
+                                                    Brandon Gillespie
+--------------------------------------------------------------------------*/
+
+/*------------------------------------------------------------------------
+Startup program for netrek.  Listens for connections, then forks off
+servers.  Based on code written by Brett McCoy, but heavily modified.
+
+Note that descriptor 2 is duped to descriptor 1, so that stdout and
+stderr go to the same file.
+--------------------------------------------------------------------------*/
+
+#define NEED_TIME 
+
+#include "config.h"
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#ifdef SVR4
+#include <sys/termios.h>
+#endif				/* SVR4 */
+#include <netdb.h>
+#include <errno.h>
+#include <time.h>
+#include <netinet/in.h>
+#include <fcntl.h>
+#include <varargs.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <string.h>
+#ifdef SYSV
+#include <fcntl.h>
+#endif
+#ifdef hpux
+#include <sys/ptyio.h>
+#endif
+#include "defs.h"
+#include "path.h"
+#include "data.h"
+
+/* #define DEF_PORT	2592*/	/* port to listen on */
+/* #define NTSERV		"bin/ntserv"
+
+#define METASERVER	"metaserver.ecst.csuchico.edu"
+*/
+/*
+ * Since the metaserver address is a nameserver alias, we can't just
+ * compare the peer hostname with the setting of METASERVER.  The peer
+ * hostname returned by gethostbyaddr() will be the machine's real name,
+ * which will be different (and could change).
+ *
+ * So, we'll do a gethostbyname() on METASERVER to get an IP address, then
+ * we can compare that with the connecting peer.
+ *
+ * It'd be overkill to get the metaserver's IP address with every connection;
+ * and it may be inadequate to get it just once at startup, since listen
+ * can exist for long periods of time, and the metaserver's IP address could
+ * be changed in that time.
+ *
+ * So, we'll grab the IP address at least every META_UPDATE_TIME seconds
+ */
+#define META_UPDATE_TIME (5*60*60)	/* five hours */
+
+void    printlistenUsage();
+void    set_env();
+int     listenSock;
+short   port = PORT;
+char   *program;
+int     meta_addr;
+
+char   *dateTime();
+void    detach();
+void    getConnections();
+void    getListenSock();
+void    multClose();
+void    reaper();
+void    terminate();
+
+/*
+ * Error reporting functions ripped from my library.
+ */
+void    syserr();
+void    warnerr();
+void    fatlerr();
+void    err();
+char   *lasterr();
+void	print_pid();
+
+struct hostent *gethostbyaddr();
+char   *inet_ntoa();
+int     metaserverflag;
+char   *leagueflag = 0;
+char   *observerflag = 0;
+
+#define NEA	10
+char   *extraargs[NEA];
+int     extraargc = 0;
+
+char	*ntserv_binary=NTSERV;
+
+/* the System-V signal() function provides the older, unreliable signal
+   semantics.  So, this is an implementation of signal using sigaction. */
+
+void    (*
+	 r_signal(sig, func)) ()
+    int     sig;
+    void    (*func) ();
+{
+    struct sigaction act, oact;
+
+    act.sa_handler = func;
+
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+#ifdef SA_RESTART
+    act.sa_flags |= SA_RESTART;
+#endif
+
+    if (sigaction(sig, &act, &oact) < 0)
+	return (SIG_ERR);
+
+    return (oact.sa_handler);
+}
+
+
+int 
+main(argc, argv)
+    int     argc;
+    char   *argv[];
+{
+    int     i, key;
+    int     nogo = 0;
+    struct hostent *he;
+    struct timeval tv;
+    time_t  stamp, now;
+
+    metaserverflag = 0;
+#ifndef apollo
+    nice(-20);
+    nice(-20);
+    nice(-20);
+#endif
+
+    for (i=1; i < argc; i++) {
+        if (*argv[i] == '-') {
+            switch (argv[i][1]) {
+              case 'p':
+                 port = atoi(argv[i + 1]);
+                 break;
+              case 'k':
+                 if (++i < argc && sscanf(argv[i], "%d", &key) > 0 && key > 0)
+                     set_env("TREKSHMKEY", argv[i]);
+                 else
+                     nogo++;
+                 break;
+              case 'b':
+                 ntserv_binary = argv[++i];
+                 break;
+              case 'h':
+              case 'u': /* for old times sake, the others don't do this,
+                           but this one does so it doesn't pass to ntserv */
+              case '-': /* same with this */
+                 nogo++;
+                 break;
+              default:
+                 /* all unknown arguments are passed through to ntserv. */
+                 extraargs[extraargc++] = argv[i];
+            }
+        }
+        /* else just ignore non flags */
+    }
+
+    if ((program = strrchr(argv[0], '/')))
+        ++program;
+    else
+        program = argv[0];      /* let err functions know our name */
+
+    if (nogo)
+	printlistenUsage(program);
+
+    detach();			/* detach from terminal, close files, etc. */
+    print_pid();		/* log the new PID */
+    getListenSock();
+    r_signal(SIGCHLD, reaper);
+    r_signal(SIGTERM, terminate);
+    r_signal(SIGHUP, SIG_IGN);
+
+    meta_addr = 0;
+    stamp = 0;
+    tv.tv_sec = 1;
+    tv.tv_usec = 0;
+
+    while (1) {
+	now = time(0);
+	if (now - stamp > META_UPDATE_TIME) {
+	    he = gethostbyname(METASERVER);
+	    if (he)
+		meta_addr = *((int *) he->h_addr);
+	    stamp = now;
+	}
+	getConnections();
+	select(0, 0, 0, 0, &tv);/* wait one sec between each connection */
+    }
+}
+
+/***********************************************************************
+ * Detach process in various ways.
+ */
+
+void 
+detach()
+{
+    int     fd, rc, mode;
+    char   *fname;
+
+    mode = S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR;
+/*    fname = build_path("startup.log"); */
+    fname = build_path("logs/startup.log");
+    if ((fd = open(fname, O_WRONLY | O_CREAT | O_APPEND, mode)) == -1)
+	syserr(1, "detach", "couldn't open log file. [%s]", dateTime());
+    dup2(fd, 2);
+    dup2(fd, 1);
+    multClose(1, 2, -1);	/* close all other file descriptors */
+    warnerr(0, "started at %s on port %d.", dateTime(), port);
+
+    /* fork once to escape the shells job control */
+    if ((rc = fork()) > 0)
+	exit(0);
+    else if (rc < 0)
+	syserr(1, "detach", "couldn't fork. [%s]", dateTime());
+
+    /* now detach from the controlling terminal */
+
+#ifdef _SEQUENT_
+    if ((fd = open("/dev/tty", O_RDWR | O_NOCTTY, 0)) >= 0) {
+	(void) close(fd);
+    }
+#else
+    if ((fd = open("/dev/tty", O_RDWR, 0)) == -1) {
+	warnerr("detach", "couldn't open tty, assuming still okay. [%s]",
+		dateTime());
+	return;
+    }
+#if defined(SYSV) && defined(TIOCTTY)
+    {
+	int     zero = 0;
+	ioctl(fd, TIOCTTY, &zero);
+    }
+#else
+    ioctl(fd, TIOCNOTTY, 0);
+#endif
+    close(fd);
+#endif				/* _SEQUENT_ */
+
+    setsid();			/* make us a new process group/session */
+}
+
+/***********************************************************************
+ */
+
+void 
+getListenSock()
+{
+    struct sockaddr_in addr;
+
+    if ((listenSock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+	syserr(1, "getListenSock", "can't create listen socket. [%s]",
+	       dateTime());
+
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_port = htons(port);
+    {
+/* added this so we could handle nuking listen. KAO 3/26/93 */
+	int     foo = 1;
+	if (setsockopt(listenSock, SOL_SOCKET, SO_REUSEADDR, (char *) &foo,
+		       sizeof(foo)) == -1) {
+	    fprintf(stderr, "Error setting socket options in listen.\n");
+	    exit(1);
+	}
+    }
+    if (bind(listenSock, (struct sockaddr *) & addr, sizeof(addr)) < 0)
+	syserr(1, "getListenSock", "can't bind listen socket. [%s]",
+	       dateTime());
+
+    if (listen(listenSock, 5) != 0)
+	syserr(1, "getListenSock", "can't listen to socket. [%s]", dateTime());
+}
+
+/***********************************************************************
+ */
+
+void 
+getConnections()
+{
+    int     len, sock, pid, pa;
+    struct sockaddr_in addr;
+    struct hostent *he;
+    char    host[100];
+
+    len = sizeof(addr);
+    while ((sock = accept(listenSock, (struct sockaddr *) & addr, &len)) < 0) {
+	/* if we got interrupted by a dying child, just try again */
+	if (errno == EINTR)
+	    continue;
+	else
+	    syserr(1, "getConnections",
+		   "accept() on listen socket failed. [%s]", dateTime());
+    }
+
+    /* get the host name */
+    he = gethostbyaddr((char *) &addr.sin_addr.s_addr,
+		       sizeof(addr.sin_addr.s_addr), AF_INET);
+    if (he != 0) {
+	strcpy(host, he->h_name);
+	pa = *((int *) he->h_addr);
+    }
+    else {
+	strcpy(host, inet_ntoa( addr.sin_addr ));
+	pa = (int) addr.sin_addr.s_addr;
+    }
+
+    if (pa == meta_addr)
+	metaserverflag = 1;
+    /* else */
+    warnerr(0, "connect: %-33s[%s][%d]", host, dateTime(), metaserverflag);
+
+    /* fork off a server */
+    if ((pid = fork()) == 0) {
+	char   *newargv[10];
+	int     newargc = 0;
+	int     i;
+	char   *binname;
+	binname = build_path(ntserv_binary);
+	dup2(sock, 0);
+	multClose(0, 1, 2, -1);	/* close everything else */
+
+	newargv[newargc++] = "ntserv";
+	if (metaserverflag == 1)
+	    newargv[newargc++] = "-M";
+	for (i = 0; i < extraargc; i++)
+	    newargv[newargc++] = extraargs[i];
+	newargv[newargc++] = host;
+	newargv[newargc] = 0;
+
+	execv(binname, newargv);
+
+	syserr(1, "getConnections",
+	       "couldn't execv %s as the server. [%s]",
+	       binname, dateTime());
+	exit(1);
+    }
+    else if (pid < 0)
+	syserr(1, "getConnections", "can't fork. [%s]", dateTime());
+
+    close(sock);
+    metaserverflag = 0;
+}
+
+/***********************************************************************
+ * Adds "var=value" to environment list
+ */
+
+void 
+set_env(var, value)
+    char   *var, *value;
+{
+    char   *buf;
+    buf = malloc(strlen(var) + strlen(value) + 2);
+    if (!buf)
+	syserr(1, "set_env", "malloc() failed. [%s]", dateTime());
+
+    strcpy(buf, var);
+    strcat(buf, "=");
+    strcat(buf, value);
+
+    putenv(buf);
+}
+
+
+/***********************************************************************
+ * Returns a string containing the date and time.  String area is static
+ * and reused.
+ */
+
+char   *
+dateTime()
+{
+    time_t  t;
+    char   *s;
+
+    time(&t);
+    s = ctime(&t);
+    s[24] = '\0';		/* wipe-out the newline */
+    return s;
+}
+
+/***********************************************************************
+ * Handler for SIGTERM.  Closes and shutdowns everything.
+ */
+
+void 
+terminate()
+{
+    int     s;
+
+    fatlerr(1, "terminate", "killed. [%s]", dateTime());
+#ifdef SYSV
+    s = sysconf(_SC_OPEN_MAX);
+    if (s < 0)			/* value for OPEN_MAX is indeterminate, */
+	s = 32;			/* so make a guess */
+#else
+    s = getdtablesize();
+#endif
+    /* shutdown and close everything */
+    for (; s >= 0; s--) {
+	shutdown(s, 2);
+	close(s);
+    }
+}
+
+/***********************************************************************
+ * Waits on zombie children.
+ */
+
+void 
+reaper()
+{
+#ifdef HAVE_WAIT3
+    while (wait3(0, WNOHANG, 0) > 0);
+#else
+    while (waitpid(0, 0, WNOHANG) > 0);
+#endif				/* SVR4 */
+}
+
+/***********************************************************************
+ * Close all file descriptors except the ones specified in the argument list.
+ * The list of file descriptors is terminated with -1 as the last arg.
+ */
+
+void 
+multClose(va_alist) va_dcl
+{
+    va_list args;
+    int     fds[100], nfds, fd, ts, i, j;
+
+    /* get all descriptors to be saved into the array fds */
+    va_start(args);
+    for (nfds = 0; nfds < 99; nfds++) {
+	if ((fd = va_arg(args, int)) == -1)
+	    break;
+	else
+	    fds[nfds] = fd;
+    }
+
+#ifdef SYSV
+    ts = sysconf(_SC_OPEN_MAX);
+    if (ts < 0)			/* value for OPEN_MAX is indeterminate, */
+	ts = 32;		/* so make a guess */
+#else
+    ts = getdtablesize();
+#endif
+
+    /*
+       close all descriptors, but first check the fds array to see if this
+       one is an exception
+    */
+    for (i = 0; i < ts; i++) {
+	for (j = 0; j < nfds; j++)
+	    if (i == fds[j])
+		break;
+	if (j == nfds)
+	    close(i);
+    }
+}
+
+/***********************************************************************
+ * Error reporting functions taken from my library.
+ */
+
+#if 0
+#ifndef sys_freebsd
+extern int sys_nerr;
+extern char *sys_errlist[];
+#endif
+extern int errno;
+#endif
+
+void 
+syserr(va_alist) va_dcl
+{
+    va_list args;
+    int     rc;
+
+    va_start(args);
+    rc = va_arg(args, int);
+    err(args);
+    if (errno < sys_nerr)
+	fprintf(stderr, "     system message: %s\n", sys_errlist[errno]);
+
+    exit(rc);
+}
+
+void 
+warnerr(va_alist) va_dcl
+{
+    va_list args;
+
+    va_start(args);
+    err(args);
+}
+
+void 
+fatlerr(va_alist) va_dcl
+{
+    va_list args;
+    int     rc;
+
+    va_start(args);
+    rc = va_arg(args, int);
+    err(args);
+
+    exit(rc);
+}
+
+void 
+err(args)
+    va_list args;
+{
+
+    char   *func, *fmt;
+
+    if (program != 0)
+	fprintf(stderr, "%s", program);
+    func = va_arg(args, char *);
+    if (func != 0 && strcmp(func, "") != 0)
+	fprintf(stderr, "(%s)", func);
+    fprintf(stderr, ": ");
+
+    fmt = va_arg(args, char *);
+    vfprintf(stderr, fmt, args);
+    fputc('\n', stderr);
+    fflush(stderr);
+}
+
+char   *
+lasterr()
+{
+    if (errno < sys_nerr)
+	return sys_errlist[errno];
+    else
+	return "No message text for this error.";
+}
+
+/*---------------------[ prints the usage of listen ]---------------------*/
+
+void printlistenUsage(char name[])
+{
+    int x;
+    char message[][255] = {
+        "\n\t'%s [options]'\n\n",
+        "Options:\n",
+        "\t-h      help (this usage message)\n",
+        "\t-p      port other than default port\n",
+        "\t-k n    use n as shared memory key number\n\n",
+        "Any unrecognized options are passed through to ntserv. For an up\n",
+        "to date listing of available ntserv options check the binary.\n",
+        "\nNOTE: in league play you must start up two listen processes, ",
+        "one for each port.\n\n",
+        "\0"
+    };
+
+    fprintf(stderr, "-- NetrekII (Paradise), %s --\n", PARAVERS);
+    for (x=0; *message[x] != '\0'; x++)
+        fprintf(stderr, message[x], name);
+
+    exit(1);
+}
+
+/*--------------------------[ printlistenUsage ]--------------------------*/
+
+/* set the pid logfile (BG) */
+void print_pid()
+{
+	char *fname;
+	FILE *fptr;
+
+	fname = build_path("logs/listen.pid");
+	fptr = fopen(fname, "w+");
+	fprintf(fptr, "%d", getpid());
+	fclose(fptr);
+}
