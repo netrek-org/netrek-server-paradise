@@ -56,9 +56,14 @@ install: all
 	@if test ! -d $(prefix)/logs; then mkdir $(prefix)/logs; fi
 	@if test ! -d $(prefix)/pics; then mkdir $(prefix)/pics; fi
 	@echo "*** Installing binaries"
+# this is tricky.  if $(prefix) == $(srcdir), we don't want to kill our only
+# copy of the scripts.  Some BSD-compatible installs handle this case;
+# some don't.  Instead, install into $${i}.dst, then move that file to
+# the correct destination file.
 	@cd src && $(MAKE) install
 	@for i in $(INSTALL_SCRIPTS); do \
-	  $(INSTALL) $(srcdir)/$${i} $(prefix)/$${i}; \
+	  $(INSTALL) $(srcdir)/$${i} $(prefix)/$${i}.dst; \
+	  mv $(prefix)/$${i}.dst $(prefix)/$${i}; \
 	done
 	@echo "*** Installing configuration files (only if needed)"
 	@for i in $(INSTALL_BLANKS); do \

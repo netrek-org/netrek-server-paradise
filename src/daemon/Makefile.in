@@ -41,7 +41,7 @@ all: generators daemonII
 generators:
 	@cd galaxygen && $(MAKE)
 
-daemonII: generators common.a $(DAEMON_OBJS)
+daemonII: galaxygen.a common.a $(DAEMON_OBJS)
 	$(CC) $(CFLAGS) -o $@ $(DAEMON_OBJS) galaxygen/galaxygen.a ../common/common.a $(LDFLAGS) $(LIBS)
 
 clean:
