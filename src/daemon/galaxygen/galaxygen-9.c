@@ -40,7 +40,7 @@ notice appear in all copies.
 
 #define GALAXY_WIDTH 200000
 #define RACE_DISTANCE_FROM_CENTER (GWIDTH/2 - GWIDTH/6)
-#define RACE_SYSTEM_VARIANCE (GWIDTH/200)
+#define RACE_SYSTEM_VARIANCE (GWIDTH/250)
 #define MIN_PLANET_ORBIT_DISTANCE 8000
 #define MAX_PLANET_ORBIT_DISTANCE \
   (3 * GWIDTH / 40 <= MIN_PLANET_ORBIT_DISTANCE ? \
@@ -48,7 +48,7 @@ notice appear in all copies.
     3 * GWIDTH / 40)
 #define PLANET_ANGULAR_VARIANCE 20
 
-#define IND_SYSTEM_VARIANCE (GWIDTH/40)
+#define IND_SYSTEM_VARIANCE (GWIDTH/250)
 #define IND_DISTANCE_FROM_CENTER (GWIDTH/8)
 
 #define HOME_PLANET_ARMIES 20
@@ -264,7 +264,7 @@ populate_race_barren_planet(struct planet *p)
   p->pl_armies = HOME_BARREN_ARMIES;
 }
 
-/* this function places a star + six planets for the given team at
+/* this function places a star + five planets for the given team at
    about the given location starting with planet p */
 static int
 place_race(int p, int team, int x, int y)
@@ -364,7 +364,7 @@ place_race(int p, int team, int x, int y)
    Each home-race system has:
      1) home base with AGRI, RPR, SY, FUEL (all resources), plus 20 armies;
      2) A thin world with AGRI, RPR (agri/metal res) plus 14 armies
-     3) two fuel planets (TNTD/dilith) plus 6 armies on each
+     3) two fuel planets (TNTD/dilith) plus 8 armies on each
      4) one barren planet (TOXC) with no resources, 5 armies.
 
    Each independent planet may or may not be developed.  If developed,
@@ -378,7 +378,7 @@ place_race(int p, int team, int x, int y)
     *4) one TNTD Arable planet (only for 5-planet systems)
     *5) one TOXC barren planet (only for 5-planet systems)
 
-    For a total of 4 * 5 + 4 + 12 = 36 planets + stars.
+    For a total of (4 * 5) + 4 + 9 + 3 = 36 planets + stars.
     Note that 2 * 5 + 9 = 19 planets should be in play at once.
 
     Wormholes and justify_galaxy are not applicable for this generator.
@@ -396,7 +396,9 @@ gen_galaxy_9(void)
     int sa;
     int pl_x_ctr, pl_y_ctr;
 
-    NUMPLANETS = 4 * 5 + 4 * 1 + 12;            /* planets + stars = 36 */
+    NUMPLANETS = (4 * 5) + 4 + 9 + 3;
+    /* race planets + race stars + ind planets + ind stars = 36 */
+
     GWIDTH = GALAXY_WIDTH;
 
     initplanets();		/* initialize planet structures */
