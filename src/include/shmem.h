@@ -224,6 +224,10 @@ struct configuration {
                                            carried armies when damaged beyond
 					   50%? */
     char    shipyard_built_by_sb_only;	/* can only SB build a shipyard? */
+
+    int     surrstart;			/* # planets where surrender starts */
+    int     surrend;			/* # planets where surrender stops */
+    int     surrlength;			/* # minutes to achive surrend */
 };
 
 #ifndef SHMEM_C

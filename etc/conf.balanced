@@ -9,12 +9,12 @@ CONFIRM=0
 UDP=1
 WARPDECEL=1
 EROSION=0.02
-PENETRATION=0.10
+PENETRATION=0.70
 EVACUATION=1
 FUELEXPLOSIONS=1
 GALAXYGENERATOR=9
 FIREDURINGWARPPREP=0
-PLANETSINPLAY=20
+PLANETSINPLAY=19
 ORBITDIRPROB=1
 TESTERS=14
 POPSCHEME=1
@@ -39,7 +39,7 @@ NOTTIMEOUT=10
 # defaults from src/daemon/sysdefaults.c are listed.
 #
 # RPRDURINGWARPPREP=1
-# RPRDURINGWARP=1
+RPRDURINGWARP=0
 # WBBOMBINGCREDIT=1		# bonus for WB bombing
 # JSPLANETCREDIT=1		# bonus for JS assists taking planets
 # BUTTTORP_PENALTY=0		# penalize butt torpers?  Modify
@@ -48,14 +48,23 @@ NOTTIMEOUT=10
 # ROBOTSTATS=1			# robots accumulate stats.
 # LOSING_ADVANTAGE=0.0		# give losing team an advantage?  If so,
 #                               # set this >= 1.0.  Typical value is 2.0.
-VICTORY_PLANETS=2		# max # of planets enemy can still have
-                                # for victory by other team.  Setting
-				# VICTORY_PLANETS=0 ==> old genocide code,
-                                # i.e., you have to take ALL planets.
-REVOLT_WITH_FACILITIES=0	# can a planet revolt if it still has
-				# built resources?  1 is normal P default.
-KILL_CARRIED_ARMIES=0.30	# percent chance any damage beyond 50%
-				# will start killing armies you carry
+# max # of planets enemy can still have
+# for victory by other team.  Setting
+# VICTORY_PLANETS=0 ==> old genocide code,
+# i.e., you have to take ALL planets.
+VICTORY_PLANETS=2
+# can a planet revolt if it still has
+# built resources?  1 is normal P default.
+REVOLT_WITH_FACILITIES=0
+# percent chance any damage beyond 50%
+# will start killing armies you carry
+KILL_CARRIED_ARMIES=0.30	
+# # of planets where surrender counter starts
+SURRSTART=3
+# # of planets where surrender counter stops
+SURREND=5
+# # of minutes to acheive SURREND
+SURRLENGTH=15
 
 ## bronco style
 #WARPDRIVE=0
@@ -64,26 +73,73 @@ AFTERBURNERS=0
 #BRONCOSHIPVALS=1
 
 SHIP=0
-SC warp.cost 30
+SC warp.cost 45
 SC warp.maxspeed 20
 SC maxarmies 0
+SC bomb 5
+SC bombflags ARMIES
 SC plasma.damage -1
+SC torp.damage 25
+SC torp.speed 16
+SC torp.cost 175
+SC torp.fuse 16
+SC phaser.damage 75
+SC phaser.range 4500
+SC phaser.cost 525
+SC phaser.fuse 10
+SC maxfuel 5000
+SC recharge 16
+SC repair 80
+SC maxshield 75
+SC maxdamage 75
+SC shieldcost 2
+SC cloakcost 50
 end
 
 SHIP=1
-DD warp.cost 45
+DD warp.cost 60
 DD warp.maxspeed 18
 DD maxarmies 0
 DD bomb 0
 DD plasma.damage -1
+DD torp.damage 30
+DD torp.speed 14
+DD torp.cost 210
+DD torp.fuse 30
+DD phaser.damage 85
+DD phaser.range 5100
+DD phaser.cost 595
+DD phaser.fuse 10
+DD maxfuel 7000
+DD recharge 22
+DD repair 100
+DD maxshield 85
+DD maxdamage 85
+DD shieldcost 3
+DD cloakcost 105
 end
 
 SHIP=2
-CA warp.cost 50
+CA warp.cost 75
 CA warp.maxspeed 16
 CA maxarmies 0
 CA bomb 0
 CA plasma.damage -1
+CA torp.damage 40
+CA torp.speed 12
+CA torp.cost 280
+CA torp.fuse 40
+CA phaser.damage 100
+CA phaser.range 6000
+CA phaser.cost 700
+CA phaser.fuse 10
+CA maxfuel 10000
+CA recharge 24
+CA repair 110
+CA maxshield 100
+CA maxdamage 100
+CA shieldcost 4
+CA cloakcost 130
 end
 
 SHIP=3
@@ -91,15 +147,31 @@ BB warp.cost 85
 BB warp.maxspeed 14
 BB maxarmies 0
 BB bomb 30
+BB bombflags ARMIES,FUEL,AGRI,REPAIR,SHIPYARD
+BB torp.damage 40
+BB torp.speed 12
+BB torp.cost 300
+BB torp.fuse 40
+BB phaser.damage 105
+BB phaser.range 6300
+BB phaser.cost 945
+BB phaser.fuse 10
 BB plasma.damage 250
 BB plasma.speed 20
 BB plasma.cost 5000
 BB plasma.fuse 40
 BB plasma.wtemp 400
+BB maxfuel 14000
+BB recharge 28
+BB repair 125
+BB maxshield 130
+BB maxdamage 130
+BB shieldcost 5
+BB cloakcost 150
 end
 
 SHIP=4
-AS warp.cost 45
+AS warp.cost 65
 AS warp.maxspeed 12
 AS tractstr 0
 AS tractrng 0
@@ -109,16 +181,20 @@ AS torp.cost 550
 AS torp.fuse 10
 AS torp.wtemp 40
 AS phaser.damage 20
-AS phaser.speed 10000
+AS phaser.range 2000
 AS phaser.cost 1100
 AS phaser.fuse 40
 AS phaser.wtemp 80
 AS plasma.damage -1
 AS armyperkill 4
 AS maxarmies 10
-AS bomb 0
+AS bomb 10
+AS bombflags ARMIES,FUEL,AGRI,REPAIR,SHIPYARD
+AS nflags UNDOCKABLE,CANORBIT,CANWARP,HASPHASERS
+AS maxfuel 6000
+AS recharge 20
 AS repair 40
-AS maxdamge 400
+AS maxdamage 400
 AS maxshield 10
 AS shieldcost 3
 AS detcost 100
@@ -128,6 +204,16 @@ AS scanrange -1
 end
 
 SHIP=5
+SB warp.cost 200
+SB warp.maxspeed 4
+SB torp.damage 30
+SB torp.speed 14
+SB torp.cost 300
+SB torp.fuse 45
+SB phaser.damage 120
+SB phaser.range 7200
+SB phaser.cost 960
+SB phaser.fuse 4
 SB plasma.damage 300
 SB plasma.speed 24
 SB plasma.cost 6000
@@ -138,9 +224,28 @@ SB bomb 0
 SB numdefn 3
 SB numplan 5
 SB rank 2
+SB maxfuel 60000
+SB recharge 90
+SB repair 170
+SB maxdamage 600
+SB maxshield 500
+SB shieldcost 10
+SB detcost 100
+SB detdist 1800
+SB cloakcost 750
 end
 
 SHIP=9
+WB warp.cost 200
+WB warp.maxspeed 5
+WB torp.damage 45
+WB torp.speed 15
+WB torp.cost 450
+WB torp.fuse 20
+WB phaser.damage 125
+WB phaser.range 7500
+WB phaser.cost 1000
+WB phaser.fuse 5
 WB plasma.damage 400
 WB plasma.speed 25
 WB plasma.cost 4000
@@ -148,7 +253,17 @@ WB plasma.fuse 35
 WB plasma.wtemp 300
 WB maxarmies 0
 WB bomb 100
+WB bombflags ARMIES,FUEL,AGRI,REPAIR,SHIPYARD
 WB numdefn 2
 WB numplan 3
 WB rank 1
+WB maxfuel 50000
+WB recharge 80
+WB repair 170
+WB maxdamage 500
+WB maxshield 250
+WB shieldcost 10
+WB detcost 100
+WB detdist 1800
+WB cloakcost 1000
 end

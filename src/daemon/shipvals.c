@@ -146,9 +146,15 @@ getshipdefaults(void)
     shipvals[SCOUT].s_armyperkill = 2;
     shipvals[SCOUT].s_maxarmies = 2;
     if (configvals->bronco_shipvals)
+    {
 	shipvals[SCOUT].s_bomb = 10;
+	shipvals[SCOUT].s_bombflags = SBOMB_ARMIES;
+    }
     else
+    {
 	shipvals[SCOUT].s_bomb = 0;
+	shipvals[SCOUT].s_bombflags = SBOMB_ARMIES | SBOMB_FACILITIES;
+    }
     shipvals[SCOUT].s_repair = 80;
     shipvals[SCOUT].s_maxdamage = 75;
     shipvals[SCOUT].s_maxshield = 75;
@@ -269,9 +275,15 @@ getshipdefaults(void)
     shipvals[DESTROYER].s_armyperkill = 2;
     shipvals[DESTROYER].s_maxarmies = 4;
     if (configvals->bronco_shipvals)
+    {
 	shipvals[DESTROYER].s_bomb = 10;
+	shipvals[DESTROYER].s_bombflags = SBOMB_ARMIES;
+    }
     else
+    {
 	shipvals[DESTROYER].s_bomb = 5;
+	shipvals[DESTROYER].s_bombflags = SBOMB_ARMIES | SBOMB_FACILITIES;
+    }
     shipvals[DESTROYER].s_repair = 100;
     shipvals[DESTROYER].s_maxdamage = 85;
     shipvals[DESTROYER].s_maxshield = 85;
@@ -391,6 +403,10 @@ getshipdefaults(void)
     shipvals[CRUISER].s_armyperkill = 2;
     shipvals[CRUISER].s_maxarmies = 6;
     shipvals[CRUISER].s_bomb = 10;
+    if (configvals->bronco_shipvals)
+        shipvals[CRUISER].s_bombflags = SBOMB_ARMIES;
+    else
+        shipvals[CRUISER].s_bombflags = SBOMB_ARMIES | SBOMB_FACILITIES;
     shipvals[CRUISER].s_repair = 110;
     shipvals[CRUISER].s_maxdamage = 100;
     shipvals[CRUISER].s_maxshield = 100;
@@ -507,6 +523,10 @@ getshipdefaults(void)
     shipvals[BATTLESHIP].s_armyperkill = 2;
     shipvals[BATTLESHIP].s_maxarmies = 6;
     shipvals[BATTLESHIP].s_bomb = 20;
+    if (configvals->bronco_shipvals)
+        shipvals[BATTLESHIP].s_bombflags = SBOMB_ARMIES;
+    else
+        shipvals[BATTLESHIP].s_bombflags = SBOMB_ARMIES | SBOMB_FACILITIES;
     shipvals[BATTLESHIP].s_repair = 125;
     shipvals[BATTLESHIP].s_maxdamage = 130;
     shipvals[BATTLESHIP].s_maxshield = 130;
@@ -623,9 +643,15 @@ getshipdefaults(void)
     shipvals[ASSAULT].s_armyperkill = 3;
     shipvals[ASSAULT].s_maxarmies = 20;
     if (configvals->bronco_shipvals)
+    {
 	shipvals[ASSAULT].s_bomb = 25;
+	shipvals[ASSAULT].s_bombflags = SBOMB_ARMIES;
+    }
     else
+    {
 	shipvals[ASSAULT].s_bomb = 50;
+	shipvals[ASSAULT].s_bombflags = SBOMB_ARMIES | SBOMB_FACILITIES;
+    }
     shipvals[ASSAULT].s_repair = 120;
     shipvals[ASSAULT].s_maxdamage = 200;
     shipvals[ASSAULT].s_maxshield = 80;
@@ -751,6 +777,10 @@ getshipdefaults(void)
     shipvals[STARBASE].s_armyperkill = 5;
     shipvals[STARBASE].s_maxarmies = 25;
     shipvals[STARBASE].s_bomb = 50;
+    if (configvals->bronco_shipvals)
+        shipvals[STARBASE].s_bombflags = SBOMB_ARMIES;
+    else
+        shipvals[STARBASE].s_bombflags = SBOMB_ARMIES | SBOMB_FACILITIES;
     shipvals[STARBASE].s_repair = 170;	/* was: 140; (BG) */
     shipvals[STARBASE].s_maxdamage = 600;
     shipvals[STARBASE].s_maxshield = 500;
@@ -852,6 +882,7 @@ getshipdefaults(void)
     shipvals[ATT].s_armyperkill = 1.5;
     shipvals[ATT].s_maxarmies = 1000;
     shipvals[ATT].s_bomb = -2100;
+    shipvals[ATT].s_bombflags = SBOMB_ARMIES | SBOMB_FACILITIES;
     shipvals[ATT].s_repair = 30000;
     shipvals[ATT].s_maxdamage = 30000;
     shipvals[ATT].s_maxshield = 30000;
@@ -955,7 +986,8 @@ getshipdefaults(void)
     }
     shipvals[JUMPSHIP].s_armyperkill = 0;
     shipvals[JUMPSHIP].s_maxarmies = 0;
-    shipvals[JUMPSHIP].s_bomb = 30;
+    shipvals[JUMPSHIP].s_bomb = 0;
+    shipvals[JUMPSHIP].s_bombflags = 0;
     shipvals[JUMPSHIP].s_repair = 200;
     shipvals[JUMPSHIP].s_maxdamage = 60;
     shipvals[JUMPSHIP].s_maxshield = 5;
@@ -1061,6 +1093,7 @@ getshipdefaults(void)
     shipvals[FRIGATE].s_armyperkill = 2;
     shipvals[FRIGATE].s_maxarmies = 6;
     shipvals[FRIGATE].s_bomb = 15;
+    shipvals[FRIGATE].s_bombflags = SBOMB_ARMIES | SBOMB_FACILITIES;
     shipvals[FRIGATE].s_repair = 118;
     shipvals[FRIGATE].s_maxdamage = 115;
     shipvals[FRIGATE].s_maxshield = 115;
@@ -1165,6 +1198,7 @@ getshipdefaults(void)
     shipvals[WARBASE].s_armyperkill = 0;
     shipvals[WARBASE].s_maxarmies = 0;
     shipvals[WARBASE].s_bomb = 90;
+    shipvals[WARBASE].s_bombflags = SBOMB_ARMIES | SBOMB_FACILITIES;
     shipvals[WARBASE].s_repair = 170;	/* was: 150; (BG) */
     shipvals[WARBASE].s_maxdamage = 500;
     shipvals[WARBASE].s_maxshield = 250;
@@ -1269,6 +1303,7 @@ getshipdefaults(void)
     shipvals[LIGHTCRUISER].s_armyperkill = 2;
     shipvals[LIGHTCRUISER].s_maxarmies = 3;	/* was 4 */
     shipvals[LIGHTCRUISER].s_bomb = 6;
+    shipvals[LIGHTCRUISER].s_bombflags = SBOMB_ARMIES | SBOMB_FACILITIES;
     shipvals[LIGHTCRUISER].s_repair = 80;	/* was 90 */
     shipvals[LIGHTCRUISER].s_maxdamage = 90;
     shipvals[LIGHTCRUISER].s_maxshield = 95;
@@ -1382,6 +1417,7 @@ getshipdefaults(void)
     shipvals[CARRIER].s_armyperkill = 25;
     shipvals[CARRIER].s_maxarmies = 3;
     shipvals[CARRIER].s_bomb = 20;
+    shipvals[CARRIER].s_bombflags = SBOMB_ARMIES | SBOMB_FACILITIES;
     shipvals[CARRIER].s_repair = 105;
     shipvals[CARRIER].s_maxdamage = 150;
     shipvals[CARRIER].s_maxshield = 120;
@@ -1489,6 +1525,7 @@ getshipdefaults(void)
     shipvals[UTILITY].s_armyperkill = 12;
     shipvals[UTILITY].s_maxarmies = 12;
     shipvals[UTILITY].s_bomb = 0;
+    shipvals[UTILITY].s_bombflags = SBOMB_ARMIES | SBOMB_FACILITIES;
     shipvals[UTILITY].s_repair = 120;
     shipvals[UTILITY].s_maxdamage = 220;
     shipvals[UTILITY].s_maxshield = 120;
@@ -1596,6 +1633,7 @@ getshipdefaults(void)
     shipvals[PATROL].s_armyperkill = 1;
     shipvals[PATROL].s_maxarmies = 1;
     shipvals[PATROL].s_bomb = 0;
+    shipvals[PATROL].s_bombflags = 0;
     shipvals[PATROL].s_repair = 50;
     shipvals[PATROL].s_maxdamage = 40;
     shipvals[PATROL].s_maxshield = 50;

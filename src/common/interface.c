@@ -324,6 +324,10 @@ bomb_planet(void)
 	warning("You can't break the peace treaty, Captain");
 	return;
     }
+    if (me->p_ship.s_bombflags == 0) {
+        warning("This ship is not equipped with any bombing equipment");
+	return;
+    }
     if (status->tourn)		/* reset the bombs out of t-mode */
 	bombsOutOfTmode = 0;	/* variable */
     me->p_flags |= PFBOMB;	/* set the bomb flag */

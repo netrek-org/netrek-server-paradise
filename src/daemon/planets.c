@@ -540,10 +540,13 @@ pbomb(void)
 		    rescue(l->pl_owner, 0, l->pl_no);
 		}
 	    }
+
+#define CAN_BOMB(pl,t) (pl->p_ship.s_bombflags & SBOMB_##t)
+
 	    p->p_swar |= l->pl_owner;	/* set player at war w/ owner */
 	    rnd = (lrand48() % 50) + p->p_ship.s_bomb;	/* pick random number */
 	    rnd = (int) ((float) rnd / 33.0 + 0.5);	/* calc armies bombed */
-	    if (rnd <= 0)
+	    if (rnd <= 0 || !CAN_BOMB(p, ARMIES))
 		continue;	/* can't bomb negative armies */
 	    if (l->pl_armies > 4) {	/* if armies to bomb then */
 		l->pl_armies -= rnd;	/* kill off armies */
@@ -564,42 +567,58 @@ pbomb(void)
 							   if armies */
 		continue;	/* on planet or in bronco-mode */
 
-	    if(configvals->slow_bomb)
-	      l->pl_tfuel -= rnd * 5;	/* knock fuel timer down */
-	    else
-	    l->pl_tfuel -= rnd * 8;	/* knock fuel timer down */
+            
+	    if(CAN_BOMB(p, FUEL))
+	    {
+	      if(configvals->slow_bomb)
+		l->pl_tfuel -= rnd * 5;	/* knock fuel timer down */
+	      else
+		l->pl_tfuel -= rnd * 8;	/* knock fuel timer down */
 
-	    l->pl_tfuel = (l->pl_tfuel < 0) ? 0 : l->pl_tfuel;
-	    if ((l->pl_tfuel == 0) && (l->pl_flags & PLFUEL)) {
-		blast_resource(p, l, PLFUEL, 0.10);
-		tlog_bres(l, p, "FUEL");
+	      l->pl_tfuel = (l->pl_tfuel < 0) ? 0 : l->pl_tfuel;
+	      if ((l->pl_tfuel == 0) && (l->pl_flags & PLFUEL)) 
+	      {
+		  blast_resource(p, l, PLFUEL, 0.10);
+		  tlog_bres(l, p, "FUEL");
+	      }
+	    }
+	    
+            if(CAN_BOMB(p, AGRI))
+	    {
+	      if(configvals->slow_bomb)
+		l->pl_tagri -= rnd * 4;	/* attack the agri timer */
+	      else
+		l->pl_tagri -= rnd * 6;	/* attack the agri timer */
+
+	      l->pl_tagri = (l->pl_tagri < 0) ? 0 : l->pl_tagri;
+	      if ((l->pl_tagri == 0) && (l->pl_flags & PLAGRI)) 
+	      {
+		  blast_resource(p, l, PLAGRI, 0.25);
+		  tlog_bres(l, p, "AGRI");
+	      }
 	    }
 
-	    if(configvals->slow_bomb)
-	      l->pl_tagri -= rnd * 4;	/* attack the agri timer */
-	    else
-	      l->pl_tagri -= rnd * 6;	/* attack the agri timer */
+	    if((CAN_BOMB(p, SHIPYARD) && (l->pl_flags & PLSHIPYARD)) ||
+	       (CAN_BOMB(p, REPAIR) && !(l->pl_flags & PLSHIPYARD)) ||
+	       (CAN_BOMB(p, REPAIR) && CAN_BOMB(p, SHIPYARD)))
+	    {
+	      if(configvals->slow_bomb)
+		l->pl_tshiprepair -= rnd * 5;	/* knock ship/repr down */
+	      else
+		l->pl_tshiprepair -= rnd * 8;	/* knock ship/repr down */
 
-	    l->pl_tagri = (l->pl_tagri < 0) ? 0 : l->pl_tagri;
-	    if ((l->pl_tagri == 0) && (l->pl_flags & PLAGRI)) {
-		blast_resource(p, l, PLAGRI, 0.25);
-		tlog_bres(l, p, "AGRI");
-	    }
-
-	    if(configvals->slow_bomb)
-	      l->pl_tshiprepair -= rnd * 5;	/* knock ship/repr down */
-	    else
-	      l->pl_tshiprepair -= rnd * 8;	/* knock ship/repr down */
-
-	    l->pl_tshiprepair = (l->pl_tshiprepair < 0) ? 0 :
-		l->pl_tshiprepair;
-	    if ((l->pl_tshiprepair < PLGREPAIR) && (l->pl_flags & PLSHIPYARD)) {
-		blast_resource(p, l, PLSHIPYARD, 0.10);
-		tlog_bres(l, p, "SHIPYARD");
-	    }
-	    if ((l->pl_tshiprepair == 0) && (l->pl_flags & PLREPAIR)) {
-		blast_resource(p, l, PLREPAIR, 0.20);
-		tlog_bres(l, p, "REPAIR");
+	      l->pl_tshiprepair = (l->pl_tshiprepair < 0) ? 0 :
+		  l->pl_tshiprepair;
+	      if ((l->pl_tshiprepair < PLGREPAIR) && (l->pl_flags & PLSHIPYARD))
+	      {
+		  blast_resource(p, l, PLSHIPYARD, 0.10);
+		  tlog_bres(l, p, "SHIPYARD");
+	      }
+	      if ((l->pl_tshiprepair == 0) && (l->pl_flags & PLREPAIR)) 
+	      {
+		  blast_resource(p, l, PLREPAIR, 0.20);
+		  tlog_bres(l, p, "REPAIR");
+	      }
 	    }
 	}
     }

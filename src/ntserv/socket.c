@@ -389,20 +389,6 @@ sendClientSizedPacket(struct player_spacket *packet, int size)
     int     issc;
     static int oldStatus = POUTFIT;
 
-#ifdef SHOW_PACKETS
-    {
-	FILE   *logfile;
-	char   *paths;
-	paths = build_path("logs/metaserver.log");
-	logfile=fopen(paths, "a");
-	if (logfile) {
-	    fprintf(logfile, "Sending packet type %d\n", (int)packet->type);
-	    fclose(logfile);
-        }
-
-    }
-#endif
-
 #ifdef T_DIAG2
     if( (packet->type == SP_TERRAIN2) || (packet->type == SP_TERRAIN_INFO2) ){
       pmessage( "Sending TERRAIN packet\n", 0, MALL, MSERVA );
@@ -423,6 +409,20 @@ sendClientSizedPacket(struct player_spacket *packet, int size)
 	/* pad to 32-bits */
 	size = ((size-1)/4 + 1) * 4;
     }
+
+#ifdef SHOW_PACKETS
+    {
+	FILE   *logfile;
+	char   *paths;
+	paths = build_path("logs/metaserver.log");
+	logfile=fopen(paths, "a");
+	if (logfile) {
+	    fprintf(logfile, "Sending packet type %d (size %d)\n", (int)packet->type, size);
+	    fclose(logfile);
+        }
+
+    }
+#endif
 
     packetsSent[packet->type]++;
 

@@ -51,6 +51,15 @@ static char *all_ship_flag_names[] = {
     0
 };
 
+static char *ship_bombflag_names[] = {
+  "ARMIES",
+  "FUEL",
+  "AGRI",
+  "REPAIR",
+  "SHIPYARD",
+  0
+};
+
 struct field_desc ship_fields[] = {
     {"alttype", FT_SHORT, OFFSET_OF(s_alttype)},
     {"name", FT_STRING, OFFSET_OF(s_name[0])},
@@ -134,6 +143,7 @@ struct field_desc ship_fields[] = {
     {"armyperkill", FT_FLOAT, OFFSET_OF(s_armyperkill)},
     {"maxarmies", FT_SHORT, OFFSET_OF(s_maxarmies)},
     {"bomb", FT_INT, OFFSET_OF(s_bomb)},
+    {"bombflags", FT_LONGFLAGS, OFFSET_OF(s_bombflags), (void *) ship_bombflag_names},
 
     {"repair", FT_SHORT, OFFSET_OF(s_repair)},
     {"maxdamage", FT_INT, OFFSET_OF(s_maxdamage)},
@@ -141,6 +151,7 @@ struct field_desc ship_fields[] = {
     {"shieldcost", FT_INT, OFFSET_OF(s_shieldcost)},
 
     {"detcost", FT_SHORT, OFFSET_OF(s_detcost)},
+    {"detdist", FT_INT, OFFSET_OF(s_detdist)},
     {"cloakcost", FT_SHORT, OFFSET_OF(s_cloakcost)},
 
     {"scanrange", FT_SHORT, OFFSET_OF(s_scanrange)},

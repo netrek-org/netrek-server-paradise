@@ -121,6 +121,7 @@ struct ship {
     float   s_armyperkill;	/* the number of armies per kill */
     short   s_maxarmies;	/* max armies ship can carry */
     int     s_bomb;		/* bomb damage ship can do */
+    unsigned s_bombflags;	/* what damage bombing can cause */
 
     /* hull, shield and repair stats */
     short   s_repair;		/* ship's repair rate */
@@ -153,6 +154,14 @@ struct ship {
 
     long    s_nflags;		/* attributes for ship type, SFN flags */
 };
+
+/* for s_bombflags */
+#define SBOMB_ARMIES (1 << 0)
+#define SBOMB_FUEL (1 << 1)
+#define SBOMB_AGRI (1 << 2)
+#define SBOMB_REPAIR (1 << 3)
+#define SBOMB_SHIPYARD (1 << 4)
+#define SBOMB_FACILITIES (SBOMB_FUEL | SBOMB_AGRI | SBOMB_REPAIR | SBOMB_SHIPYARD)
 
 /* ATTENTION!!!
    Changes to these flags should be mirrored in structdesc.c

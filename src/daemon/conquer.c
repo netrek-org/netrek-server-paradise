@@ -33,12 +33,17 @@ notice appear in all copies.
 #include "data.h"
 #include "shmem.h"
 
+#if 0	/* these are now configvals */
 /*----------------------------NUMBER DEFINES-------------------------------*/
 #define SURRSTART  4		/* # planets where surrender starts */
 #define SURREND	  7		/* # planets where surrender stops */
 #define SURRLENGTH 25		/* give them 30 minutes to sustain empire */
 /*-------------------------------------------------------------------------*/
+#endif
 
+#define SURRSTART (configvals->surrstart)
+#define SURREND   (configvals->surrend)
+#define SURRLENGTH (configvals->surrlength)
 
 /*----------------------------LOCAL DATA-----------------------------------*/
 static char *teamVerbage[9] = 

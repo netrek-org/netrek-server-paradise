@@ -414,3 +414,15 @@ the wierd problem where if a forward shipyard is built, then someone
 has to remove all the friendly armies from the previous shipyard, bomb
 the old shipyard facility, then re-drop the armies to move the default
 entry planet forward).  *** CURRENTLY NOT IMPLEMENTED ***
+
+SURRSTART=%d
+  This is the number of planets at which point the surrender counter starts.
+Default is 4 planets.
+
+SURREND=%d
+  This is the number of planets at which the surrender counter stops.
+Default is 7 planets.
+
+SURRLENGTH=%d
+  This is the number of minutes after the surrender counter starts to
+surrender; default is 25 minutes.

@@ -760,6 +760,9 @@ sendSysDefs(void)
         case 8:
             strcat(buf, " (bronco style)");
             break;
+	case 9:
+	    strcat(buf, " (balanced advance)");
+	    break;
         default:
             strcat(buf, " (unknown??)");
             break;
@@ -770,13 +773,15 @@ sendSysDefs(void)
 	 "Ship deaths outside tournament mode affect construction timers" :
 	 "Construction timers are not affected by ship deaths outside tournament mode");
 
-    sprintf(buf, "Cloaking during warp prep is %sallowed",
-	    configvals->cloakduringwarpprep ? "" : "not ");
-    sendMotdLine(buf);
-
-    sprintf(buf, "Cloaking during warp is %sallowed",
-	    configvals->cloakwhilewarping ? "" : "not ");
-    sendMotdLine(buf);
+    if (configvals->cloakduringwarpprep || configvals->cloakwhilewarping)
+    {
+      sprintf(buf, "Cloaking during%s%s%s is allowed",
+              (configvals->cloakwhilewarping ? " warp" : ""),
+	      (configvals->cloakwhilewarping && configvals->cloakduringwarpprep?
+	       " and" : ""),
+	      (configvals->cloakduringwarpprep ? " warp prep" : ""));
+      sendMotdLine(buf);
+    }
 
     sprintf(buf, "Variable warp speed is %sabled",
 	    configvals->variable_warp ? "en" : "dis");
@@ -819,6 +824,47 @@ sendSysDefs(void)
         sprintf(buf,"Warp zones are disabled.");
     }
     sendMotdLine(buf);
+
+    if(!(configvals->repair_during_warp_prep) || 
+       !(configvals->repair_during_warp))
+    {
+      sprintf(buf, "Repair is NOT allowed during%s%s%s.",
+              (!configvals->repair_during_warp ? " warp" : ""),
+	      (!configvals->repair_during_warp && 
+	       !configvals->repair_during_warp_prep ? " and" : ""),
+	      (!configvals->repair_during_warp_prep ? " warp prep" : ""));
+      sendMotdLine(buf);
+    }
+
+    sprintf(buf, "WB bombing credit bonus %sabled.  JS assist credit %sabled.",
+            (configvals->wb_bombing_credit ? "en" : "dis"),
+	    (configvals->js_assist_credit ? "en" : "dis"));
+    sendMotdLine(buf);
+
+    sprintf(buf, "Surrender start: %d planets; sustain: %d planets; "
+                 "timer: %d min.",
+           configvals->surrstart, configvals->surrend,
+	   configvals->surrlength);
+    sendMotdLine(buf);
+
+    sprintf(buf, "Genocide: %d planets.", configvals->victory_planets);
+    sendMotdLine(buf);
+
+    sprintf(buf, "Penetration: %d%%.  Erosion: %d%%.  Army penetration: %d%%",
+	    (int)(configvals->penetration * 100.0),
+	    (int)(configvals->erosion * 100.0),
+	    (int)(configvals->kill_carried_armies * 100.0));
+    sendMotdLine(buf);
+
+    sprintf(buf, "Planets with built facilities do%s revolt.",
+           (configvals->revolt_with_facilities ? "" : " not"));
+    sendMotdLine(buf);
+
+    if(configvals->shipyard_built_by_sb_only)
+    {
+      sprintf(buf, "Shipyards can only be built by Starbases.");
+      sendMotdLine(buf);
+    }
 }
 
 void 

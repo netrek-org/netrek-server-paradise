@@ -39,9 +39,9 @@ notice appear in all copies.
   (lrand48() % (2 * (k) + 1)) - ((k)/2)
 
 #define GALAXY_WIDTH 200000
-#define RACE_DISTANCE_FROM_CENTER (GWIDTH/2 - GWIDTH/8)
+#define RACE_DISTANCE_FROM_CENTER (GWIDTH/2 - GWIDTH/6)
 #define RACE_SYSTEM_VARIANCE (GWIDTH/20)
-#define MIN_PLANET_ORBIT_DISTANCE 5000
+#define MIN_PLANET_ORBIT_DISTANCE 8000
 #define MAX_PLANET_ORBIT_DISTANCE \
   (3 * GWIDTH / 40 <= MIN_PLANET_ORBIT_DISTANCE ? \
     MIN_PLANET_ORBIT_DISTANCE + 1 : \
@@ -57,6 +57,11 @@ notice appear in all copies.
 #define HOME_BARREN_ARMIES 5
 #define MAX_INDEP_ARMIES 3
 
+#define PLGFUEL configvals->plgrow.fuel
+#define PLGAGRI configvals->plgrow.agri
+#define PLGREPAIR configvals->plgrow.repair
+#define PLGSHIPYARD configvals->plgrow.shipyard
+
 typedef void (*planet_function)(struct planet *);
 
 /* helper functions to populate independent's planets */
@@ -67,6 +72,8 @@ ind_developed(struct planet *p)
     p->pl_armies = (lrand48() % (MAX_INDEP_ARMIES-1)) + 1;
 }
 
+/* note that the construction timers on IND planets are set to 
+   "quarter built" in the beginning */
 static void
 populate_ind_type1(struct planet *p)
 {
@@ -74,7 +81,10 @@ populate_ind_type1(struct planet *p)
   p->pl_flags |= (PLPLANET | PLATYPE1 | PLMETAL);
 
   if(p->pl_armies)
+  {
     p->pl_flags |= (PLREPAIR);
+    p->pl_tshiprepair = PLGREPAIR / 4;
+  }
 }
 
 static void
@@ -89,7 +99,10 @@ populate_ind_type2(struct planet *p)
     p->pl_flags |= PLATYPE3;
 
   if(p->pl_armies)
+  {
     p->pl_flags |= (PLFUEL);
+    p->pl_tfuel = PLGFUEL / 4;
+  }
 }
 
 static void
@@ -104,7 +117,10 @@ populate_ind_type4(struct planet *p)
   p->pl_flags |= (PLPLANET | PLATYPE3 | PLARABLE);
 
   if(p->pl_armies)
+  {
     p->pl_flags |= (PLAGRI);
+    p->pl_tagri = PLGAGRI / 4;
+  }
 }
 
 /* place independent system with k stars, n planets, at about x, y */
@@ -220,6 +236,9 @@ populate_race_home_planet(struct planet *p)
                  /* and facilities */
 		 (PLFUEL | PLREPAIR | PLSHIPYARD | PLAGRI);
   p->pl_armies = HOME_PLANET_ARMIES;
+  p->pl_tfuel = PLGFUEL;
+  p->pl_tagri = PLGAGRI;
+  p->pl_tshiprepair = PLGSHIPYARD;
 }
 
 static void
@@ -229,6 +248,7 @@ populate_race_marslike_planet(struct planet *p)
   p->pl_flags |= (PLPLANET | PLATYPE2 | PLMETAL | PLARABLE) | 
                  (PLREPAIR | PLAGRI);
   p->pl_armies = HOME_MARS_ARMIES;
+  p->pl_tshiprepair = PLGREPAIR;
 }
 
 static void
@@ -237,6 +257,7 @@ populate_race_fuel_planet(struct planet *p)
   /* place resources & facilities */
   p->pl_flags |= (PLPLANET | PLATYPE3 | PLDILYTH) | (PLFUEL);
   p->pl_armies = HOME_FUEL_ARMIES;
+  p->pl_tfuel = PLGFUEL;
 }
 
 static void
@@ -377,6 +398,7 @@ gen_galaxy_9(void)
 {
     int teams[NUMTEAM], i, ang, x, y, tpick, pnum = 1, j;
     int nindep;
+    int sa;
 
     NUMPLANETS = 4 * 5 + 4 * 1 + 12;            /* planets + stars = 36 */
     GWIDTH = GALAXY_WIDTH;
@@ -389,7 +411,7 @@ gen_galaxy_9(void)
 
     for(i = 0; i < NUMTEAM; i++)
     {
-      ang = (256 * i) / NUMTEAM;
+      ang = (((256 * i) / NUMTEAM) + 32) % 256;
       x = (GWIDTH/2) + (int)(Cos[ang] * (double)(RACE_DISTANCE_FROM_CENTER));
       y = (GWIDTH/2) + (int)(Sin[ang] * (double)(RACE_DISTANCE_FROM_CENTER));
       tpick = (lrand48() % (NUMTEAM - i));
@@ -400,7 +422,8 @@ gen_galaxy_9(void)
         teams[j-1] = teams[j];
     }
 
-    nindep = (lrand48() % 2) + 1;	/* two or three indep. systems */
+    nindep = (lrand48() % 2) + 2;	/* two or three indep. systems */
+    sa = (lrand48() % 256);		/* randomly orient inner systems */
     /* place_ind(p, k, n, x, y, sys) */
 
     if(nindep == 2)
@@ -410,7 +433,7 @@ gen_galaxy_9(void)
       
       for(i = 0; i < nindep; i++)
       {
-        ang = (256 * i) / nindep;
+        ang = (((256 * i) / nindep) + sa) % 256;
 	x = (GWIDTH/2) + (int)(Cos[ang] * (double)(IND_DISTANCE_FROM_CENTER));
 	y = (GWIDTH/2) + (int)(Sin[ang] * (double)(IND_DISTANCE_FROM_CENTER));
 	pnum += place_ind(pnum, (rv == i ? 2 : 1), (rv == i ? 4 : 5), x, y);
@@ -420,7 +443,7 @@ gen_galaxy_9(void)
     {
       for (i = 0; i < nindep; i++)
       {
-	ang = (256 * i) / nindep;
+	ang = (((256 * i) / nindep) + sa) % 256;
 	x = (GWIDTH/2) + (int)(Cos[ang] * (double)(IND_DISTANCE_FROM_CENTER));
 	y = (GWIDTH/2) + (int)(Sin[ang] * (double)(IND_DISTANCE_FROM_CENTER));
 	pnum += place_ind(pnum, 1, 3, x, y);
