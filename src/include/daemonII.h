@@ -135,6 +135,7 @@ void gen_galaxy_5 P((void));
 void gen_galaxy_6 P((void));
 void gen_galaxy_7 P((void));
 void gen_galaxy_8 P((void));
+void gen_galaxy_9 P((void));
 #endif
 /* daemon/shipvals.c */
 void getshipdefaults P((void));

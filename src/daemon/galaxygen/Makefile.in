@@ -40,7 +40,8 @@ GALAXYGEN_GEN_OBJS = galaxygen-1.o \
 	             galaxygen-5.o \
 	             galaxygen-6.o \
 	             galaxygen-7.o \
-	             galaxygen-8.o
+	             galaxygen-8.o \
+		     galaxygen-9.o
 
 all: galaxygen.a
 
@@ -56,7 +57,8 @@ galaxygen.a: $(GALAXYGEN_LIB_OBJS) $(GALAXYGEN_GEN_OBJS)
 #			galaxygen-5.so \
 #			galaxygen-6.so \
 #			galaxygen-7.so \
-#			galaxygen-8.so
+#			galaxygen-8.so \
+#                       galaxygen-9.so
 #
 #galaxygen.a: $(GALAXYGEN_LIB_OBJS)
 #	$(AR) $(ARFLAGS) $@ $(GALAXYGEN_LIB_OBJS)

@@ -402,4 +402,15 @@ number of armies carried.  A good number is probably 0.30 (30% chance).
 	   so I have a 30% chance of killing between 0 and 
 	   (0.5 * 6) = 3 armies with that torp.
 
-Note 
+SHIPYARD_BUILT_BY_SB_ONLY=%hhd
+  If this is non-zero, then only the starbase can build a shipyard on a metal
+planet (i.e., random metal planets won't grow their own shipyards, the
+SB must be orbiting them).  Default is 0 (normal Paradise style).
+
+CAN_BOMB_OWN_SHIPYARD=%hhd
+  If this is non-zero, this will allow a friendly ship to remove a team's
+own shipyard if that team had more than one to begin with (this eliminates
+the wierd problem where if a forward shipyard is built, then someone
+has to remove all the friendly armies from the previous shipyard, bomb
+the old shipyard facility, then re-drop the armies to move the default
+entry planet forward).  *** CURRENTLY NOT IMPLEMENTED ***

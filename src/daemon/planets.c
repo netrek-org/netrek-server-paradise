@@ -76,6 +76,26 @@ extern int glfd;
 
 /*-----------------------------MODULE VARIABLES----------------------------*/
 
+#ifndef LOADABLE_PLGEN
+typedef void (*galaxy_generator)(void);
+
+galaxy_generator generators[] = 
+{
+  NULL,
+  gen_galaxy_1,
+  gen_galaxy_2,
+  gen_galaxy_3,
+  gen_galaxy_4,
+  gen_galaxy_5,
+  gen_galaxy_6,
+  gen_galaxy_7,
+  gen_galaxy_8,
+  gen_galaxy_9
+};
+
+int ngenerators = sizeof(generators) / sizeof(galaxy_generator);
+#endif
+
  /* the list of all possible planet names */
 static char *pnames[] =
 {
@@ -311,6 +331,8 @@ growplanets(void)
     int     i;			/* looping var */
     struct planet *p;		/* to point within planets */
     int     add;		/* number to add to timers */
+    int     sb_orbits = 0;	/* a building ship orbits */
+    int     osr;
 
     if (!status->tourn)
 	return;
@@ -328,6 +350,7 @@ growplanets(void)
 	p->pl_tfuel += 20;	/* give growth rate a boost */
 	p->pl_tagri += 30;	/* NOTE: change these if PLG consts */
 	p->pl_tshiprepair += 50;/* change */
+	sb_orbits = 1;
     }
     p = &planets[0];		/* start with first planet */
     for (i = 0; i < NUMPLANETS; i++, p++) {	/* through all planets */
@@ -354,7 +377,17 @@ growplanets(void)
 	    p->pl_tinfo[p->pl_owner].timestamp = status->clock;
 	    tlog_res(p, "AGRI");
 	}
+
+        osr = p->pl_tshiprepair;	/* save old value */
 	p->pl_tshiprepair += add;	/* add to ship/repair timer */
+
+        if(p->pl_tshiprepair >= PLGREPAIR)
+	{
+	  /* if only SB builds shipyard, clamp timer if SB isn't orbiting */
+	  if(configvals->shipyard_built_by_sb_only && !sb_orbits)
+	    p->pl_tshiprepair = (osr < PLGREPAIR ? PLGREPAIR : osr);
+	}
+
 	if ((!(p->pl_flags & PLREPAIR))	/* if not repair */
 	    &&(p->pl_flags & PLMETAL)	/* and metal deposits */
 	    &&(p->pl_tshiprepair >= PLGREPAIR)) {	/* and timer high enough */
@@ -368,6 +401,7 @@ growplanets(void)
 	if ((!(p->pl_flags & PLSHIPYARD))	/* if not repair */
 	    &&(p->pl_flags & PLMETAL)	/* and metal deposits */
 	    &&(p->pl_tshiprepair >= PLGSHIP)) {	/* and timer high enough */
+
 	    p->pl_flags |= (PLSHIPYARD | PLREDRAW);	/* create repair station */
 	    p->pl_tinfo[p->pl_owner].flags = p->pl_flags;
 	    p->pl_tinfo[p->pl_owner].timestamp = status->clock;
@@ -882,35 +916,12 @@ gen_planets(void)
     status->clock = 0;		/* reset the timestamp clock */
 
 #ifndef LOADABLE_PLGEN
-    switch (configvals->galaxygenerator) {
-    case 2:
-	gen_galaxy_2();		/* Bob Forsman's compact galaxy generator */
-	break;
-    case 3:
-	gen_galaxy_3();		/* Heath's better race placement galaxy
-				   generator */
-	break;
-    case 4:
-	gen_galaxy_4();		/* Mike's Bronco emulator */
-	break;
-    case 5:
-	gen_galaxy_5();		/* Mike's small-galaxy generator */
-	break;
-    case 6:
-        gen_galaxy_6();         /* Brandon's hack on Heath's to give 2 */
-        break;                  /* systems to each race */
-    case 7:
-	gen_galaxy_7();		/* Eric Dormans deepspace galaxy gen, rooted
-			 	 * in galaxy gen 6. */
-	break;
-    case 8:
-	gen_galaxy_8();
-	break;
-    case 1:
-    default:
-	gen_galaxy_1();		/* original paradiseII galaxy generator */
-	break;
-    }
+    if(configvals->galaxygenerator >= 1 && 
+       configvals->galaxygenerator <= ngenerators &&
+       generators[configvals->galaxygenerator])
+      (*generators[configvals->galaxygenerator])();
+    else
+      gen_galaxy_1();
 #else
     /* build_path() */
     /* PLGEN_PATH */

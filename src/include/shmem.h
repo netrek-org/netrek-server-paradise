@@ -223,6 +223,7 @@ struct configuration {
     float   kill_carried_armies;	/* is there a % chance of killing
                                            carried armies when damaged beyond
 					   50%? */
+    char    shipyard_built_by_sb_only;	/* can only SB build a shipyard? */
 };
 
 #ifndef SHMEM_C
