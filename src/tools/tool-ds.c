@@ -26,7 +26,7 @@ void dump_ship_sysdef(void);
 void dump_ship_Ccode(void);
 void dump_ships_to_table(void);
 void describe_ship(int ship);
-void usage(char name[]);
+void usage(char *name);
 
 /* --[ rather than duplicate it 3 times make the macro from hell (shrug) ]-- */
 #define Print_value(place) { \
@@ -105,7 +105,8 @@ struct nflags_desc_ {
 
 /* ==============================[ Functions ]============================== */
 
-int main(int argc, char **argv)
+int
+main(int argc, char **argv)
 {
     int     i, droutine = 0;
     char *name;
@@ -169,7 +170,8 @@ int main(int argc, char **argv)
 }
 
 /* ------------------[ Print ship stats in sysdef format ]------------------ */
-void dump_ship_sysdef(void)
+void
+dump_ship_sysdef(void)
 {
     int     j, i;
 
@@ -189,7 +191,8 @@ void dump_ship_sysdef(void)
 }
 
 /* ----------------[ Print ship stats in a C syntax format ]---------------- */
-void dump_ship_Ccode(void)
+void
+dump_ship_Ccode(void)
 {
     int     j, i;
 
@@ -214,7 +217,8 @@ void dump_ship_Ccode(void)
 }
 
 /* -----------------[ Print ship stats in a table format ]----------------- */
-void dump_ships_to_table(void)
+void
+dump_ships_to_table(void)
 {
     int x, j, i;
 
@@ -258,7 +262,8 @@ void dump_ships_to_table(void)
 
 
 /* -------------------------[ Verbose description ]------------------------- */
-void describe_ship(int s_no)
+void 
+describe_ship(int s_no)
 {
     struct ship *sp = &shipvals[s_no];
     int     i;
@@ -273,7 +278,8 @@ void describe_ship(int s_no)
 
 
 /* ----------------------------[ Prints usage ]---------------------------- */
-void usage(char name[])
+void
+usage(char *name)
 {
     int x;
 

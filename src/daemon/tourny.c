@@ -32,15 +32,8 @@ FILE   *tlog = NULL;
 
 #define TOURNEYMODE	(status2->league > 2)
 
-void    endtourn();
-void    starttourn();
-
-extern void pmessage();
-extern void explode_everyone();
-extern void endgame_effects();
-
 void 
-opentlog()
+opentlog(void)
 {
     tlog = fopen(TLOGNAME, "a");
     if (tlog == NULL)
@@ -58,9 +51,8 @@ opentlog()
 /* Return a string identifying the player and his ship.
    Uses a ring of buffers so that it can be used multiple times
    in a printf */
-char   *
-id_player(p)
-    struct player *p;
+char *
+id_player(struct player *p)
 {
     static char bufs[16][80];
     static int ring = 0;
@@ -80,9 +72,8 @@ id_player(p)
 /* Return a string identifying the player and his ship.
    Uses a ring of buffers so that it can be used multiple times
    in a printf */
-char   *
-id_planet(p)
-    struct planet *p;
+char *
+id_planet(struct planet *p)
 {
     static char bufs[16][80];
     static int ring = 0;
@@ -110,8 +101,7 @@ enum player_status_e status_cache[MAXPLAYER];
 enum ship_types_e ship_cache[MAXPLAYER];
 
 void 
-tlog_refit(pl)
-    struct player *pl;
+tlog_refit(struct player *pl)
 {
     if (!TOURNEYMODE)
 	return;
@@ -131,10 +121,8 @@ tlog_refit(pl)
 /* player was killed by player.
    call before erasing armies */
 void 
-tlog_plkill(victim, killer1, killer2)
-    struct player *victim;
-    struct player *killer1;
-    struct player *killer2;
+tlog_plkill(struct player *victim, struct player *killer1, 
+            struct player *killer2)
 {
     if (!TOURNEYMODE)
 	return;
@@ -154,8 +142,7 @@ tlog_plkill(victim, killer1, killer2)
    something else without telling us.
    call before erasing armies */
 void 
-tlog_plquit(victim)
-    struct player *victim;
+tlog_plquit(struct player *victim)
 {
     if (!TOURNEYMODE)
 	return;
@@ -173,10 +160,8 @@ tlog_plquit(victim)
 /* player was killed by planet.
    call before erasing armies */
 void 
-tlog_plankill(victim, killer1, killer2)
-    struct player *victim;
-    struct planet *killer1;
-    struct player *killer2;
+tlog_plankill(struct player *victim, struct player *killer1, 
+              struct player *killer2)
 {
     if (!TOURNEYMODE)
 	return;
@@ -192,9 +177,7 @@ tlog_plankill(victim, killer1, killer2)
 /* planet was destroyed
    call before changing owner to IND */
 void 
-tlog_plandest(pl, killer)
-    struct planet *pl;
-    struct player *killer;
+tlog_plandest(struct planet *pl, struct player *killer)
 {
     if (!TOURNEYMODE)
 	return;
@@ -208,9 +191,7 @@ tlog_plandest(pl, killer)
 /* planet was taken
    call after changing owner */
 void 
-tlog_plantake(pl, killer)
-    struct planet *pl;
-    struct player *killer;
+tlog_plantake(struct planet *pl, struct player *killer)
 {
     if (!TOURNEYMODE)
 	return;
@@ -224,9 +205,7 @@ tlog_plantake(pl, killer)
 /* planet was abandoned
    call before changing owner */
 void 
-tlog_planaban(pl, killer)
-    struct planet *pl;
-    struct player *killer;
+tlog_planaban(struct planet *pl, struct player *killer)
 {
     if (!TOURNEYMODE)
 	return;
@@ -238,8 +217,7 @@ tlog_planaban(pl, killer)
 }
 
 void 
-tlog_jsassist(js)
-    struct player *js;
+tlog_jsassist(struct player *js)
 {
     if (!TOURNEYMODE)
 	return;
@@ -251,9 +229,7 @@ tlog_jsassist(js)
 
 /* call before transferring the army */
 void 
-tlog_beamup(pl, carrier)
-    struct planet *pl;
-    struct player *carrier;
+tlog_beamup(struct planet *pl, struct player *carrier)
 {
     if (!TOURNEYMODE)
 	return;
@@ -266,9 +242,7 @@ tlog_beamup(pl, carrier)
 
 /* call after transferring the army */
 void 
-tlog_beamdown(pl, carrier)
-    struct planet *pl;
-    struct player *carrier;
+tlog_beamdown(struct planet *pl, struct player *carrier)
 {
     if (!TOURNEYMODE)
 	return;
@@ -281,9 +255,7 @@ tlog_beamdown(pl, carrier)
 
 /* call before transferring the army */
 void 
-tlog_Bbeamup(base, carrier)
-    struct player *base;
-    struct player *carrier;
+tlog_Bbeamup(struct player *base, struct player *carrier)
 {
     if (!TOURNEYMODE)
 	return;
@@ -296,9 +268,7 @@ tlog_Bbeamup(base, carrier)
 
 /* call after transferring the army */
 void 
-tlog_Bbeamdown(base, carrier)
-    struct player *base;
-    struct player *carrier;
+tlog_Bbeamdown(struct player *base, struct player *carrier)
 {
     if (!TOURNEYMODE)
 	return;
@@ -311,10 +281,7 @@ tlog_Bbeamdown(base, carrier)
 
 /* call after destroying armies */
 void 
-tlog_bomb(pl, killer, narmies)
-    struct planet *pl;
-    struct player *killer;
-    int     narmies;
+tlog_bomb(struct planet *pl, struct player *killer, int narmies)
 {
     if (!TOURNEYMODE)
 	return;
@@ -329,10 +296,7 @@ tlog_bomb(pl, killer, narmies)
 }
 
 void 
-tlog_bres(pl, killer, resource)
-    struct planet *pl;
-    struct player *killer;
-    char   *resource;
+tlog_bres(struct planet *pl, struct player *killer, char *resource)
 {
     if (!TOURNEYMODE)
 	return;
@@ -352,9 +316,7 @@ tlog_bres(pl, killer, resource)
 
 /* call before popping */
 void 
-tlog_pop(pl, narmies)
-    struct planet *pl;
-    int     narmies;
+tlog_pop(struct planet *pl, int narmies)
 {
     if (!TOURNEYMODE)
 	return;
@@ -366,9 +328,7 @@ tlog_pop(pl, narmies)
 }
 
 void 
-tlog_res(pl, resource)
-    struct planet *pl;
-    char   *resource;
+tlog_res(struct planet *pl, char *resource)
 {
     if (!TOURNEYMODE)
 	return;
@@ -381,8 +341,7 @@ tlog_res(pl, resource)
 
 /* call before changing owner */
 void 
-tlog_revolt(pl)
-    struct planet *pl;
+tlog_revolt(struct planet *pl)
 {
     if (!TOURNEYMODE)
 	return;
@@ -393,7 +352,7 @@ tlog_revolt(pl)
 }
 
 void 
-scan_for_unexpected_tourny_events()
+scan_for_unexpected_tourny_events(void)
 {
     int     i;
     for (i = 0; i < MAXPLAYER; i++) {
@@ -425,7 +384,7 @@ scan_for_unexpected_tourny_events()
 
 
 void 
-closetlog()
+closetlog(void)
 {
     if (tlog != NULL) {
 	fprintf(tlog, "\n\nCLOSING TOURNAMENT LOG\n\n\n\n");
@@ -436,7 +395,7 @@ closetlog()
 
 
 void 
-tlog_all()
+tlog_all(void)
 {
     int     i;
     struct planet *pl;
@@ -451,8 +410,7 @@ tlog_all()
 }
 
 void 
-tlog_conquerline(line)
-    char   *line;
+tlog_conquerline(char *line)
 {
     if (!tlog)
 	return;
@@ -465,7 +423,7 @@ tlog_conquerline(line)
 
 
 void 
-udtourny()
+udtourny(void)
 {
     int     trem;
     char    buf[120];
@@ -519,7 +477,7 @@ udtourny()
 
 
 void 
-starttourn()
+starttourn(void)
 {
     int     i, j;
     struct planet *pl;
@@ -553,7 +511,7 @@ starttourn()
 
 
 void 
-endtourn()
+endtourn(void)
 {
     pmessage(" ", 0, MALL, UMPIRE);
     pmessage("Time is done", 0, MALL, UMPIRE);

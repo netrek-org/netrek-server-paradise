@@ -26,7 +26,7 @@ suitability of this software for any purpose.  This software is provided
 #include "grid.h"
 
 int 
-idx_to_mask(i)
+idx_to_mask(int i)
     int     i;
 {
     if (i >= 0)
@@ -36,7 +36,7 @@ idx_to_mask(i)
 }
 
 int 
-mask_to_idx(m)
+mask_to_idx(int m)
     int     m;
 {
     int     i;
@@ -51,8 +51,7 @@ mask_to_idx(m)
  */
 
 int 
-in_warp(pl)
-    struct player *pl;
+in_warp(struct player *pl)
 {
     if (pl->p_flags & PFDOCK) {
 	/* if we are docked, then we have the same state as our base */
@@ -63,8 +62,7 @@ in_warp(pl)
 
 
 int 
-undock_player(pl)
-    struct player *pl;
+undock_player(struct player *pl)
 {
     struct player *base;
 
@@ -88,9 +86,7 @@ undock_player(pl)
 }
 
 int 
-base_undock(base, port_id)
-    struct player *base;
-    int     port_id;
+base_undock(struct player *base, int port_id)
 {
     struct player *pl;
 
@@ -111,8 +107,7 @@ base_undock(base, port_id)
 }
 
 void 
-enforce_dock_position(pl)
-    struct player *pl;
+enforce_dock_position(struct player *pl)
 {
     struct player *base;
     unsigned char angle;
@@ -142,9 +137,7 @@ enforce_dock_position(pl)
 }
 
 void 
-dock_to(pl, base_num, port_id)
-    struct player *pl;
-    int     base_num, port_id;
+dock_to(struct player *pl, int base_num, int port_id)
 {
     struct player *base = &players[base_num];
 
@@ -161,9 +154,7 @@ dock_to(pl, base_num, port_id)
 }
 
 void 
-scout_planet(p_no, pl_no)
-    int     p_no;
-    int     pl_no;
+scout_planet(int p_no, int pl_no)
 {
     struct player *fred = &players[p_no];
     struct planet *mars = &planets[pl_no];
@@ -193,8 +184,7 @@ scout_planet(p_no, pl_no)
  */
 
 void 
-evaporate(pl)
-    struct player *pl;
+evaporate(struct player *pl)
 {
     /* put someone on the outfit screen with no ill effects */
 
@@ -215,9 +205,7 @@ evaporate(pl)
 }
 
 void 
-explode_everyone(whydead, minlive)
-     int	whydead;
-     int	minlive;
+explode_everyone(int whydead, int minlive)
 {
     int     i;
     for (i = 0; i < MAXPLAYER; i++) {
@@ -241,8 +229,7 @@ explode_everyone(whydead, minlive)
 /* round randomly, but weighted by the fractional part */
 
 int 
-random_round(d)
-    double  d;
+random_round(double d)
 {
     int     rval = floor(d);
     if (drand48() < d - rval)
@@ -251,9 +238,8 @@ random_round(d)
 }
 
 
-char   *
-twoletters(pl)
-    struct player *pl;
+char *
+twoletters(struct player *pl)
 /* calculate the two letters that form the players designation (e.g. R4) */
 {
 #define RINGSIZE MAXPLAYER+3

@@ -33,8 +33,7 @@ suitability of this software for any purpose.  This software is provided
  * Note that NO multiplication or floating point math is needed. [BDyess]
  */
 int
-isqrt(n)
-int n;
+isqrt(int n)
 {
   int result = 0, sum = 1, prev = 1;
 
@@ -162,8 +161,8 @@ int hypotlookup[] = {
   1414
 };
 
-int ihypot(x,y)
-int x,y;
+int 
+ihypot(int x, inty)
 {
   int max, min;
 

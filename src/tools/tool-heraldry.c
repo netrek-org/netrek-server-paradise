@@ -38,8 +38,8 @@ struct person {
   struct person *next;
 };
 
-int compare_people(a, b)
-    struct person	*a, *b;
+int
+compare_people(struct person *a, struct person *b)
 {
     if (a->royal > b->royal)
 	return 1;
@@ -48,9 +48,7 @@ int compare_people(a, b)
 }
 
 int
-main(argc, argv)
-    int     argc;
-    char  **argv;
+main(int argc, char *argv)
 {
     struct statentry plstats;
     struct person	*head=0;

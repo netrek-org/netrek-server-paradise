@@ -43,16 +43,17 @@ static long sequence;		/* the holy sequence number */
 
 extern int udpMode;
 
-int haveDeferredPackets();
 extern int clientDead;
 
-int buffersEmpty()
+int
+buffersEmpty(void)
 {
     return bufptr==buf &&
 	(commMode!=COMM_UDP || udpbufptr==buf);
 }
 
-void resetUDPbuffer()
+void
+resetUDPbuffer(void)
 {
     if (udpbufptr != udpbuf) {
 	udpbufptr = udpbuf;	/* clear out any old data */
@@ -60,7 +61,7 @@ void resetUDPbuffer()
     }
 }
 
-void resetUDPsequence()
+void resetUDPsequence(void)
 {
     sequence = 1;
 }
@@ -75,8 +76,7 @@ void resetUDPsequence()
  * in which they were sent.
  */
 int 
-addSequence(outbuf)
-    char   *outbuf;
+addSequence(char *outbuf)
 {
     struct sequence_spacket *ssp;
 
@@ -95,7 +95,7 @@ addSequence(outbuf)
 
 /* Flush the socket buffer */
 void
-flushSockBuf()
+flushSockBuf(void)
 {
     int     cc;
 
@@ -149,8 +149,8 @@ foo:
 	fatMerge();
 }
 
-void build_select_masks(readfds,writefds)
-    fd_set	*readfds, *writefds;
+void
+build_select_masks(fd_set *readfds, fd_set *writefds)
 {
     if (readfds) {
 	FD_ZERO(readfds);
@@ -166,7 +166,7 @@ void build_select_masks(readfds,writefds)
 }
 
 int
-socketPause()
+socketPause(void)
 {
     struct timeval timeout;
     fd_set     readfds, writefds;
@@ -180,7 +180,7 @@ socketPause()
 }
 
 int
-socketWait()
+socketWait(void)
 {
     fd_set  readfds, writefds;
 
@@ -190,10 +190,7 @@ socketWait()
 }
 
 int
-gwrite(fd, wbuf, bytes)
-    int     fd;
-    char   *wbuf;
-    int     bytes;
+gwrite(int fd, char *wbuf, int bytes)
 {
     int     orig = bytes;
     int     n;
@@ -241,10 +238,9 @@ gwrite(fd, wbuf, bytes)
 }
 
 
-void sendUDPbuffered(issc, packet, size)
-    int	issc;			/* is semi-critical */
-    void	*packet;
-    int	size;
+/* issc - is semi-critical */
+void
+sendUDPbuffered(int issc, void *packet, int size)
 {
     if (udpbufptr - udpbuf+size >= UDPBUFSIZE) {
 	int	cc;
@@ -279,9 +275,8 @@ void sendUDPbuffered(issc, packet, size)
 }
 
 
-void sendTCPbuffered(packet, size)
-    void	*packet;
-    int		size;
+void 
+sendTCPbuffered(void *packet, int size)
 {
     int	cc;
     /* these are critical packets; send them via TCP */
@@ -323,14 +318,16 @@ struct deferred_packet {
 
 struct deferred_packet	*df_head, *df_tail;
 
-int haveDeferredPackets()
+int
+haveDeferredPackets(void)
 {
     return df_head != 0;
 }
 
 /* Put a packet on the deferred queue. */
 
-void sendTCPdeferred(packet, size)
+void
+sendTCPdeferred(void *packet, int size)
     void	*packet;
     int		size;
 {
@@ -358,7 +355,8 @@ void sendTCPdeferred(packet, size)
    Hopefully it won't block...
  */
 
-void flushDeferred()
+void
+flushDeferred(void)
 {
     int	rval;
 
@@ -385,7 +383,8 @@ void flushDeferred()
 }
 
 /* sends all the deferred packets through the TCP buffer */
-void undeferDeferred()
+void
+undeferDeferred(void)
 {
     while (df_head) {
 	sendTCPbuffered(df_head->data, df_head->size);

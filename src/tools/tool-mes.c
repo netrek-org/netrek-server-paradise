@@ -23,7 +23,8 @@ suitability of this software for any purpose.  This software is provided
 #include "data.h"
 #include "shmem.h"
 
-void usage(char name[])
+void
+usage(char *name)
 {
     char *message[255] = {
         "\nSend messages (accepted from stdin).\n",
@@ -46,12 +47,8 @@ void usage(char name[])
     exit(1);
 }
 
-void pmessage(from_to, str, recip, group)
-     /* ==[ printing of message func ]== */
-    char   *from_to;
-    char   *str;
-    int     recip;
-    int     group;
+void
+pmessage(char *from_to, char *str, int recip, int group)
 {
     struct message *cur;
     if (++(mctl->mc_current) >= MAXMESSAGE)
@@ -66,7 +63,8 @@ void pmessage(from_to, str, recip, group)
     cur->m_flags |= MVALID;
 }
 
-int main(int argc, char **argv)
+int
+main(int argc, char **argv)
 {
     char    ch;
     char    to[80];

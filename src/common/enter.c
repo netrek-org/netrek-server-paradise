@@ -33,16 +33,7 @@ suitability of this software for any purpose.  This software is provided
 
 #include "orbit.h"
 
-void    auto_peace();
-static void placeIndependent();
-extern int 
-pmessage2(			/* char *str, int recip, int group, char
-	      *address, unsigned char from */ );
-extern int 
-pmessage(			/* char *str, int recip, int group, char
-	     *address */ );
-
-
+static void placeIndependent P((void));
 
 /*------------------------------NUMBER DEFINES-----------------------------*/
 #define INDEP (GWIDTH/3)	/* width of region in the center of galaxy */
@@ -54,8 +45,7 @@ pmessage(			/* char *str, int recip, int group, char
 
 
 int 
-find_start_planet(team, flag)
-    int     team, flag;
+find_start_planet(int team, int flag)
 {
     int     valid[MAXPLANETS];
     int     nvalid;
@@ -100,7 +90,7 @@ two times too large.  */
 
 
 void 
-peanut_gallery()
+peanut_gallery(void)
 {
     char    buf[90];
 
@@ -164,7 +154,7 @@ peanut_gallery()
 
 
 void 
-advertise_tourney_queue()
+advertise_tourney_queue(void)
 {
     char    buf[80], addrbuf[10];
     int     count = 0;
@@ -198,13 +188,15 @@ a robot.  */
  * Also added starting planet number as a useful return value.
  */
 
+/* args:
+   tno - team player is on
+   disp - "not used, so I used it 7/27/91 TC"
+   pno - player's number
+   s_type - player's ship type
+   startplanet - planet to enter near (or -1) */
+
 int 
-enter(tno, disp, pno, s_type, startplanet)
-    int     tno;		/* team player is on */
-    int     disp;		/* not used, so I used it 7/27/91 TC */
-    int     pno;		/* player's number */
-    int     s_type;		/* player's ship type */
-    int     startplanet;	/* planet to enter near (or -1) */
+enter(int tno, int disp, int pno, int s_type, int startplanet)
 {
     static int lastteam = -1;	/* to hold team of last enter */
     static int lastrank = -1;	/* to hold rank of last enter */
@@ -336,10 +328,6 @@ enter(tno, disp, pno, s_type, startplanet)
 	auto_peace();		/* set do automatic peace */
     me->p_hostile &= ~me->p_team;	/* hostile to all but own team */
     me->p_swar &= ~me->p_team;
-#if 0
-    sprintf(buf, "%c%c", teamlet[me->p_team], shipnos[me->p_no]);
-    strncpy(me->p_mapchars, buf, 2);
-#endif
     if ((lastteam != tno) || (lastrank != mystats->st_rank)) {
 	if ((lastteam > 0) && (lastteam < NUMTEAM) && (lastteam != tno))
 	    declare_war((1 << lastteam) | me->p_hostile);	/* if changing then
@@ -389,9 +377,7 @@ enter(tno, disp, pno, s_type, startplanet)
 
 	pmessage2(buf, 0, MALL | MJOIN, addrbuf, me->p_no);
 
-#if 1
 	advertise_tourney_queue();
-#endif
 
     }
     delay = 0;
@@ -407,7 +393,7 @@ player on them if it is t-mode.  Otherwise if it is not t-mode the player
 is set as hositle to everyone.  */
 
 void 
-auto_peace()
+auto_peace(void)
 {
     int     i, num[MAXTEAM + 1];/* to hold team's player counts */
     struct player *p;		/* looping var */
@@ -434,7 +420,7 @@ auto_peace()
 near any other players.  */
 
 static void 
-placeIndependent()
+placeIndependent(void)
 {
     int     i;			/* ye olde looping var */
     struct player *p;		/* to point to players */

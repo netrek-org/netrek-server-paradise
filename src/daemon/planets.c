@@ -221,14 +221,7 @@ float   popcap[4][8] = {
 
 
 
-#ifdef LEAGUE_SUPPORT
-extern void tlog_res();
-extern void tlog_bomb();
-extern void tlog_bres();
-extern void tlog_plankill();
-extern void tlog_revolt();
-extern void tlog_pop();
-#else
+#ifndef LEAGUE_SUPPORT
 #define tlog_res(a,b)
 #define tlog_bomb(a,b,c)
 #define tlog_bres(a,b,c)
@@ -236,15 +229,8 @@ extern void tlog_pop();
 #define tlog_revolt(a)
 #define tlog_pop(a,b)
 #endif
-extern void scout_planet();
-extern int inflict_damage();
-extern void killmess();
-extern int enemy_admiral();
 
 /*------------------------------INTERNAL FUNCTIONS-------------------------*/
-
-void fill_planets();
-
 
 #ifndef NO_QSORT
 /* used by the qsort() in sortnames() below */
@@ -266,7 +252,7 @@ because I was too lazy to write anything more sophisticated.  */
 if available (HK) */
 
 void 
-sortnames()
+sortnames(void)
 {
 #ifdef NO_QSORT
     struct planet ptemp;	/* temporary space to hold planet */
@@ -305,7 +291,7 @@ planets structure.  The planet names need to be sorted afterthe planets
 have been placed.  */
 
 void 
-initplanets()
+initplanets(void)
 {
     int     i, j;		/* looping vars */
     int     nused[MAXNAMES];	/* to mark which names are used */
@@ -364,7 +350,7 @@ do not grow.  This function also checks to see if any player in a starbase
 is orbiting a planet and adjusts the planet's growth rate if so.  */
 
 void 
-growplanets()
+growplanets(void)
 {
     int     i;			/* looping var */
     struct planet *p;		/* to point within planets */
@@ -443,7 +429,7 @@ if an enemy is close enough to see him.  THIS FUNCTION SHOULD EVENTUALLY USE
 THE SPACE GRID.  */
 
 void 
-pvisible()
+pvisible(void)
 {
     struct player *p;		/* to point to a player */
     int     i;			/* looping var */
@@ -486,11 +472,7 @@ pvisible()
 
 
 void 
-blast_resource(p, l, res, dival)
-    struct player *p;
-    struct planet *l;
-    int     res;
-    double  dival;
+blast_resource(struct player *p, struct player *l, int res, double dival)
 {
     if (status->tourn) {
 	p->p_stats.st_di += dival;
@@ -513,7 +495,7 @@ is bombing a planet that another team owns, then that team will see the
 player by having the PFSEEN flag set.  */
 
 void 
-pbomb()
+pbomb(void)
 {
     struct player *p;		/* to point to a player */
     int     i;			/* looping var */
@@ -621,7 +603,7 @@ Enemy planets will 'see' players that are very close to them.  THIS FUNCTION
 SHOULD EVENTUALLY USE THE SPACE GRID.  */
 
 void 
-pfire()
+pfire(void)
 {
     struct player *p;		/* to point to a player */
     int     i, j;		/* looping vars */
@@ -760,8 +742,7 @@ pfire()
 timer and prints the messages that warn the team.  */
 
 void 
-revolt(l)
-    struct planet *l;		/* the planet to check */
+revolt(struct planet *l)	/* the planet to check */
 {
     if (!configvals->revolts)
 	return;
@@ -824,7 +805,7 @@ revolt(l)
     }
 }
 
-void check_revolt()
+void check_revolt(void)
 {
     static int planetlist[MAXPLANETS];
     static int count = 0;
@@ -854,7 +835,7 @@ void check_revolt()
 /* struct planet *stars[NUMPLANETS + 1]; */
 
 static void 
-build_stars_array()
+build_stars_array(void)
 {
     int     i;
     struct planet *pl;
@@ -874,7 +855,7 @@ arranged in systems and are also placed so that they are not too close to
 any other planets.  The races are then given home planets. */
 
 void 
-gen_planets()
+gen_planets(void)
 {
     int     i;
     struct planet *pl;
@@ -935,7 +916,8 @@ gen_planets()
     }
 }
 
-void pl_neworbit()
+void 
+pl_neworbit(void)
 /* rearranges a pre-existing galaxy setup such that planets orbit at more "unique"
    distances from their star.  Asteroids look and probably play bad when all the
    planets are approx. the same dist from the star, so I'd suggest turning this
@@ -985,7 +967,7 @@ void pl_neworbit()
 }
 
 void 
-moveplanets()
+moveplanets(void)
 {
     register int i;		/* for looping */
     register struct planet *l;	/* to point to individual plaent */
@@ -1016,8 +998,7 @@ moveplanets()
    that are in this module.  Negative growth is supported. */
 
 static void 
-pop_one_planet1(l)
-    struct planet *l;
+pop_one_planet1(struct planet *l)
 {
     int     r;			/* to hold resource index */
     int     a;			/* to hold atmosphere index */
@@ -1085,8 +1066,7 @@ pop_one_planet1(l)
  */
 
 static void 
-pop_one_planet2(l)
-    struct planet *l;
+pop_one_planet2(struct planet *l)
 {
     int     delta = 0;
     int     atmosphere = (l->pl_flags & PLATMASK) >> PLATSHIFT;
@@ -1151,8 +1131,7 @@ pop_one_planet2(l)
 }
 
 void 
-pop_one_planet(l)
-    struct planet *l;
+pop_one_planet(struct planet *l)
 {
 #if 0
     printf("popping planet #%d  %x\n", l->pl_no, l->pl_owner);
@@ -1174,10 +1153,7 @@ pop_one_planet(l)
 /*-------------------------------UDPLANETS----------------------------------*/
 
 void 
-fill_planets(plist, count, owner)
-    int    *plist;		/* array */
-    int    *count;		/* scalar */
-    int     owner;
+fill_planets(int *plist /* array */, int *count /* scalar */, int owner)
 {
     int     i;
     *count = 0;
@@ -1195,8 +1171,7 @@ fill_planets(plist, count, owner)
 }
 
 int 
-find_other_team(teammask)
-    int     teammask;
+find_other_team(int teammask)
 {
     int     counts[NUMTEAM];
     int     i;
@@ -1222,7 +1197,7 @@ find_other_team(teammask)
 }
 
 void 
-popplanets()
+popplanets(void)
 {
     register int i;		/* for looping */
     register struct planet *l;	/* to point to individual plaent */
@@ -1329,7 +1304,7 @@ by checking the closeness of other players.  The planets are then checked
 to see if they are close enough to fire on enemy players.  */
 
 void 
-plfight()
+plfight(void)
 {
     register int h;		/* looping vars */
     register struct planet *l;	/* for looping through planets */
@@ -1353,7 +1328,7 @@ is a handle on the previously opened .planets file.  The function also saves
 the status to the glfd file.  */
 
 void 
-save_planets()
+save_planets(void)
 {
     if (plfd >= 0) {		/* if plfd file open */
 	(void) lseek(plfd, (long) 0, 0);	/* save the planets */

@@ -59,50 +59,14 @@ int     overload = 0;		/* global 7/31/91 TC */
 int     indie = 0;		/* always be indie 8/28/91 TC */
 
 
-extern void load_time_access();
-void printntservUsage();
-extern pid_t getpid();
-extern int connectToClient();
-extern int checkSocket();
-extern int initClientData();
-extern int socketPause();
-extern int readFromClient();
-extern int checkVersion();
-extern int findslot();
-extern void updateSelf();
-extern void updateShips();
-extern void updatePlanets();
-extern void updateTerrain();
-extern void flushSockBuf();
-extern int getname();
-extern int sendShipCap();
-extern int logEntry();
-extern int getEntry();
-void     printStats();
-void    exitGame();
 #if defined(sparc) && !defined(SVR4)
 int     atexitfunc( /* int, caddr_t */ );
 #else
 void    atexitfunc();
 #endif
-extern void (*r_signal()) ();
-extern int enter();
-extern int input();
-extern int setitimer();
-extern int pmessage2();
-extern int savestats();
-extern void move_player();
-extern int sendMotdLine();
-extern int time_access();
-void    doMotdPics();
-extern int numPlanets();
-extern int sendMotdPic();
-extern int ParseXbmFile();
 
 int 
-main(argc, argv)
-    int     argc;
-    char  **argv;
+main(int argc, char **argv)
 {
     int     intrupt();
     char   *getenv();
@@ -467,12 +431,10 @@ main(argc, argv)
     return 1;
 }
 
-extern int setflag();		/* input.c */
-
 int     interrupting = 0;
 
 void 
-stop_interruptor()
+stop_interruptor(void)
 {
     struct itimerval udt;
 
@@ -490,7 +452,7 @@ stop_interruptor()
 }
 
 void 
-start_interruptor()
+start_interruptor(void)
 {
     struct itimerval udt;
 
@@ -655,7 +617,7 @@ inputloop()
 
 
 void 
-exitGame()
+exitGame(void)
 {
     char    buf[80];
     char    addrbuf[20];
@@ -704,7 +666,7 @@ static char *weapon_types[WP_MAX] = {
 };
 
 void 
-sendSysDefs()
+sendSysDefs(void)
 {
     char    buf[200], buf2[200];
     int     i;
@@ -911,7 +873,8 @@ sendSysDefs()
     sendMotdLine(buf);
 }
 
-void sendMotd()
+void 
+sendMotd(void)
 {
     FILE   *motd;
     char    buf[100], buf2[30];	/* big enough... */
@@ -1014,8 +977,8 @@ void sendMotd()
 	doMotdPics();
 }
 
-int reaper(sig)
-    int     sig;
+void
+reaper(int sig)
 {
 #ifdef HAVE_WAIT3
     while (wait3((int *) 0, (int) WNOHANG, (struct rusage *) 0) > 0);
@@ -1025,14 +988,11 @@ int reaper(sig)
     return 0;
 }
 
-void printStats()
+void
+printStats(void)
 {
     FILE   *logfile;
-#if defined(SVR4) || defined(sparc)
     time_t  curtime;
-#else
-    int     curtime;
-#endif				/* SVR4 */
     char   *paths;		/* added 1/18/93 KAO */
 
     paths = build_path(LOGFILENAME);
@@ -1080,7 +1040,7 @@ void printStats()
  */
 
 void 
-doMotdPics()
+doMotdPics(void)
 {
     FILE   *ptr, *ftemp;
     char    buf[128], fname[128];

@@ -36,19 +36,8 @@ extern jmp_buf env;		/* change 4/14/91 TC */
 
 
 #ifdef AUTHORIZE
-extern int makeReservedPacket();
-#endif
-extern void death();
-void     auto_features();
-extern int set_speed();
-extern int orbit();
-extern int set_course();
-int     newcourse();
-extern void imm_warning();
-
-#ifdef AUTHORIZE
 void 
-check_authentication()
+check_authentication(void)
 {
     /* if (!configvals->binconfirm) testtime=0; */
     if (testtime == -1) {
@@ -97,7 +86,7 @@ check_authentication()
 #endif				/* AUTHORIZE */
 
 void
-intrupt()
+intrupt(void)
 {
 #ifdef AUTHORIZE
     check_authentication();
@@ -137,7 +126,7 @@ intrupt()
 
 
 static void 
-selfdestruct_countdown()
+selfdestruct_countdown(void)
 {
     char    buf[180];
     if (!(me->p_flags & PFSELFDEST))
@@ -167,7 +156,7 @@ selfdestruct_countdown()
 }
 
 static void 
-warp_powerup()
+warp_powerup(void)
 {
     static int sequence = 0;
     int     time = myship->s_warpinittime;
@@ -218,7 +207,7 @@ warp_powerup()
 }
 
 static void 
-refit_countdown()
+refit_countdown(void)
 {
     char    buf[120];
     static int lastRefitValue = 0;	/* for smooth display */
@@ -261,7 +250,7 @@ refit_countdown()
 }
 
 static void 
-backstab_countdown()
+backstab_countdown(void)
 {
     static int lastWarValue = 0;
 
@@ -306,7 +295,7 @@ backstab_countdown()
 }
 
 static void 
-bombing_info()
+bombing_info(void)
 {
     char    buf[120];
 
@@ -332,7 +321,7 @@ bombing_info()
 
 
 static void 
-operate_transporters()
+operate_transporters(void)
 {
     char    buf[120];
     int     troop_capacity = 0;
@@ -443,8 +432,7 @@ reduce_speed()
 #endif
 
 static void 
-decelerate_at_range(dist)
-    int     dist;
+decelerate_at_range(int dist)
 {
     int     speed;
     int     maximp = myship->s_imp.maxspeed;
@@ -502,7 +490,7 @@ decelerate_at_range(dist)
 }
 
 static void 
-follow_player()
+follow_player(void)
 {
     struct player *pl;
     int     dist;
@@ -531,9 +519,11 @@ follow_player()
 }
 
 static void 
-follow_planet()
+follow_planet(void)
 {				/* follow a planet?  How silly. Will it
 				   perhaps outmaneuver you? */
+				/* it might if MDM's planet mover code is
+				   on 1/10/2000 - rpg ;) */
     struct planet *pln;
     int     dist;
 /*  int speed = me->p_speed;*/
@@ -563,7 +553,7 @@ follow_planet()
    belong in the daemon. */
 
 void
-auto_features()
+auto_features(void)
 {
     selfdestruct_countdown();
 
@@ -601,8 +591,7 @@ auto_features()
 }
 
 int
-newcourse(x, y)
-    int     x, y;
+newcourse(int x, int y)
 {
     if (x == me->p_x && y == me->p_y)
 	return 0;

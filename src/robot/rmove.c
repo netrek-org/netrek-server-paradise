@@ -141,43 +141,8 @@ extern int runfast;
 extern int closeslow;
 extern int closefast;
 
-unsigned char getcourse();
-char   *robo_message();
-char   *termie_message();	/* added 8/2/91 TC */
-
-
-extern void (*r_signal()) ();
-void     exitRobot();
-extern void move_player();
-void     messAll();
-int     phaser_plasmas();
-void     pmessage2();
-int     do_repair();
-void     go_home();
-extern int ntorp();
-extern int repair_off();
-extern int cloak_off();
-extern int phaser();
-extern int angdist();
-int     isTractoringMe();
-extern int pressor_player();
-extern int tractor_player();
-int     projectDamage();
-extern int set_course();
-extern int cloak_on();
-extern int shield_up();
-extern void detothers();
-extern int shield_down();
-extern int set_speed();
-extern int lock_planet();
-extern int orbit();
-extern int repair();
-#ifdef ROBOTSTATS
-extern void save_robot();
-#endif
-
 void
-rmove()
+rmove(void)
 {
     register struct player *j;
     register struct planet *l;
@@ -675,8 +640,7 @@ rmove()
 }
 
 unsigned char 
-getcourse(x, y)
-    int     x, y;
+getcourse(int x, int y)
 {
     return ((unsigned char) (int) (atan2((double) (x - me->p_x),
 				 (double) (me->p_y - y)) / 3.14159 * 128.));
@@ -726,8 +690,7 @@ struct {
 #define GUARDDIST 8000
 
 void
-go_home(ebuf)
-    struct Enemy *ebuf;
+go_home(struct Enemy *ebuf)
 {
     int     x, y;
     double  dx, dy;
@@ -793,7 +756,7 @@ go_home(ebuf)
 }
 
 int
-phaser_plasmas()
+phaser_plasmas(void)
 {
     register struct plasmatorp *pt;
     register int i;
@@ -824,9 +787,7 @@ phaser_plasmas()
 }
 
 int
-projectDamage(eNum, dirP)
-    int     eNum;
-    int    *dirP;
+projectDamage(int eNum, int *dirP)
 {
     register int i, j, numHits = 0, mx, my, tx, ty, dx, dy;
     double  tdx, tdy, mdx, mdy;
@@ -864,8 +825,7 @@ projectDamage(eNum, dirP)
 }
 
 int
-isTractoringMe(enemy_buf)
-    struct Enemy *enemy_buf;
+isTractoringMe(struct Enemy *enemy_buf)
 {
     return ((enemy_buf->e_hisflags & PFTRACT) &&	/* bug fix: was using */
 	    !(enemy_buf->e_hisflags & PFPRESS) &&	/* e_flags 6/24/92 TC */
@@ -875,7 +835,7 @@ isTractoringMe(enemy_buf)
 struct Enemy ebuf;
 
 struct Enemy *
-get_nearest()
+get_nearest(void)
 {
     int     pcount = 0;
     register int i;
@@ -1068,7 +1028,7 @@ get_nearest()
 }
 
 struct planet *
-get_nearest_planet()
+get_nearest_planet(void)
 {
     register int i;
     register struct planet *l;
@@ -1088,7 +1048,7 @@ get_nearest_planet()
 }
 
 int
-do_repair()
+do_repair(void)
 {
 /* Repair if necessary (we are safe) */
 
@@ -1161,18 +1121,14 @@ do_repair()
 
 
 void
-pmessage(str, recip, group, address)
-    char   *str;
-    int     recip;
-    int     group;
-    char   *address;
+pmessage(char *str, int recip, int group, char *address)
 {
     pmessage2(str, recip, group, address, 255);
 }
 
 
 void
-pmessage2(str, recip, group, address, from)
+pmessage2(char *str, int recip, int group, char *address, unsigned char from)
     char   *str;
     int     recip;
     int     group;
@@ -1196,9 +1152,8 @@ pmessage2(str, recip, group, address, from)
 }
 
 
-char   *
-robo_message(enemy)
-    struct player *enemy;
+char *
+robo_message(struct player *enemy)
 {
     int     i;
     char   *s, *t;
@@ -1273,9 +1228,8 @@ robo_message(enemy)
     return (rmessage);
 }
 
-char   *
-termie_message(enemy)
-    struct player *enemy;
+char *
+termie_message(struct player *enemy)
 {
     int     i;
     char   *s, *t;
@@ -1356,7 +1310,7 @@ termie_message(enemy)
 }
 
 void
-exitRobot()
+exitRobot(void)
 {
     static char buf[80];
 
@@ -1400,8 +1354,7 @@ exitRobot()
 }
 
 void
-messAll(buf)
-    char   *buf;		/* wasn't K&R before...oops 5/1/92 TC */
+messAll(char *buf)
 {
     static char addrbuf[20];
 

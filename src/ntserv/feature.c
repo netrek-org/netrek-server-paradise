@@ -27,33 +27,6 @@ suitability of this software for any purpose.  This software is provided
 #include "struct.h"
 #include "packets.h"
 
-void sendClientPacket();
-
-#ifdef UNIXWARE		/* can you BELIEVE it doesn't have strcmpi?? */
-#if 0		/* just  use strcmp for now */
-int strcmpi( char *a, char *b ){
-
-  char ta, tb;
-
-  while( (*a) && (*b) ){
-    ta = ((*a)>='a') && ((*b) <= 'z'))?(*a)&223:(*a);
-    tb = ((*b)>='a') && ((*b) <= 'z'))?(*b)&223:(*b);
-    if( ta < tb )
-      return( -1 );
-    if( ta > tb )
-      return( 1 );
-    a++;
-    b++;
-  }
-  if( !(*a) && (*b) )
-    return( 1 );
-  if( !(*b) && (*a) )
-    return( -1 );
-  return( 0 );
-}
-#endif
-#endif
-
 /*
  * Feature.c
  *
@@ -82,10 +55,6 @@ struct feature_cpacket {
  *  Code lifted July 1995 by Bob Glamm - enabled into server code.
  *
  */
-
-void    handleFeature(struct feature_cpacket *);
-void    sendFeature (char *name, int feature_type,
-		       int value, int arg1, int arg2);
 
 /* not the actual packets: this holds a list of features to report for */
 /* this client. */
@@ -126,8 +95,7 @@ struct feature {
     {0, 0, 0, 0, 0, 0}
 };
 
-void handleFeature(packet)
-  struct feature_cpacket *packet;
+void handleFeature(struct feature_cpacket *packet)
 {
   int feature = 0;
 /*
@@ -174,7 +142,7 @@ void handleFeature(packet)
 }
     
 void
-sendFeature(name, feature_type, value, arg1, arg2)
+sendFeature(char *name, int feature_type, int value, int arg1, int arg2)
     char   *name;
     int     feature_type;
     int     value;

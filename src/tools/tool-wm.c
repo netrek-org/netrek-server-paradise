@@ -57,7 +57,9 @@ int     displaykills = 1;
 int     docolor = 0;
 char   *myname;
 
-int main(int argc, char **argv) {
+int
+main(int argc, char **argv)
+{
     int     i;
     int     oldmctl;
 
@@ -110,7 +112,9 @@ int main(int argc, char **argv) {
     }
 }
 
-static int contains(char *str1, char *str2) {
+static int
+contains(char *str1, char *str2)
+{
     char   *s;
     int     length;
 
@@ -122,7 +126,9 @@ static int contains(char *str1, char *str2) {
     return (0);
 }
 
-void printmes(char mstr[80], int mflags, int mrecpt, int mfrom) {
+void
+printmes(char mstr[80], int mflags, int mrecpt, int mfrom)
+{
     if (docolor) {
         switch (mflags) {
             case 17: /* MGOD: */
@@ -144,7 +150,9 @@ void printmes(char mstr[80], int mflags, int mrecpt, int mfrom) {
     PRINT(mstr);
 }
 
-void usage(char *me) {
+void
+usage(char *me)
+{
     int x;
     char message[][255] = {
         "Netrek II message board watching tool.\n",

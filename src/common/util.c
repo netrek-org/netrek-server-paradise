@@ -40,8 +40,7 @@ struct stats *mystats;
 The angles are expressed as numbers from 0-255. */
 
 int 
-angdist(x, y)
-    unsigned char x, y;
+angdist(unsigned char x, unsigned char y)
 {
     register unsigned char res;	/* temp var */
 
@@ -62,9 +61,7 @@ angdist(x, y)
    */
 
 int 
-temporally_spaced(lasttime, gap)
-    struct timeval *lasttime;
-    int     gap;		/* microseconds */
+temporally_spaced(struct timeval *lasttime, int gap)
 {
     struct timeval curtp;
 
@@ -85,7 +82,7 @@ temporally_spaced(lasttime, gap)
  */
 
 int 
-check_fire_warp()
+check_fire_warp(void)
 {
     if (configvals->fireduringwarp || !(me->p_flags & PFWARP))
 	return 1;
@@ -96,7 +93,7 @@ check_fire_warp()
 }
 
 int 
-check_fire_warpprep()
+check_fire_warpprep(void)
 {
     if (configvals->fireduringwarpprep || !me->p_warptime)
 	return 1;
@@ -106,8 +103,8 @@ check_fire_warpprep()
     return 0;
 }
 
-int 
-check_fire_docked()
+int
+check_fire_docked(void)
 {
     if (configvals->firewhiledocked || !(me->p_flags & PFDOCK))
 	return 1;

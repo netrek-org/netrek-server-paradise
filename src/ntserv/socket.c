@@ -42,8 +42,6 @@ suitability of this software for any purpose.  This software is provided
 #include "getship.h"
 #include "util.h"
 
-extern void (*r_signal()) ();
-
 /* comment this out to disable it */
 #undef DOUBLE_UDP
 
@@ -344,9 +342,7 @@ void    enqueue();
 extern int pmessage();
 
 int
-connectToClient(machine, port)
-    char   *machine;
-    int     port;
+connectToClient(char *machine, int port)
 {
     int     ns;
     struct sockaddr_in addr;
@@ -401,7 +397,7 @@ connectToClient(machine, port)
 /* Check the socket to read it's inet addr for possible future use.
  */
 void
-checkSocket()
+checkSocket(void)
 {
     struct sockaddr_in sin;
     int     length;
@@ -415,7 +411,7 @@ checkSocket()
 }
 
 void
-initClientData()
+initClientData(void)
 /* invalidates all data, so it is all sent to the client */
 {
     int     i;
@@ -506,13 +502,13 @@ initClientData()
 }
 
 int
-isClientDead()
+isClientDead(void)
 {
     return (clientDead);
 }
 
 void 
-updateClient()
+updateClient(void)
 {
     int     i;
 
@@ -571,7 +567,7 @@ updateClient()
 }
 
 void
-briefUpdateClient()
+briefUpdateClient(void)
 {
     updateMessages();
     updateMOTD();
@@ -582,7 +578,7 @@ briefUpdateClient()
 }
 
 void
-updateStatus()
+updateStatus(void)
 {
     if (repCount % efticks(75) == 0 &&
 	((ntohl(clientStatus2.timeprod) != status->timeprod) ||
@@ -610,8 +606,7 @@ updateStatus()
 }
 
 struct player *
-maybe_watching(p)
-    struct player *p;
+maybe_watching(struct player *p)
 {
     struct player *tg = &players[me->p_playerl];
     return (p == me
@@ -623,14 +618,14 @@ maybe_watching(p)
 }
 
 struct planet *
-maybe_watching_planet()
+maybe_watching_planet(void)
 {
     return (me->p_status == POBSERVE && (me->p_flags & PFPLLOCK)) ?
     &planets[me->p_planet] : 0;
 }
 
 void
-updateSelf()
+updateSelf(void)
 {
     struct player *watched = maybe_watching(me);
     int     armies = maybe_watching_planet()
@@ -693,7 +688,7 @@ updateSelf()
 extern int ignored[];
 
 void
-updateShips()
+updateShips(void)
 {
     register int i;
     register struct player *pl;
@@ -948,7 +943,7 @@ updateShips()
 }
 
 void
-updateTorpInfos()
+updateTorpInfos(void)
 {
     register struct torp *torp;
     register int i;
@@ -1011,7 +1006,7 @@ updateTorpInfos()
 
 
 void
-updateTorps()
+updateTorps(void)
 {
     register struct torp *torp;
     register int i;
@@ -1071,13 +1066,11 @@ updateTorps()
 
 #define NIBBLE()	*(*data)++ = (torp->t_war & 0xf) | (torp->t_status << 4)
 
-int encode_torp_status(torp, pnum, data, tpi, tp, mustsend)
-    struct torp	*torp;
-    int	pnum;
-    char	**data;
-    struct torp_info_spacket *tpi;
-    struct torp_spacket *tp;
-    int	*mustsend;
+int
+encode_torp_status(struct torp *torp, int pnum, char **data, 
+                   struct torp_info_spacket *tpi, 
+		   struct torp_spacket *tp, 
+		   int *mustsend)
 {
     if (pnum!=me->p_no) {
 	int	dx,dy;
@@ -1135,12 +1128,9 @@ int encode_torp_status(torp, pnum, data, tpi, tp, mustsend)
 				 (tstatus) == TOFF || \
 				 (tstatus) == TLAND)
 
-int encode_torp_position(torp, pnum, data, shift, cache)
-    struct torp *torp;
-    int pnum;
-    char	**data;
-    int	*shift;
-    struct torp_spacket *cache;
+int
+encode_torp_position(struct torp *torp, int pnum, char **data, int *shift, 
+                     struct torp_spacket *cache)
 {
     int	x,y;
 
@@ -1183,7 +1173,7 @@ int encode_torp_position(torp, pnum, data, shift, cache)
 }
 
 void
-short_updateTorps()
+short_updateTorps(void)
 {
     register int i;
 
@@ -1249,7 +1239,7 @@ short_updateTorps()
 
 
 void
-updateMissiles()
+updateMissiles(void)
 {
     register struct missile *missile;
     register int i;
@@ -1345,9 +1335,8 @@ updateMissiles()
 }
 
 static void 
-fill_thingy_info_packet(thing, packet)
-    struct thingy *thing;
-    struct thingy_info_spacket *packet;
+fill_thingy_info_packet(struct thingy *thing, 
+                        struct thingy_info_spacket *packet)
 {
     switch (thing->type) {
     case TT_NONE:
@@ -1373,9 +1362,8 @@ fill_thingy_info_packet(thing, packet)
 }
 
 static void 
-fill_thingy_packet(thing, packet)
-    struct thingy *thing;
-    struct thingy_spacket *packet;
+fill_thingy_packet(struct thingy *thing, 
+                   struct thingy_spacket *packet)
 {
     switch (thing->type) {
     case TT_NONE:
@@ -1399,7 +1387,7 @@ fill_thingy_packet(thing, packet)
 }
 
 void 
-updateThingies()
+updateThingies(void)
 {
     struct thingy *thing;
     struct thingy_info_spacket *tip;
@@ -1438,7 +1426,7 @@ updateThingies()
 }
 
 void
-updatePlasmas()
+updatePlasmas(void)
 {
     register struct plasmatorp *torp;
     register int i;
@@ -1512,7 +1500,7 @@ updatePlasmas()
 }
 
 void
-updatePhasers()
+updatePhasers(void)
 {
     register int i;
     register struct phaser_spacket *ph;
@@ -1556,7 +1544,7 @@ updatePhasers()
 #define PLFLAGMASK (PLRESMASK|PLATMASK|PLSURMASK|PLPARADISE|PLTYPEMASK)
 
 void
-updatePlanets()
+updatePlanets(void)
 {
     register int i;
     register struct planet *plan;
@@ -1656,7 +1644,7 @@ updatePlanets()
 }
 
 void
-updateMessages()
+updateMessages(void)
 {
     int     i;
     struct message *cur;
@@ -1707,7 +1695,7 @@ updateMessages()
 #define DIM (MAX_GWIDTH/TGRID_GRANULARITY)
 
 void
-updateTerrain(){
+updateTerrain(void){
     int i;
     int j, maxfor;
 #if defined(T_DIAG) || defined(T_DIAG2)
@@ -1794,7 +1782,7 @@ updateTerrain(){
 }
 
 void
-updateMOTD()
+updateMOTD(void)
 {
     static int spinner = 0;
 
@@ -1831,8 +1819,7 @@ updateMOTD()
 }
 
 void
-sendQueuePacket(pos)
-    short int pos;
+sendQueuePacket(short int pos)
 {
     struct queue_spacket qPacket;
 
@@ -1843,17 +1830,14 @@ sendQueuePacket(pos)
 }
 
 void
-sendClientPacket(packet)
-    struct player_spacket *packet;
+sendClientPacket(struct player_spacket *packet)
 {
     sendClientSizedPacket(packet, -1);
 }
 
 void
-sendClientSizedPacket(packet, size)
+sendClientSizedPacket(struct player_spacket *packet, int size)
  /* Pick a random type for the packet */
-    struct player_spacket *packet;
-    int	size;
 {
     int     orig_type;
     int     issc;
@@ -1995,7 +1979,7 @@ sendClientSizedPacket(packet, size)
 
 /* Find out if client has any requests */
 int 
-readFromClient()
+readFromClient(void)
 {
     struct timeval timeout;
     fd_set  readfds, writefds;
@@ -2027,8 +2011,7 @@ readFromClient()
 }
 
 static int 
-input_allowed(packettype)
-    int     packettype;
+input_allowed(int packettype)
 {
     switch (packettype) {
     case CP_MESSAGE:
@@ -2079,8 +2062,7 @@ static int rsock;		/* ping stuff */
 
 /* ripped out of above routine */
 int
-doRead(asock)
-    int     asock;
+doRead(int asock)
 {
     struct timeval timeout;
 /*    int readfds;*/
@@ -2326,7 +2308,7 @@ handleOrbitReq(packet)
 no other players are in the game.  */
 
 static void
-practice_robo()
+practice_robo(void)
 {
     char   *paths;		/* to hold dot dir path */
     char   *arg1;
@@ -2907,7 +2889,7 @@ handleByeReq(packet)
 }
 
 int
-checkVersion()
+checkVersion(void)
 {
     struct badversion_spacket packet;
 
@@ -2922,7 +2904,7 @@ checkVersion()
 }
 
 void
-logEntry()
+logEntry(void)
 {
     FILE   *logfile;
     int     curtime;
@@ -3072,8 +3054,7 @@ handleUpdatesReq(packet)
 }
 
 void
-logmessage(string)
-    char   *string;
+logmessage(char *string)
 {
     FILE   *fp;
     char   *paths;
@@ -3612,7 +3593,7 @@ send:
 
 
 int
-connUdpConn()
+connUdpConn(void)
 {
     struct sockaddr_in addr;
     int     len;
@@ -3659,7 +3640,7 @@ connUdpConn()
 }
 
 int
-closeUdpConn()
+closeUdpConn(void)
 {
     V_UDPDIAG(("Closing UDP socket\n"));
     if (udpSock < 0) {
@@ -3675,7 +3656,7 @@ closeUdpConn()
 
 /* used for debugging */
 void
-printUdpInfo()
+printUdpInfo(void)
 {
     struct sockaddr_in addr;
     int     len;
@@ -3719,7 +3700,7 @@ handleAskMOTD()
  * SP_CP_SEQUENCE instead of SP_SEQUENCE.
  */
 void 
-sendSC()
+sendSC(void)
 {
     struct sequence_spacket *ssp;
     struct sc_sequence_spacket *sc_sp;
@@ -3771,7 +3752,7 @@ sendSC()
  * happen anyway...)
  */
 void 
-forceUpdate()
+forceUpdate(void)
 {
     static time_t lastone = 0;
     time_t  now;
@@ -3819,8 +3800,7 @@ forceUpdate()
 }
 
 int 
-isCensured(s)			/* return true if cannot message opponents */
-    char   *s;
+isCensured(char *s)		/* return true if cannot message opponents */
 {
     return (
 #if 0
@@ -3838,8 +3818,7 @@ isCensured(s)			/* return true if cannot message opponents */
 /* return true if you should eat message */
 
 int 
-parseIgnore(packet)
-    struct mesg_cpacket *packet;
+parseIgnore(struct mesg_cpacket *packet)
 {
     char   *s;
     int     who;
@@ -3935,8 +3914,7 @@ parseIgnore(packet)
 /* return true if you should eat message */
 
 int 
-parseQuery(packet)
-    struct mesg_spacket *packet;/* was cpacket 4/17/92 TC */
+parseQuery(struct mesg_spacket *packet)
 {
     char    buf[80];
     float   sessionBombing, sessionPlanets, sessionOffense, sessionDefense;
@@ -4004,8 +3982,7 @@ parseQuery(packet)
 }
 
 int 
-bouncePingStats(packet)
-    struct mesg_spacket *packet;
+bouncePingStats(struct mesg_spacket *packet)
 {
     char    buf[80];
 
@@ -4028,9 +4005,7 @@ bouncePingStats(packet)
 
 /* new code, sends bouncemsg to bounceto from GOD 4/17/92 TC */
 void 
-bounce(bouncemsg, bounceto)
-    char   *bouncemsg;
-    int     bounceto;
+bounce(char *bouncemsg, int bounceto)
 {
     char    buf[10];
 
@@ -4044,7 +4019,7 @@ bounce(bouncemsg, bounceto)
  */
 
 void 
-sendShipCap()
+sendShipCap(void)
 {
     struct ship_cap_spacket temppack;
     struct ship ship;
@@ -4084,13 +4059,7 @@ sendShipCap()
 }
 
 void 
-sendMotdPic(x, y, bits, page, width, height)
-    int     x;
-    int     y;
-    char   *bits;
-    int     page;
-    int     width;
-    int     height;
+sendMotdPic(int x, int y, char *bits, int page, int width, int height)
 {
     struct motd_pic_spacket temppack;
     short   sx, sy, sp, sw, sh;
@@ -4115,12 +4084,7 @@ sendMotdPic(x, y, bits, page, width, height)
 
 
 void 
-sendMotdNopic(x, y, page, width, height)
-    int     x;
-    int     y;
-    int     page;
-    int     width;
-    int     height;
+sendMotdNopic(int x, int y, int page, int width, int height)
 {
     struct pe1_missing_bitmap_spacket temppack;
 
@@ -4137,8 +4101,7 @@ sendMotdNopic(x, y, page, width, height)
 
 /* tells the client how many missiles carried [BDyess] */
 void
-sendMissileNum(num)
-    int     num;
+sendMissileNum(int num)
 {
 
     /* remove the 1 || to enable missile updates [BDyess] */
@@ -4165,7 +4128,9 @@ sendMissileNum(num)
 
 */
 
-int convert_hostname(char *name, struct in_addr    *addr) {
+int
+convert_hostname(char *name, struct in_addr *addr)
+{
     struct hostent   *hp;
     int               len;
 
@@ -4193,7 +4158,9 @@ int convert_hostname(char *name, struct in_addr    *addr) {
   have more than one internet address :/
 */
 
-int site_rsa_exempt() {
+int
+site_rsa_exempt(void) 
+{
     FILE    *fp;
     char    buf[256];
 

@@ -39,11 +39,10 @@ struct statentry *database;
 struct statentry **playertab;
 int     topn, motd = 0;
 
-void header();
+void header(void);
 
 void 
-printUsage(me)
-    char   *me;
+printUsage(char *me)
 {
     int x;
     char message[][255] = {
@@ -64,8 +63,7 @@ printUsage(me)
 }
 
 int 
-cmp_func(a, b)
-    struct statentry **a, **b;
+cmp_func(struct statentry **a, struct statentry **b)
 {
     float     di_diff = (*a)->stats.st_di - (*b)->stats.st_di;
     int     rk_diff = (*a)->stats.st_rank - (*b)->stats.st_rank;
@@ -108,9 +106,7 @@ static char *rankh[] = {
 #endif
 
 int 
-main(argc, argv)
-    int     argc;
-    char   *argv[];
+main(int argc, char *argv[])
 {
     int     i, nplayers, j, count = 0;
     FILE   *fp;
@@ -201,7 +197,7 @@ main(argc, argv)
 }
 
 void
-header()
+header(void)
 {
     if (motd)
 	printf("\t@@b\n");

@@ -44,6 +44,7 @@ char *fillcH(int width, char fchar);
 char *typestat(struct player *p);
 
 /* -------------------------------[ Main ]----------------------------- */
+int
 main(int argc, char **argv)
 {
     int     mode;
@@ -230,7 +231,8 @@ main(int argc, char **argv)
 
 /* map rank into one of the original netrek rank names for compatibility
    with the metaserver */
-char *maprank(struct player *p)
+char *
+maprank(struct player *p)
 {
     int     r;
 
@@ -242,7 +244,8 @@ char *maprank(struct player *p)
     return oldranknames[r];
 }
 
-char *mapshiptype(struct player *p)
+char *
+mapshiptype(struct player *p)
 {
     int     n;
 
@@ -253,7 +256,8 @@ char *mapshiptype(struct player *p)
     return oldshiptypes[n];
 }
 
-char *mapname(char   *s)
+char *
+mapname(char *s)
 {
     char    newname[17];
 
@@ -266,7 +270,8 @@ char *mapname(char   *s)
 }
 
 /* fills with fchar up to width (width must be less than 255) */
-char *fillcH(int width, char fchar)
+char *
+fillcH(int width, char fchar)
 {
     char buf[width];
     int i;
@@ -277,7 +282,8 @@ char *fillcH(int width, char fchar)
     return buf;
 }
 
-char *typestat(struct player *p)
+char *
+typestat(struct player *p)
 {
     char    str[3];
 

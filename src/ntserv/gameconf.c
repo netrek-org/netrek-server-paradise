@@ -30,7 +30,7 @@ suitability of this software for any purpose.  This software is provided
 /* status experimental */
 
 static void
-updateGPrank()
+updateGPrank(void)
 {
     int     i;
     struct gp_rank_spacket pkt;
@@ -41,19 +41,11 @@ updateGPrank()
     for (i = 0; i < NUMRANKS; i++) {
 	pkt.rankn = i;
 	pkt.genocides = htonl(ranks[i].genocides);
-#ifndef BAD_SVR4_HACKS
-	pkt.milliDI = htonl(1000 * ranks[i].di);
-	pkt.millibattle = htonl(1000 * ranks[i].battle);
-	pkt.millistrat = htonl(1000 * ranks[i].strategy);
-	pkt.millispec = htonl(1000 * ranks[i].specship);
-#else /* Unixware/IRIX requires explicit casts */
-      /* this next define will make the next more readable */
-#define BAD_SVR4_HACKS_CAST(a,b) (unsigned long)( (long double)a * (long double)b )
-	pkt.milliDI = htonl( BAD_SVR4_HACKS_CAST( 1000, ranks[i].di ) );
-	pkt.millibattle = htonl( BAD_SVR4_HACKS_CAST( 1000, ranks[i].battle ) );
-	pkt.millistrat = htonl( BAD_SVR4_HACKS_CAST( 1000, ranks[i].strategy ) );
-	pkt.millispec = htonl( BAD_SVR4_HACKS_CAST( 1000, ranks[i].specship ) );
-#endif /* BAD_SVR4_HACKS */
+#define COMPUTE_STATS(a, b) (unsigned long)((long double)(a) * (long double)(b))
+	pkt.milliDI = htonl(COMPUTE_STATS( 1000, ranks[i].di));
+	pkt.millibattle = htonl(COMPUTE_STATS( 1000, ranks[i].battle));
+	pkt.millistrat = htonl(COMPUTE_STATS(1000, ranks[i].strategy));
+	pkt.millispec = htonl(COMPUTE_STATS(1000, ranks[i].specship));
 	strcpy((char *) pkt.name, (char *) ranks[i].name);
 
 	sendClientPacket((struct player_spacket *) & pkt);
@@ -61,7 +53,7 @@ updateGPrank()
 }
 
 static void
-updateGProyal()
+updateGProyal(void)
 {
     int     i;
     struct gp_royal_spacket pkt;
@@ -77,7 +69,7 @@ updateGProyal()
 }
 
 static void
-updateGPteams()
+updateGPteams(void)
 {
     struct gp_team_spacket pkt;
     int     i;
@@ -97,10 +89,7 @@ updateGPteams()
 }
 
 static void
-send_one_teamlogo(teamidx, data, width, height)
-    int     teamidx;
-    unsigned char *data;
-    int     width, height;
+send_one_teamlogo(int teamidx, unsigned char *data, int width, int height)
 {
     struct gp_teamlogo_spacket pkt;
     int     pwidth;
@@ -131,7 +120,7 @@ send_one_teamlogo(teamidx, data, width, height)
 }
 
 static void
-updateGPteamlogos()
+updateGPteamlogos(void)
 {
     char    buf[40];
     char   *data;
@@ -171,7 +160,7 @@ updateGPteamlogos()
 }
 
 static void
-updateGPshipshapes()
+updateGPshipshapes(void)
 {
 #if 0
     {
@@ -207,7 +196,7 @@ updateGPshipshapes()
 }
 
 static void
-updateGPplanetbitmaps()
+updateGPplanetbitmaps(void)
 {
     struct gp_teamplanet_spacket pkt;
     char    buf[40];
@@ -288,7 +277,7 @@ updateGPplanetbitmaps()
 }
 
 void
-updateGameparams()
+updateGameparams(void)
 {
     struct gp_sizes_spacket pkt;
 

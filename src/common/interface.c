@@ -28,16 +28,6 @@ suitability of this software for any purpose.  This software is provided
 #include "plutil.h"
 #include "imath.h"
 
-void    cloak_off();
-void    cloak_on();
-int     numShips();
-void     sendwarn();
-extern int pmessage2();
-int     allowed_ship();
-int     numPlanets();
-void suspendPrep();
-void unsuspendPrep();
-
 /*-----------------------------VISIBLE FUNCTIONS---------------------------*/
 
 /*--------------------------------SETSPEED---------------------------------*/
@@ -50,11 +40,11 @@ that are received directly from the client.  A speed of 99 is treated as
 a request for warp speed.  A request of 98 is a request for afterburners. */
 
 
-
+/* args:
+    int     speed;		 the desired speed 
+    int     type;		 type of request. 0=server 1=client */
 void 
-set_speed(speed, type)
-    int     speed;		/* the desired speed */
-    int     type;		/* type of request. 0=server 1=client */
+set_speed(int speed, int type)
 {
     if (me->p_flags & PFDOCK) {	/* if docked then */
 	if (players[me->p_docked].p_speed > 4) {	/* you cannot get off >=
@@ -175,8 +165,7 @@ set_speed(speed, type)
 players direction to it.  Certain flags are cleared.  */
 
 void 
-set_course(dir)
-    unsigned char dir;
+set_course(unsigned char dir)
 {
     me->p_desdir = dir;		/* set the desired direction */
     if (me->p_flags & PFDOCK) {	/* if player is docked then he cannot */
@@ -204,7 +193,7 @@ set_course(dir)
 /*  This function raises the players shields.  */
 
 void
-shield_up()
+shield_up(void)
 {
     me->p_flags |= PFSHIELD;	/* some flags go up and some down */
     me->p_flags &= ~(PFBOMB | PFREPAIR | PFBEAMUP | PFBEAMDOWN);
@@ -218,7 +207,7 @@ shield_up()
 /*  This function lowers the players shields.  */
 
 void
-shield_down()
+shield_down(void)
 {
     me->p_flags &= ~PFSHIELD;	/* shield flag clear */
 }
@@ -230,7 +219,7 @@ shield_down()
 /*  This function toggles the players shields on and off.  */
 
 void
-shield_tog()
+shield_tog(void)
 {
     me->p_flags ^= PFSHIELD;	/* toggle shield flag */
     me->p_flags &= ~(PFBOMB | PFREPAIR | PFBEAMUP | PFBEAMDOWN);
@@ -245,7 +234,7 @@ shield_tog()
 you are bombing enemy planets.  */
 
 void 
-bomb_planet()
+bomb_planet(void)
 {
     static int bombsOutOfTmode = 0;	/* confirm bomb out of t-mode */
     int     owner;		/* owner of planet */
@@ -295,7 +284,7 @@ bomb_planet()
 /*  This function set the beam up flag if it is allowable to beam men up.  */
 
 void 
-beam_up()
+beam_up(void)
 {
     if(!status2->starttourn && configvals->nopregamebeamup) {
 	warning("You can't beam up armies before a game starts");
@@ -337,7 +326,7 @@ beam_up()
 /*  This function sets the beam up flag if certain conditions are met*/
 
 void 
-beam_down()
+beam_down(void)
 {
     int     i;			/* looping var */
     struct planet *pl;		/* to access planets */
@@ -412,7 +401,7 @@ beam_down()
 repair while in warp.  */
 
 void 
-repair()
+repair(void)
 {
 #if !defined(AEDILE) || !defined(REPAIR_IN_WARP)
     if (me->p_flags & PFWARP) {	/* no repairing in warp */
@@ -434,7 +423,7 @@ repair()
 /*  This function takes the repair flag off.  */
 
 void 
-repair_off()
+repair_off(void)
 {
     me->p_flags &= ~PFREPAIR;
 }
@@ -446,7 +435,7 @@ repair_off()
 /* This function repeats the last message.  */
 
 void 
-repeat_message()
+repeat_message(void)
 {
     if (++lastm == MAXMESSAGE)	/* go to next message */
 	lastm = 0;		/* account for rollover */
@@ -460,7 +449,7 @@ repeat_message()
 off.  */
 
 void 
-cloak()
+cloak(void)
 {
     if (me->p_flags & PFCLOAK)
 	cloak_off();
@@ -475,7 +464,7 @@ cloak()
 /*  This function turns cloak on.  Tractors and pressors are turned off.  */
 
 void
-cloak_on()
+cloak_on(void)
 {
     if (me->p_warptime && !configvals->cloakduringwarpprep) {
 	warning("Can't cloak during warp preparation.");
@@ -496,7 +485,7 @@ cloak_on()
 /*  This function turns the cloak off.  */
 
 void 
-cloak_off()
+cloak_off(void)
 {
     me->p_flags &= ~PFCLOAK;
 }
@@ -508,8 +497,7 @@ cloak_off()
 /*  This function locks the player onto a planet.  */
 
 void 
-lock_planet(planet)
-    int     planet;		/* planet locking onto */
+lock_planet(int planet)		/* planet locking onto */
 {
     char    buf[80];		/* to sprintf into */
 
@@ -548,8 +536,7 @@ lock_planet(planet)
 /*  This function locks the player onto another player.  */
 
 void 
-lock_player(player)
-    int     player;		/* player locking onto */
+lock_player(int player)		/* player locking onto */
 {
     char    buf[80];
 
@@ -595,8 +582,7 @@ lock_player(player)
 times when the tractor cannot be used.  */
 
 void 
-tractor_player(player)
-    int     player;
+tractor_player(int player)
 {
     struct player *victim;
 
@@ -645,8 +631,7 @@ tractor_player(player)
 number of conditions where tractors will not work.  */
 
 void 
-pressor_player(player)
-    int     player;		/* the player to presoor */
+pressor_player(int player)	/* the player to pressor */
 {
     int     target;
     struct player *victim;
@@ -703,8 +688,7 @@ pressor_player(player)
 /*  This function changes the war mask of a player.  */
 
 void 
-declare_war(mask)
-    int     mask;		/* who are we declaring war against */
+declare_war(int mask)		/* who are we declaring war against */
 {
     int     changes;		/* to hold changes in war mask */
     int     i;			/* looping var */
@@ -754,13 +738,14 @@ declare_war(mask)
 /*  This function sends the warning message to the other players when a
 player switches his war status with that team.  */
 
-void
-sendwarn(string, atwar, team)
-    char   *string;		/* the name of the team changing status
-				   towards */
-    int     atwar;		/* 1 if declarig war 0 if decalring peace */
-    int     team;		/* name of team we are switching in regards
+/* args:
+    char   *string;		 the name of the team changing status
+				   towards 
+    int     atwar;		 1 if declarig war 0 if decalring peace 
+    int     team;		 name of team we are switching in regards
 				   to */
+void
+sendwarn(char *string, int atwar, int team)
 {
     char    buf[BUFSIZ];	/* to hold sprintfed message */
     char    addrbuf[10];	/* to hold ship number and team letter */
@@ -781,7 +766,7 @@ sendwarn(string, atwar, team)
 /* switches the special weapon of the player */
 
 void 
-switch_special_weapon()
+switch_special_weapon(void)
 {
     int     mask = 0;
     int     currflag;
@@ -830,8 +815,7 @@ switch_special_weapon()
 are all sorts of nasty reasons why it might fail. */
 
 void 
-do_refit(type)
-    int     type;		/* type of ship to refit to */
+do_refit(int type)		/* type of ship to refit to */
 {
     int     i;			/* looping var */
 
@@ -929,11 +913,7 @@ do_refit(type)
 /* Is a person with this rank on this team able
    to requisition a ship of this type? */
 int 
-allowed_ship(team, rank, royal, type)
-    int     team;
-    int     rank;
-    int     royal;
-    int     type;
+allowed_ship(int team, int rank, int royal, int type)
 {
     struct ship *tempship;
     int     shipcount;
@@ -1034,8 +1014,7 @@ allowed_ship(team, rank, royal, type)
 /*  This function counts the number of players on a team.  */
 
 int 
-numShips(owner)
-    int     owner;		/* the team to count for */
+numShips(int owner)		/* the team to count for */
 {
     int     i;			/* looping var */
     int     num;		/* to hold player count */
@@ -1056,8 +1035,7 @@ numShips(owner)
 /*  This function counts the number of planets a team has.  */
 
 int 
-numPlanets(owner)
-    int     owner;		/* the team to check for */
+numPlanets(int owner)		/* the team to check for */
 {
     int     i;			/* looping var */
     int     num;		/* to hold count */
@@ -1077,7 +1055,7 @@ numPlanets(owner)
    Suspends warp prep [BDyess]
 */
 void 
-suspendPrep()
+suspendPrep(void)
 {
     /* check to see if the server allows warp prep to be suspended [BDyess] */
     if (!configvals->warpprep_suspendable)
@@ -1095,7 +1073,7 @@ suspendPrep()
    Unsuspends warp prep [BDyess]
 */
 void
-unsuspendPrep()
+unsuspendPrep(void)
 {
     /* check to see if the server allows warp prep to be suspended [BDyess] */
     if (!configvals->warpprep_suspendable)

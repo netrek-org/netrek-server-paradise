@@ -89,7 +89,7 @@ is filled with 1's, allowing access at all times.  */
 
 
 void 
-load_time_access()
+load_time_access(void)
 {
     FILE   *f;			/* to open time access file with */
     char   *filename;		/* to hold full path plus filename */
@@ -127,7 +127,7 @@ server is open at the current time of day and day of the week.  It returns
 a 0 otherwise.  */
 
 int 
-time_access()
+time_access(void)
 {
     struct tm *tm;		/* points to structure containing local time */
     time_t  secs;		/* to get number of seconds */

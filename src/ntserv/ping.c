@@ -62,20 +62,12 @@ struct {
 }       ping_sent[HASHSIZE];
 
 
-void calc_loss();
-void update_lag_stats();
-void update_loss_stats();
-int mstime();
-int msetime();
-int uchar_diff(int,int);
-
 /*
  * response from client
  */
 
 void
-pingResponse(packet)
-    struct ping_cpacket *packet;
+pingResponse(struct ping_cpacket *packet)
 {
     register i;
     static int last_num;
@@ -123,7 +115,7 @@ pingResponse(packet)
  */
 
 void
-sendClientPing()
+sendClientPing(void)
 {
     struct ping_spacket packet;
 
@@ -149,9 +141,7 @@ sendClientPing()
 }
 
 void
-calc_loss(i, packet)
-    int     i;
-    struct ping_cpacket *packet;
+calc_loss(int i, struct ping_cpacket *packet)
 {
     /* tloss vars */
     register cp_recv,		/* client packets recv */
@@ -298,7 +288,7 @@ static int sum, n, s2;
 static int M, var;
 
 void
-update_lag_stats()
+update_lag_stats(void)
 {
     n++;
     sum += ping_lag;
@@ -317,7 +307,7 @@ update_lag_stats()
 }
 
 void
-update_loss_stats()
+update_loss_stats(void)
 {
     /*
        packet loss (as average of server-to-client, client-to-server loss),
@@ -331,7 +321,7 @@ update_loss_stats()
 
 /* ms time from start */
 int
-mstime()
+mstime(void)
 {
     static struct timeval tv_base = {0, 0};
     struct timeval tv;
@@ -347,7 +337,7 @@ mstime()
 
 /* debugging */
 int
-msetime()
+msetime(void)
 {
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -355,10 +345,9 @@ msetime()
 }
 
 int
-uchar_diff(x, y)
-    int     x, y;
+uchar_diff(int x, int y)
 {
-    register res;
+    register int res;
 
     res = x - y;
 

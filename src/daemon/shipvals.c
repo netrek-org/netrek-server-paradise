@@ -44,7 +44,7 @@ ships.  They can later be changed with the sysdefaults.  */
 
 
 void 
-getshipdefaults()
+getshipdefaults(void)
 {
     int     i;
 

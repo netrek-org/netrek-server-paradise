@@ -34,9 +34,7 @@ extern jmp_buf env;
 
 /* Figure out ratings for player p.  Computed ratings are filled into r */
 void 
-compute_ratings(p, r)
-    struct player *p;
-    struct rating *r;
+compute_ratings(struct player *p, struct rating *r)
 {
     struct stats *s;
     float   t, t2;
@@ -107,11 +105,8 @@ printf("planetrat %f tplanets %f t2 %f\n", (float)r->planetrat, (float)s->st_tpl
 /*  This function is called when the player dies.  It checks to see if the
 player has been promoted.  */
 
-
-extern int savestats();
-
 void 
-death()
+death(void)
 {
     struct stats *s;		/* to point to player's stats */
     struct rating r;		/* filled in by compute_ratings() */

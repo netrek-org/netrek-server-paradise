@@ -44,12 +44,7 @@ struct highscore *scores;
 int     scoresize, nscores;
 
 void 
-subbrag(name, stuff, time, title, descr, num)
-    char   *name;
-    int     stuff, time;
-    char   *title;
-    char   *descr;
-    int     num;
+subbrag(char *name, int stuff, int time, char *title, char *descr, int num)
 {
     char    full[64];
     char    line[80];
@@ -101,8 +96,7 @@ subbrag(name, stuff, time, title, descr, num)
 }
 
 void 
-brag(title, descr, offset)
-    char   *title, *descr;
+brag(char *title, char *descr, int offset)
 {
     int     i;
     if (name[0] != 0) {
@@ -135,8 +129,7 @@ brag(title, descr, offset)
 
 
 #define COMPARE(STN) \
-int cmp_raw ## STN(a,b) \
-     struct highscore *a, *b; \
+int cmp_raw ## STN(struct highscore *a, struct highscore *b) \
 { \
   int	diff = a->STN - b->STN; \
  \
@@ -148,8 +141,7 @@ int cmp_raw ## STN(a,b) \
     return -1; \
 } \
  \
-int cmp_per ## STN(a,b) \
-     struct highscore *a, *b; \
+int cmp_per ## STN(struct highscore *a, struct highscore *b) \
 { \
   double	diff = a->STN/(double)a->ticks - b->STN/(double)b->ticks; \
  \
@@ -169,8 +161,7 @@ int cmp_per ## STN(a,b) \
 
 
 #define COMPARE(STN) \
-int cmp_raw/**/STN(a,b) \
-     struct highscore *a, *b; \
+int cmp_raw/**/STN(struct highscore *a, struct highscore *b) \
 { \
   int	diff = a->STN - b->STN; \
  \
@@ -182,8 +173,7 @@ int cmp_raw/**/STN(a,b) \
     return -1; \
 } \
  \
-int cmp_per/**/STN(a,b) \
-     struct highscore *a, *b; \
+int cmp_per/**/STN(struct highscore *a, struct highscore *b) \
 { \
   double	diff = a->STN/(double)a->ticks - b->STN/(double)b->ticks; \
  \
@@ -203,8 +193,8 @@ COMPARE(tarmsbomb)
 COMPARE(tresbomb)
 COMPARE(tdooshes)
 COMPARE(tplanets)
-    int     cmp_ticks(a, b)
-    struct highscore *a, *b;
+
+int cmp_ticks(struct highscore *a, struct highscore *b)
 {
     int     diff = a->ticks - b->ticks;
 
@@ -219,18 +209,13 @@ COMPARE(tplanets)
 struct statentry zeroplayer;
 
 int 
-different(one, two)
-    struct highscore *one, *two;
+different(struct highscore *one, struct highscore *two)
 {
     return 0 != strcmp(one->name, two->name);
 }
 
-double atof();
-
 int 
-main(argc, argv)
-    int     argc;
-    char  **argv;
+main(int argc, char **argv)
 {
     struct stat fstats;
     FILE   *fp;

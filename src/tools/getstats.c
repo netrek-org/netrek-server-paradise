@@ -53,10 +53,8 @@ struct statentry {
     struct stats stats;		/* player's stats */
 };
 
-
-main(argn, argv)
-    int     argn;
-    char  **argv;
+int
+main(int argc, char **argv)
 {
     FILE   *f;
     struct statentry s;

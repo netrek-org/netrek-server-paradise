@@ -22,12 +22,14 @@ suitability of this software for any purpose.  This software is provided
 
 /* This function should be called any time a planet is relocated.
    It is in charge of updating the space grid. */
-void 
-move_planet(pno, x, y, isold)
-    int     pno;		/* planet number */
+
+/* args:
+    int     pno;		 planet number 
     int     x, y;
-    int     isold;		/* 0 if the planet has not yet been entered
+    int     isold;		 0 if the planet has not yet been entered
 				   into the grid */
+void 
+move_planet(int pno, int x, int y, int isold)
 {
     struct planet *pl = &planets[pno];
 
@@ -40,12 +42,13 @@ move_planet(pno, x, y, isold)
     /* enter into space grid */
 }
 
-void 
-move_player(pno, x, y, isold)
-    int     pno;		/* player number */
+/* args:
+    int     pno;		 player number 
     int     x, y;
-    int     isold;		/* 0 if the player has not yet been entered
+    int     isold;		 0 if the player has not yet been entered
 				   into the grid */
+void 
+move_player(int pno, int x, int y, int isold)
 {
     struct player *pl = &players[pno];
 
@@ -57,12 +60,13 @@ move_player(pno, x, y, isold)
     /* enter into space grid */
 }
 
-void 
-move_torp(tno, x, y, isold)
-    int     tno;		/* torp number */
+/* args:
+    int     tno;		 torp number 
     int     x, y;
-    int     isold;		/* 0 if the torp has not yet been entered
+    int     isold;		 0 if the torp has not yet been entered
 				   into the grid */
+void 
+move_torp(int tno, int x, int y, int isold)
 {
     struct torp *t = &torps[tno];
 
@@ -74,12 +78,13 @@ move_torp(tno, x, y, isold)
     /* enter into space grid */
 }
 
-void 
-move_missile(dno, x, y, isold)
-    int     dno;		/* missile number */
+/* args:
+    int     dno;		 missile number 
     int     x, y;
-    int     isold;		/* 0 if the missile has not yet been entered
+    int     isold;		 0 if the missile has not yet been entered
 				   into the grid */
+void 
+move_missile(int dno, int x, int y, int isold)
 {
     struct missile *d = &missiles[dno];
 

@@ -50,7 +50,7 @@ static struct timeval lasttp;
 torps that are close enough to det.  */
 
 void 
-detothers()
+detothers(void)
 {
     register int h, i;		/* looping var */
     int     dx, dy;		/* to find distance */

@@ -5,8 +5,7 @@
 #include "data.h"
 
 char 
-team_to_letter(t)
-    int     t;
+team_to_letter(int t)
 {
     switch (t) {
     case FED:
@@ -23,8 +22,7 @@ team_to_letter(t)
 }
 
 int 
-letter_to_team(ch)
-    char    ch;
+letter_to_team(char ch)
 {
     switch (ch) {
     case 'I':
@@ -48,8 +46,7 @@ letter_to_team(ch)
 }
 
 int 
-letter_to_pnum(ch)
-    char    ch;
+letter_to_pnum(char ch)
 {
     switch (ch) {
     case '0':
@@ -97,8 +94,7 @@ letter_to_pnum(ch)
 }
 
 char 
-pnum_to_letter(ch)
-    int     ch;
+pnum_to_letter(int ch)
 {
     switch (ch) {
     case 0:
@@ -118,9 +114,8 @@ pnum_to_letter(ch)
 }
 
 
-char   *
-twoletters(pl)
-    struct player *pl;
+char *
+twoletters(struct player *pl)
 /* calculate the two letters that form the players designation (e.g. R4) */
 {
 #define RINGSIZE MAXPLAYER+3

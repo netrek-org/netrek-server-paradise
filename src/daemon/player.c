@@ -49,14 +49,7 @@ suitability of this software for any purpose.  This software is provided
 
 
 
-#ifdef LEAGUE_SUPPORT
-extern void tlog_beamup( /* struct planet *pl, struct player *carrier */ );
-extern void tlog_plandest( /* struct planet *pl, struct player *killer */ );
-extern void tlog_Bbeamup( /* struct player *base, struct player carrier */ );
-extern void tlog_beamdown( /* struct planet *pl, struct player *carrier */ );
-extern void tlog_plantake( /* struct planet *pl, struct player *killer */ );
-extern void tlog_Bbeamdown( /* struct player *base, struct player carrier */ );
-#else
+#ifndef LEAGUE_SUPPORT
 #define tlog_beamup(a,b)
 #define tlog_plandest(a,b)
 #define tlog_plantake(a,b)
@@ -65,21 +58,6 @@ extern void tlog_Bbeamdown( /* struct player *base, struct player carrier */ );
 #define tlog_beamdown(a,b)
 #define tlog_Bbeamdown(a,b)
 #endif
-extern int enemy_admiral( /* int tno */ );
-extern void pmessage(		/* char *str, int recip, int group, char
-		         *address */ );
-extern int undock_player( /* struct player *pl */ );
-extern int base_undock( /* struct player *base, int port_id */ );
-extern void move_player( /* int pno, int x, int y, int isold */ );
-extern int 
-inflict_damage(			/* struct player *sp, struct player *op,
-	           struct player *victim, int damage, int why */ );
-extern int get_explode_views( /* short int stype */ );
-extern void cause_kaboom( /* struct player *victim */ );
-extern void enforce_dock_position( /* struct player *pl */ );
-
-
-
 
 /*---------------------------INTERNAL FUNCTIONS---------------------------*/
 
@@ -88,8 +66,7 @@ extern void enforce_dock_position( /* struct player *pl */ );
 to beam up all the armies on a planet.  */
 
 void 
-beammeupscotty(j)
-    struct player *j;		/* the player beaming */
+beammeupscotty(struct player *j)	/* the player beaming */
 {
     struct planet *l;		/* to point to planet beaming from */
 
@@ -180,8 +157,7 @@ different alert statuses.  You get more stats from taking while alert status
 is red than green.  */
 
 void 
-beamdown(j)
-    struct player *j;		/* the player beaming */
+beamdown(struct player *j)	/* the player beaming */
 {
     char    buf[90];		/* to sprintf into */
     char    buf1[90];
@@ -304,8 +280,7 @@ players structure and decs the timer before the player's explosion is done
 and he is really dead.  */
 
 void 
-doshipexplode(j)
-    struct player *j;		/* the player to explode */
+doshipexplode(struct player *j)	/* the player to explode */
 {
     int     k;			/* another damned looping var */
 
@@ -354,8 +329,7 @@ doshipexplode(j)
 coordinates to go around in a circle.   */
 
 void 
-doorbit(j)
-    struct player *j;		/* the player in orbit */
+doorbit(struct player *j)	/* the player in orbit */
 {
     int     x, y;
     int     angle;
@@ -377,8 +351,7 @@ doorbit(j)
 
 
 void 
-repair_docking_ring(j)
-    struct player *j;
+repair_docking_ring(struct player *j)
 {
     int     i;
     int     damaged = 0;
@@ -404,8 +377,7 @@ the speed of the ship.  There is a ver for how fast each ship can take on
 fuel from  a planet of other ship  */
 
 void 
-doresources(j)
-    struct player *j;		/* the player in orbit */
+doresources(struct player *j)	/* the player in orbit */
 {
     int     factor;
     int     ccost;
@@ -583,8 +555,7 @@ doresources(j)
 direction and position are adjusted.  */
 
 void 
-dobounce(j)
-    struct player *j;		/* the player to bounce */
+dobounce(struct player *j)	/* the player to bounce */
 {
     int     x = j->p_x;
     int     y = j->p_y;
@@ -618,8 +589,7 @@ players in the game and seeing if they are too close.  Should probably be
 moved to the code that does visibility.  */
 
 void 
-doalert(j)
-    struct player *j;		/* the player to check for */
+doalert(struct player *j)	/* the player to check for */
 {
     int     k;			/* Oh, no.  Another looping var */
     int     dx, dy, dist;	/* to find distances */
@@ -667,8 +637,7 @@ player's speed and maneuveribility of his ship.  This function includes
 optional use of TC's new-style turn rates.  */
 
 void 
-changedir(sp)
-    struct player *sp;		/* the player to turn */
+changedir(struct player *sp)	/* the player to turn */
 {
     unsigned int ticks;
     unsigned int min, max;
@@ -711,8 +680,7 @@ changedir(sp)
 
 
 int 
-being_tractored(victim)
-    struct player *victim;
+being_tractored(struct player *victim)
 {
     int     i;
     for (i = 0; i < MAXPLAYER; i++)
@@ -734,8 +702,7 @@ decellerates the ship if it is needed.  The coordinates of the ship are
 then adjusted.  */
 
 void 
-domove(j)
-    struct player *j;		/* the player to move */
+domove(struct player *j)	/* the player to move */
 {
     int     maxspeed;		/* to hold max speed */
     int     acc;		/* to hold accelleration */
@@ -938,8 +905,7 @@ domove(j)
 There is a long set of conditions that can turn off tractors.  */
 
 void 
-dotractor(j)
-    struct player *j;		/* the player to do */
+dotractor(struct player *j)	/* the player to do */
 {
     float   cosTheta, sinTheta;	/* Cos and Sin from me to him */
     int     halfforce;		/* Half force of tractor */
@@ -1023,8 +989,7 @@ dotractor(j)
 be incremented.  */
 
 void 
-loserstats(pl)
-    int     pl;			/* the dead players number */
+loserstats(int pl)		/* the dead player's number */
 {
     struct player *dude;	/* to point to player */
 
@@ -1060,9 +1025,7 @@ kills need to be increased.  This function will add partial kills if the
 victim was carrying armies.  */
 
 void 
-killerstats(pl, victim)
-    int     pl;			/* the killer's player number */
-    struct player *victim;	/* the victim's player structure */
+killerstats(int pl, struct player *victim)
 {
     struct player *dude;	/* to point to killer's player struct */
 
@@ -1115,8 +1078,7 @@ killerstats(pl, victim)
 he has, it records the new max kills.  */
 
 void 
-checkmaxkills(pl)
-    int     pl;			/* number of player to check */
+checkmaxkills(int pl)		/* # of player to check */
 {
     struct stats *stats;	/* to point to player's struct */
     struct player *dude;	/* to point to his stats struct */
@@ -1153,8 +1115,7 @@ inflicts damage on the nearby players.  The damage has been changed to be
 based on the amount of fuel the ship has when it explodes.  */
 
 void 
-blowup(sh)
-    struct player *sh;		/* the player that blew up */
+blowup(struct player *sh)	/* the player that blew up */
 {
     register int i;		/* looping vars */
     int     dx, dy;		/* delta coords of a ship */
@@ -1214,7 +1175,7 @@ blowup(sh)
 or down, the beaming is done here.  */
 
 void 
-beam()
+beam(void)
 {
     register int i;		/* looping variable */
     register struct player *j;
@@ -1238,7 +1199,7 @@ beam()
 /*  This function incs/decs the cloakphase for the players.  */
 
 void 
-udcloak()
+udcloak(void)
 {
     register int i;		/* looping var */
 
@@ -1262,7 +1223,7 @@ this function will set the dietime variable that the move function in the
 daemon will use to shut down the deamon.  */
 
 void 
-udplayers()
+udplayers(void)
 {
     register int i;		/* looping vars */
     register struct player *j;	/* to point to players */

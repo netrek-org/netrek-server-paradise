@@ -80,34 +80,14 @@ extern int length;
 
 static int plan_count = 0;
 static int s_clock;
-static int _move();
+static int _move(void);
 static int defenders[ALLTEAM];
 
-struct player *whokilledme();
 struct planet *homeworld = 0;
 struct planet *homestar = 0;
 
-unsigned char getacourse();
-extern void (*r_signal()) ();
-
-void snake_torp();
-
-int bombcheck(int, int);
-int rrnd(int);
-void check_tboundary(int, unsigned char*, int, int, int);
-void doeyes();
-int crash_killer();
-int sp_area(int, int);
-void make_war();
-void award();
-void exitSnake(int);
-void startsnake();
-void check_explode();
-void movesnake();
-
 struct planet *
-star_of(pl)
-    struct planet *pl;
+star_of(struct planet *pl)
 {
     int     i;
     if (pl->pl_system < 1)
@@ -125,7 +105,8 @@ star_of(pl)
 
 
 
-void snakemove()
+void
+snakemove(void)
 {
     s_clock++;
 
@@ -133,7 +114,7 @@ void snakemove()
 }
 
 static 
-int _move()
+int _move(void)
 {
     if (!perfs[0] || !perfs[1])
 	exitSnake(0);
@@ -158,7 +139,8 @@ int _move()
     return 1;
 }
 
-void startsnake()
+void
+startsnake(void)
 {
     register i, l;
     register struct player *j;
@@ -260,7 +242,8 @@ void startsnake()
 	fprintf(stderr, "started\n");
 }
 
-void restore_eye()
+void
+restore_eye(void)
 {
     if (fl->pt_status != PTMOVE) {
 	/* eyes */
@@ -298,7 +281,8 @@ void restore_eye()
     }
 }
 
-void movesnake()
+void
+movesnake(void)
 {
     register i, px, py;
     register struct player *j;
@@ -401,7 +385,7 @@ void movesnake()
     doeyes();
 }
 
-void check_explode()
+void check_explode(void)
 {
     register int i, l;
     register struct player *j;
@@ -474,8 +458,7 @@ void check_explode()
 }
 
 int
-crash_killer(p)
-    struct player *p;
+crash_killer(struct player *p)
 {
     register int i, px, py;
     register struct player *j;
@@ -521,7 +504,7 @@ crash_killer(p)
 }
 
 void
-doeyes()
+doeyes(void)
 {
     unsigned char c = getacourse(eyetp->t_x, eyetp->t_y, eyet->t_x,
 				 eyet->t_y);
@@ -592,8 +575,8 @@ doeyes()
     }
 }
 
-void exitSnake(sig)
-    int     sig;
+void
+exitSnake(int sig)
 {
     register int i;
     register struct player *j;
@@ -632,12 +615,7 @@ void exitSnake(sig)
 	exit(0);
 }
 void
-pmessage2(str, recip, group, address, from)
-    char   *str;
-    int     recip;
-    int     group;
-    char   *address;
-    unsigned char from;
+pmessage2(char *str, int recip, int group, char *address, unsigned char from)
 {
     struct message *cur;
     int     mesgnum;
@@ -655,19 +633,14 @@ pmessage2(str, recip, group, address, from)
     cur->m_flags |= MVALID;
 }
 void
-pmessage(str, recip, group, address)
-    char   *str;
-    int     recip;
-    int     group;
-    char   *address;
+pmessage(char *str, int recip, int group, char *address)
 {
     pmessage2(str, recip, group, address, 255);
 }
 
 /* get course from (mx,my) to (x,y) */
 unsigned char 
-getacourse(x, y, mx, my)
-    int     x, y, mx, my;
+getacourse(int x, int y, int mx, int my)
 {
     if (x == mx && y == my)
 	return 0;
@@ -691,7 +664,7 @@ getacourse(x, y, mx, my)
  */
 
 void
-check_tboundary(teams, mycrs, range, x, y)
+check_tboundary(int teams, unsigned char *mycrs, int range, int x, int y)
     int     teams;
     unsigned char *mycrs;
     int     range;
@@ -731,8 +704,8 @@ check_tboundary(teams, mycrs, range, x, y)
 }
 
 /* return rnd between -range & range */
-int rrnd(range)
-    int     range;
+int
+rrnd(int range)
 {
     return lrand48() % (2 * range) - range;
 }
@@ -760,10 +733,7 @@ contrast(t)
 #endif
 
 void
-snake_torp(t, n, p)
-    struct torp *t;
-    int     n;
-    struct player *p;
+snake_torp(struct torp *t, int n, struct player *p)
 {
     t->t_no = n;
     t->t_status = TMOVE;
@@ -787,8 +757,7 @@ snake_torp(t, n, p)
 }
 
 struct player *
-whokilledme(pt)
-    struct plasmatorp *pt;
+whokilledme(struct plasmatorp *pt)
 {
     register i;
     register struct phaser *j;
@@ -815,8 +784,7 @@ whokilledme(pt)
    implementation would mark the "snake plasma" and have the daemon do the
    awarding. */
 void
-award(win)
-    struct player *win;
+award(struct player *win)
 {
     char    buf[80];
     char    addrbuf[10];
@@ -880,8 +848,7 @@ award(win)
 }
 
 int
-bombcheck(team1, team2)
-    int     team1, team2;
+bombcheck(int team1, int team2)
 {
     register i;
     register struct player *j;
@@ -941,9 +908,7 @@ bombcheck(team1, team2)
 }
 
 void
-make_war(p, plteam)
-    struct player *p;
-    int     plteam;
+make_war(struct player *p, int plteam)
 {
     register int i;
     register struct player *j;
@@ -978,8 +943,8 @@ make_war(p, plteam)
  * (only considers 1 start planet at this time)
  */
 
-int sp_area(x, y)
-    int     x, y;
+int
+sp_area(int x, int y)
 {
     register i,  px, py;
 

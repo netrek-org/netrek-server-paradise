@@ -59,13 +59,11 @@ static struct timeval lasttp;
 ** a random function.  Torps currently live two to five seconds.
 */
 
-
-extern void move_torp();
-
+/* args 
+    unsigned char course;	 direction of torp travel 
+    int     type;		 type of torp flight */
 void 
-ntorp(course, type)
-    unsigned char course;	/* direction of torp travel */
-    int     type;		/* type of torp flight */
+ntorp(unsigned char course, int type)
 {
     register int i;		/* looping var */
     register struct torp *k;	/* to point to a torp */

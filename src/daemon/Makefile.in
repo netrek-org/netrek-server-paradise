@@ -54,4 +54,5 @@ install:
 	$(INSTALL) daemonII $(bindir)
 
 distclean: clean
+	@cd pl_gen && $(MAKE) distclean
 	-rm -f Makefile

@@ -31,10 +31,6 @@ express or implied warranty.
 #define X 0
 #define Y 1
 
-extern int inflict_damage();
-
-
-void generate_terrain()
 /* Generates terrain based on specs in the system configuration.
    Places a number of "seeds" into the terrain grid, and then generates an
    "altitude" map based on those seeds' positions (which correspond to
@@ -45,6 +41,8 @@ void generate_terrain()
    This function is called within the galaxy generation stuff.
 
    10/26/94 MM */
+void 
+generate_terrain(void)
 {
   int i/*,j,k*/;  /* counters */
   int x,y;    /* more counters, different purpose */
@@ -96,11 +94,12 @@ void generate_terrain()
   if (num_asteroid)  place_asteroids(MAXALTITUDE-(*asteroid_radius));
 }
 
-void place_nebula(int num_nebula, int num_seeds, int minalt)
 /* Values inbetween MAXALTITUDE and minalt are considered nebulous terrain.
    Tries to cluster seeds in groups based on num_nebula and num_seeds.
    ...the number of seeds per nebula being num_seeds. 
    10/26/94 MM */
+void 
+place_nebula(int num_nebula, int num_seeds, int minalt)
 {
     int i = 0,j = 0,x,y,dx,dy, dist, lowdist = 2 * TGRID_SIZE;
     int *seeds1=NULL, *seeds2=NULL;
@@ -187,12 +186,13 @@ void place_nebula(int num_nebula, int num_seeds, int minalt)
     free(seeds2);
 }
 
-void place_asteroids(int altitude)
 /* Marks terrain grid locations within density of altitude as asteroid
    fields.  I may make the chance of such a grid location becoming a
    field random (like 90% or something), so that fields will appear less
    uniform, and holes may exist in them.  Makes for interesting terrain, IMO.
    10/26/94 MM */
+void 
+place_asteroids(int altitude)
 {
   int x,y,i,j,numstars=0;
   int *systems_with_asteroids;
@@ -259,12 +259,13 @@ void place_asteroids(int altitude)
        }
 }
 
-void doTerrainEffects()
 /* apply terrain effects to players 
 
-   I REALLY wish I could add a "skill" element to many of the effects, but its tough.
-   Asteroid damage is the most notable example where skill *should* be a factor, but
-   isn't. MDM */
+   I REALLY wish I could add a "skill" element to many of the effects, but 
+   it's tough.  Asteroid damage is the most notable example where 
+   skill *should* be a factor, but isn't. MDM */
+void
+doTerrainEffects(void)
 {
    struct player *p;
    int i,j,dam;

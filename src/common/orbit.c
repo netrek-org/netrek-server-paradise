@@ -30,10 +30,8 @@ suitability of this software for any purpose.  This software is provided
 #include "orbit.h"
 #include "plutil.h"
 
-extern void move_player();
-
 static void 
-deactivate_friendly_tractors()
+deactivate_friendly_tractors(void)
 {
     int     i;
     struct player *j;
@@ -58,7 +56,7 @@ If that fails, then the planets are checked.  The orbit key acts as a toggle
 for docking and undocking at ships.  */
 
 void 
-orbit()
+orbit(void)
 {
     register int i;		/* looping var */
     register struct planet *l;	/* to point to planet being orbited */
@@ -163,8 +161,7 @@ orbit()
 
 
 void 
-newdock(base_num)
-    int     base_num;
+newdock(int base_num)
 {
     char    buf[80];		/* to sprintf into */
     struct player *base = &players[base_num];
@@ -209,11 +206,5 @@ newdock(base_num)
     sprintf(buf, "Helmsman:  Docking manuever completed Captain.  All moorings secured at port %d.", port_id);
     warning(buf);		/* tell user he's docked */
 }
-
-#ifdef HAVE_RAND48
-
-double  drand48();
-
-#endif
 
 /*------------END OF FILE--------*/

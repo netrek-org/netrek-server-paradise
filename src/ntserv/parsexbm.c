@@ -29,11 +29,7 @@ return -1; }
 #define MAX_LINE 500
 
 int 
-ParseXbmFile(stream, widthP, heightP, dataP)
-    FILE   *stream;
-    int    *widthP;
-    int    *heightP;
-    char  **dataP;
+ParseXbmFile(FILE *stream, int *widthP, int *heightP, char **dataP)
 {
     char    line[MAX_LINE], name_and_type[MAX_LINE];
     char   *ptr;

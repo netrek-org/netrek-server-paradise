@@ -31,10 +31,7 @@ suitability of this software for any purpose.  This software is provided
    the System-V signal() function provides the older, unreliable signal
    semantics.  So, this is an implementation of signal using sigaction. */
 
-void    (*
-	 r_signal(sig, func)) ()
-    int     sig;
-    void    (*func) ();
+void    (*r_signal(int sig, void (*func)() )) ()
 {
     struct sigaction act, oact;
 
@@ -42,12 +39,9 @@ void    (*
 
     sigemptyset(&act.sa_mask);
     act.sa_flags = 0;
-#ifdef SA_RESTART
-#ifdef BAD_SVR4_HACKS
+
   if( sig != SIGALRM )
-#endif /* BAD_SVR4_HACKS */
     act.sa_flags |= SA_RESTART;
-#endif
 
     if (sigaction(sig, &act, &oact) < 0)
 	return (SIG_ERR);

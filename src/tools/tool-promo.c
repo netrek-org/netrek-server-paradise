@@ -38,8 +38,7 @@ struct highscore *scores;
 int     scoresize, nscores;
 
 int 
-cmp_score(a, b)
-    struct highscore *a, *b;
+cmp_score(struct highscore *a, struct highscore *b)
 {
     float   diff = a->newrank - b->newrank;
 
@@ -68,9 +67,7 @@ cmp_score(a, b)
 struct statentry zeroplayer;
 
 int 
-main(argc, argv)
-    int     argc;
-    char  **argv;
+main(int argc, char **argv)
 {
     struct stat fstats;
     FILE   *fp;

@@ -56,22 +56,8 @@ typedef struct playerlist {
 /*-------------------------------------------------------------------------*/
 
 
-
-
-
-
-extern int enemy_admiral();
-extern void perror();
-extern void cause_kaboom();
-extern void gen_planets();
-extern void endtourn();
-extern void stoptimer();
-extern char *twoletters();
-void displayBest();
-
 static void 
-swap(a, b)
-    int    *a, *b;
+swap(int *a, int *b)
 {
     int     t = *a;
     *a = *b;
@@ -89,9 +75,7 @@ in the parameters team1 and team2.  If one of the teams does not have at
 least one planet then a 1 is returned.  Otherwise a zero is returned.  */
 
 int 
-genocide(team1, team2)
-    int    *team1;		/* where to put first team */
-    int    *team2;		/* where to put second team */
+genocide(int *team1, int *team2)	/* where to put first/second team */
 {
     int     t1, t2;		/* to hold two teams */
     int     n1, n2;		/* to hold number of ships on teams */
@@ -150,9 +134,7 @@ whether a team has prevented surrender or the surrender process should
 begin.  */
 
 void 
-checksurrender(team, otherplanets)
-    int     team;		/* the team to check */
-    int     otherplanets;
+checksurrender(int team, int otherplanets)	/* team - team to check */
 {
     char    buf[80];		/* to sprintf into */
 
@@ -198,7 +180,7 @@ checksurrender(team, otherplanets)
 updating the ship construction timers here.  */
 
 void
-udsurrend()
+udsurrend(void)
 {
     register int i, t;		/* looping vars */
     char    buf[80];
@@ -259,10 +241,7 @@ on the winning and losing teams.  The reason should be either GENOCIDE or
 SURRENDER.  The list is written to the conquer file.  */
 
 void
-conquerMessage(winners, losers, pno)
-    int     winners;
-    int     losers;
-    int     pno;
+conquerMessage(int winners, int losers, int pno)
  /* the losing and winning teams */
  /* the person who won it */
 {
@@ -341,7 +320,7 @@ conquerMessage(winners, losers, pno)
 
 
 void 
-refresh_team_planetcounts()
+refresh_team_planetcounts(void)
 {
     int     i;
     register struct planet *l;	/* to point to planets */
@@ -357,10 +336,7 @@ refresh_team_planetcounts()
 
 /* blow everyone up, print the conquer assessments, figure out who won. */
 void 
-endgame_effects(t1, t2, pno)
-    int     t1;
-    int     t2;
-    int     pno;
+endgame_effects(int t1, int t2, int pno)
 {
     int     i;
     struct player *j;
@@ -413,8 +389,7 @@ a team has been genocided then the genocide message is printed and the
 game is reset. */
 
 void
-checkwin(pno)
-    int     pno;
+checkwin(int pno)
 {
     int     g;			/* to hold whether genocide occured */
     int     t1, t2;		/* to hold the t-mode teams */
@@ -472,10 +447,11 @@ the players have inflicted on the enemy, with one planet taken counting
 as thirty armies bombed.  A resource counts as 8 armies bombed and a
 army dooshed counts as five armies bombed.  */
 
+/* args:
+    FILE   *conqfile;		 the opened conquer file 
+    int     team;		 the winning team */
 void
-displayBest(conqfile, team)
-    FILE   *conqfile;		/* the opened conquer file */
-    int     team;		/* the winning team */
+displayBest(FILE *conqfile, int team)
 {
     register int i, k, l;	/* looping vars */
     register struct player *j;	/* to point to players */

@@ -36,20 +36,12 @@ suitability of this software for any purpose.  This software is provided
 now adds the way of death onto the end of the kill message.  */
 
 
-extern void pmessage();
-int     get_explode_views();
-extern void killerstats();
-extern void checkmaxkills();
-#ifdef LEAGUE_SUPPORT
-extern void tlog_plkill();
-#else
+#ifndef LEAGUE_SUPPORT
 #define tlog_plkill(a,b,c) 
 #endif
-extern void loserstats();
 
 void 
-killmess(victim, killer)
-    struct player *victim, *killer;	/* killee and killer */
+killmess(struct player *victim, struct player *killer)
 {
     char    buf[80];		/* to sprintf into */
 
@@ -131,8 +123,7 @@ killmess(victim, killer)
 explosion views.  */
 
 void 
-cause_kaboom(victim)
-    struct player *victim;	/* which ship to blast to tiny fragments */
+cause_kaboom(struct player *victim)	/* which ship to blast to tiny frags */
 {
     victim->p_status = PEXPLODE;/* set player as exploding */
     victim->p_explode = (short) get_explode_views(victim->p_ship.s_type);
@@ -142,8 +133,7 @@ cause_kaboom(victim)
 /* returns the number of ship views for the given ship type */
 
 int 
-get_explode_views(stype)
-    short   stype;
+get_explode_views(short stype)
 {
     switch (stype) {
     case STARBASE:
@@ -161,13 +151,15 @@ the victim was killed and a 0 otherwise.  If the sp parameter is a zero then
 the victim was damaged by something other than a ship.  It is the responsibil-
 ity of the caller to set the whydead field of the victim.  */
 
+/* args:
+    struct player *sp;		 player that inflicted the damage
+    struct player *op;		 other player that could be responsible
+    struct player *victim;	 which ship to victimize
+    int     damage;		 how much damage, should be positive
+    int     why;		 the source of the damage */
 int 
-inflict_damage(sp, op, victim, damage, why)
-    struct player *sp;		/* player that inflicted the damage */
-    struct player *op;		/* other player that could be responsible */
-    struct player *victim;	/* which ship to victimize */
-    int     damage;		/* how much damage, should be positive */
-    int     why;		/* the source of the damage */
+inflict_damage(struct player *sp, struct player *op, 
+               struct player *victim, int damage, int why)
 {
     if (damage < 0) {		/* should not be called with - damage */
 	fprintf(stderr, "Attempt to inflict negative damage\n");
@@ -277,8 +269,7 @@ struct ranksorter {
 static struct ranksorter admirals[MAXTEAM];
 
 int 
-enemy_admiral(tno)
-    int     tno;
+enemy_admiral(int tno)
 {
     int     teammates;
     int     pno;

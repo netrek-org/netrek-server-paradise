@@ -38,19 +38,9 @@ suitability of this software for any purpose.  This software is provided
 #include "shmem.h"
 #include "crypt.h"
 
-void    handleLogin();
-extern int exitGame();
-extern int isClientDead();
-extern int socketPause();
-extern int readFromClient();
-int     lockout();
-extern int sendClientLogin();
-extern int flushSockBuf();
-
 /* replace non-printable characters in string with spaces */
 static void 
-remove_ctl(str)
-    char   *str;
+remove_ctl(char *str)
 {
     while (*str) {
 	if (!isgraph(*str))	/* not a printable character */
@@ -60,7 +50,7 @@ remove_ctl(str)
 }
 
 void 
-getname()
+getname(void)
 /* Let person identify themselves from w */
 {
     *(me->p_name) = 0;
@@ -70,7 +60,7 @@ getname()
 }
 
 void 
-handleLogin()
+handleLogin(void)
 {
     static struct statentry player;
     static int position = -1;
@@ -214,17 +204,15 @@ handleLogin()
     }
     flushSockBuf();
 
-#if 1
     /* Try to make the first person in the player database an Emperor */
     if (position==0)
       me->p_stats.st_royal = NUMROYALRANKS-1;
-#endif
 
     return;
 }
 
 void 
-savestats()
+savestats(void)
 {
     int     fd;
     char   *paths;
@@ -245,7 +233,7 @@ savestats()
 
 /* return true if we want a lockout */
 int 
-lockout()
+lockout(void)
 {
     return (
 /*

@@ -26,9 +26,8 @@ suitability of this software for any purpose.  This software is provided
 #define STEP 10
 char   *myname;
 
-main(argc, argv)
-    int     argc;
-    char  **argv;
+int
+main(int argc, char **argv)
 {
     int     i;
     int     player;
@@ -72,10 +71,8 @@ main(argc, argv)
     exit(0);
 }
 
-pmessage(str, recip, group)
-    char   *str;
-    int     recip;
-    int     group;
+void
+pmessage(char *str, int recip, int group)
 {
     struct message *cur;
     if (++(mctl->mc_current) >= MAXMESSAGE)
@@ -91,7 +88,8 @@ pmessage(str, recip, group)
 }
 
 
-Usage()
+void
+Usage(void)
 {
     int x;
     char message[][255] = {
@@ -108,7 +106,8 @@ Usage()
     exit(1);
 }
 
-zap()
+void
+zap(void)
 {
     int     player;
 

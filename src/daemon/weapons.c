@@ -29,8 +29,6 @@ suitability of this software for any purpose.  This software is provided
 #include "shmem.h"
 #include "imath.h"
 
-int f_torp();
-
 
 /*------------------------------VISIBLE FUNCTIONS-------------------------*/
 
@@ -39,13 +37,8 @@ int f_torp();
 1 if we are hostile or at war with the object  */
 
 
-extern int inflict_damage();
-int     torp_track_opportunity();
-extern void move_torp();
-extern void move_missile();
-
 int 
-hostile_to(warmask, team, pl)
+hostile_to(int warmask, int team, struct player *pl)
     int     warmask, team;
     struct player *pl;
 {
@@ -60,10 +53,7 @@ hostile_to(warmask, team, pl)
 explodes.  */
 
 void 
-explode_damage(torp, radius, why)
-    struct basetorp *torp;
-    int     radius;
-    int     why;
+explode_damage(struct basetorp *torp, int radius, int why)
 {
     register int i;		/* looping var */
     int     dx, dy, dist;	/* to calc distance from torp to players */
@@ -110,8 +100,7 @@ explode_damage(torp, radius, why)
 }
 
 void
-explode(torp)
-    struct basetorp *torp;	/* pointer to exploding torp's struct */
+explode(struct basetorp *torp)	/* pointer to exploding torp's struct */
 {
     explode_damage(torp, DAMDIST, KTORP);
     torp->bt_status = TEXPLODE;	/* set the torp to explode */
@@ -126,8 +115,7 @@ explode(torp)
 players and damages them if they are close enough to get damaged*/
 
 void
-pexplode(plasmatorp)
-    struct plasmatorp *plasmatorp;	/* ptr to plasma to explode */
+pexplode(struct plasmatorp *plasmatorp)	/* ptr to plasma to explode */
 {
     explode_damage(&plasmatorp->pt_base, PLASDAMDIST, KPLASMA);
     plasmatorp->pt_status = PTEXPLODE;	/* set the plasma to explode */
@@ -142,7 +130,7 @@ pexplode(plasmatorp)
 phaser hit if the phaser hit a target.  */
 
 void
-udphaser()
+udphaser(void)
 {
     register int i;		/* looping var */
     register struct phaser *j;	/* to point to phaser being fired */
@@ -179,10 +167,7 @@ udphaser()
 /* this function will use the space grid */
 
 int 
-weap_near_object(torp, type, dist)
-    struct basetorp *torp;
-    int type;
-    int dist;
+weap_near_object(struct basetorp *torp, int type, int dist)
 {
     register struct planet *pl;	/* to point to the planets */
     int     dx, dy, i;
@@ -239,9 +224,7 @@ near(torp)
 #endif
 
 int 
-near_player(torp, dist)
-    struct basetorp *torp;	/* the torp to check for */
-    int     dist;
+near_player(struct basetorp *torp, int dist)
 {
     register int i;		/* looping var */
     int     dx, dy;		/* to calc torp-player distance */
@@ -266,10 +249,9 @@ near_player(torp, dist)
     return 0;			/* return that torp should continue */
 }
 
-
+/* the fighter landing function */
 int 
-f_land(mis)			/* the fighter landing function */
-    struct missile *mis;	/* the fighter to check for */
+f_land(struct missile *mis)	/* the fighter to check for */
 {
     int     dx, dy;		/* to calc fighter-player distance */
     register struct player *j;	/* to point to players */
@@ -296,8 +278,7 @@ if the plasma should explode and a 0 if it should continue to travel through
 spac.  */
 
 int 
-pnear(plasmatorp)
-    struct plasmatorp *plasmatorp;	/* the plasma torp to check for */
+pnear(struct plasmatorp *plasmatorp)	/* the plasma torp to check for */
 {
 #if 1
     return near_player(&plasmatorp->pt_base, EXPDIST);
@@ -329,8 +310,7 @@ pnear(plasmatorp)
 
 
 int 
-outofbounds(x, y)
-    int     x, y;
+outofbounds(int x, int y)
 {
     return x < 0 || x > GWIDTH || y < 0 || y > GWIDTH;
 }
@@ -342,7 +322,7 @@ nearest target.  this function also handles the explosion and makes sure
 that torps do not go off the edge of the galaxy.  */
 
 void
-udtorps()
+udtorps(void)
 {
     register int i;		/* looping var--to loop through torps */
     int     turn;		/* to get whether to go right or left */
@@ -444,7 +424,7 @@ udtorps()
 }
 
 void 
-udmissiles()
+udmissiles(void)
 {
     int     i;
     int     x, y, turn;
@@ -628,10 +608,12 @@ udmissiles()
     }
 }
 
-int anticipate_impact(w, dx, dy, s, dir)
-    int	w;		/* speed of torp */
-    int	dx,dy;		/* distance to target */
-    int	s, dir;	/* speed of target */
+/* args:
+    int	w;		 speed of torp
+    int	dx,dy;		 distance to target
+    int	s, dir;		 speed of target */
+int
+anticipate_impact(int w, int dx, int dy, int s, int dir)
 {
     float	sdx, sdy;
     float	a, b, c, d;
@@ -691,11 +673,12 @@ ship is to the left of the torp on its current heading and a 1 if the ship
 is to the right.  If no target is found then a 0 is return indicating the
 torp should go straight.  */
 
-int 
-torp_track_opportunity(torp, turnspeed, smart)
-    struct basetorp *torp;	/* the torp to check for */
+/* args:
+    struct basetorp *torp;	the torp to check for
     int     turnspeed;
-    int	    smart;		/* which tracking algorithm? */
+    int	    smart;		which tracking algorithm? */
+int 
+torp_track_opportunity(struct basetorp *torp, int turnspeed, int smart)
 {
     int     i;			/* looping var */
     int     closest;		/* to hold closest player */
@@ -773,7 +756,7 @@ It will ensure that a plasma torp explodes when it hits the edge of the
 galaxy.  */
 
 void
-udplasmatorps()
+udplasmatorps(void)
 {
     register int i;		/* looping var--loop through plasmas */
     int     turn;		/* to get whether to go left or right */
@@ -876,10 +859,11 @@ coords you want to get a change in direction for.  The direction is the
 current direction of the torp.  The function returns the angle that the dir
 need to be changed by to travel to the new points.  */
 
+/* args:
+    int     dx, dy;		delta x, y coords
+    int     dir;		current direction travelling */
 unsigned char 
-get_bearing(dx, dy, dir)
-    int     dx, dy;		/* delta x, y coords */
-    int     dir;		/* current direction travelling */
+get_bearing(int dx, int dy, int dir)
 {
     int     phi;		/* to hold angle */
 
@@ -907,9 +891,7 @@ fighter should go straight.  Also returns fighters to the CV.
 gets checked.  */
 
 int 
-fighter_track_target(mis, turnspeed)
-    struct missile *mis;	/* the torp to check for */
-    int     turnspeed;
+fighter_track_target(struct missile *mis, int turnspeed)
 {
     int     i;			/* looping var */
     int     closest;		/* to hold closest player */
@@ -981,8 +963,7 @@ fighter_track_target(mis, turnspeed)
 /* then fires a torpedo at that target.  A return value of 1 indicates firing*/
 
 int 
-f_torp(mis)
-    struct missile *mis;
+f_torp(struct missile *mis)
 {
     register int i;
     int     torp2fire = -1, targetdist = FSTRIKEDIST + 1, tdist, target;

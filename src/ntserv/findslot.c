@@ -30,19 +30,8 @@ suitability of this software for any purpose.  This software is provided
 #include "packets.h"
 #include "shmem.h"
 
-int     grabslot( /* int */ );
-void    mapWaitCount( /* int */ );
-
-
-extern int isClientDead();
-extern unsigned int sleep();
-extern int sendQueuePacket();
-extern int flushSockBuf();
-
 int 
-findslot(overload, homeaway)
-    int     overload;
-    enum HomeAway homeaway;
+findslot(int overload, enum HomeAway homeaway)
 {
     int     i;
 
@@ -200,10 +189,9 @@ static int ImAllowed( slotnum, homeaway)
  *		9 times, I assume it is obsolete, and I reset it.
  */
 
+/* overload - indicates request for tester's slot */
 int 
-grabslot(overload, homeaway)
-    int     overload;		/* Indicates a request for a tester's slot. */
-    enum HomeAway homeaway;
+grabslot(int overload, enum HomeAway homeaway)
 {
     int     count;		/* My number */
     int     oldcount;		/* Number that was being served last check */
@@ -428,8 +416,7 @@ grabslot(overload, homeaway)
 }
 
 void 
-mapWaitCount(count)
-    unsigned int count;
+mapWaitCount(unsigned int count)
 {
     if (count == -1)
 	return;

@@ -79,33 +79,15 @@ stderr go to the same file.
  */
 #define META_UPDATE_TIME (5*60*60)	/* five hours */
 
-void    printlistenUsage();
-void    set_env();
 int     listenSock;
 short   port = PORT;
 char   *program;
 int     meta_addr;
 
-char   *dateTime();
-void    detach();
-void    getConnections();
-void    getListenSock();
-void    multClose();
-void    reaper();
-void    terminate();
-
 /*
  * Error reporting functions ripped from my library.
  */
-void    syserr();
-void    warnerr();
-void    fatlerr();
-void    err();
-char   *lasterr();
-void	print_pid();
 
-struct hostent *gethostbyaddr();
-char   *inet_ntoa();
 int     metaserverflag;
 char   *leagueflag = 0;
 char   *observerflag = 0;
@@ -115,31 +97,6 @@ char   *extraargs[NEA];
 int     extraargc = 0;
 
 char	*ntserv_binary=NTSERV;
-
-/* the System-V signal() function provides the older, unreliable signal
-   semantics.  So, this is an implementation of signal using sigaction. */
-
-void    (*
-	 r_signal(sig, func)) ()
-    int     sig;
-    void    (*func) ();
-{
-    struct sigaction act, oact;
-
-    act.sa_handler = func;
-
-    sigemptyset(&act.sa_mask);
-    act.sa_flags = 0;
-#ifdef SA_RESTART
-    act.sa_flags |= SA_RESTART;
-#endif
-
-    if (sigaction(sig, &act, &oact) < 0)
-	return (SIG_ERR);
-
-    return (oact.sa_handler);
-}
-
 
 int 
 main(argc, argv)
@@ -225,8 +182,9 @@ main(argc, argv)
  * Detach process in various ways.
  */
 
+/* maybe do a setsid() here instead?? */
 void 
-detach()
+detach(void)
 {
     int     fd, rc, mode;
     char   *fname;
@@ -277,7 +235,7 @@ detach()
  */
 
 void 
-getListenSock()
+getListenSock(void)
 {
     struct sockaddr_in addr;
 
@@ -309,7 +267,7 @@ getListenSock()
  */
 
 void 
-getConnections()
+getConnections(void)
 {
     int     len, sock, pid, pa;
     struct sockaddr_in addr;
@@ -380,8 +338,7 @@ getConnections()
  */
 
 void 
-set_env(var, value)
-    char   *var, *value;
+set_env(char *var, char *value)
 {
     char   *buf;
     buf = malloc(strlen(var) + strlen(value) + 2);
@@ -401,8 +358,8 @@ set_env(var, value)
  * and reused.
  */
 
-char   *
-dateTime()
+char *
+dateTime(void)
 {
     time_t  t;
     char   *s;
@@ -561,8 +518,8 @@ err(args)
     fflush(stderr);
 }
 
-char   *
-lasterr()
+char *
+lasterr(void)
 {
     if (errno < sys_nerr)
 	return sys_errlist[errno];
@@ -572,7 +529,7 @@ lasterr()
 
 /*---------------------[ prints the usage of listen ]---------------------*/
 
-void printlistenUsage(char name[])
+void printlistenUsage(char *name)
 {
     int x;
     char message[][255] = {

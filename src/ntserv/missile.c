@@ -57,8 +57,7 @@ static struct timeval lasttime;	/* used to prevent players from */
 */
 
 void 
-fire_missile_dir(course)
-    unsigned char course;	/* direction of torp travel */
+fire_missile_dir(unsigned char course)
 {
     register int i;		/* looping var */
     register struct missile *drn;	/* to point to a torp */

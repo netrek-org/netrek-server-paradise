@@ -78,25 +78,8 @@ static int PKEY = 128;
 /*  This function starts the daemon.  It get the path to where the daemon
 resides, then tries to start it up.  */
 
-
-#if 0
-#ifndef SYSV /* HP/UX hates this */
-extern int fprintf();
-#endif
-extern pid_t fork();
-extern int execl();
-extern void perror();
-extern int shmget();
-#ifndef IRIX
-extern int shmctl();
-#endif
-extern unsigned int sleep();
-extern uid_t geteuid();
-#endif
-
 void 
-startdaemon(leagueflag, restart)
-    int     leagueflag, restart;
+startdaemon(int leagueflag, int restart)
 {
     int     i;			/* temp var */
     char   *hell;		/* to hold path to daemon */
@@ -140,9 +123,7 @@ static int shmid = -1;		/* ID number of shared mem */
    */
 
 void 
-openmem(code, leagueflag)
-    int     code;
-    int     leagueflag;		/* only used if code==1 */
+openmem(int code, int leagueflag)
 {
     extern int errno;		/* to get error number */
     key_t   shmemKey = PKEY;	/* shared memory's key */
@@ -265,7 +246,7 @@ openmem(code, leagueflag)
 }
 
 void 
-blast_shmem()
+blast_shmem(void)
 {
     shmctl(shmid, IPC_RMID, (struct shmid_ds *) 0);
 }

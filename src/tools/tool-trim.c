@@ -42,9 +42,8 @@ void trimblanks2(char *str);
 void trimblanks(char *str);
 void usage(char *me);
 
-main(argc, argv)
-    int     argc;
-    char  **argv;
+int
+main(int argc, char **argv)
 {
     int     fd;
     struct statentry plstats;
@@ -107,7 +106,8 @@ main(argc, argv)
     exit(0);
 }
 
-void usage(char *me)
+void
+usage(char *me)
 {
     int x;
     char message[][255] = {
@@ -128,7 +128,8 @@ void usage(char *me)
     exit(0);
 }
 
-void trimblanks2(char *str)
+void
+trimblanks2(char *str)
 {
     *str = 0;
     str--;
@@ -140,7 +141,8 @@ void trimblanks2(char *str)
         *str = 0;
 }
 
-void trimblanks(char *str)
+void
+trimblanks(char *str)
 {
     *str = 0;
     str--;

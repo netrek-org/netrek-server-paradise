@@ -33,11 +33,7 @@ char binary[] = "@(#)snake";
 #include "data.h"
 #include "shmem.h"
 
-extern void (*r_signal()) ();
-extern int findrslot();
-extern int config();
 struct player *perfs[2];
-void     printsnakeUsage();
 int     num_perfs = 2;
 int     debug = 0;
 int     target = -1;
@@ -54,7 +50,7 @@ int     lastm;
 int     tno = 0;
 
 int 
-choose_team(team)
+choose_team(int team)
 {
     if (tno < 0)
 	tno = team;
@@ -65,9 +61,7 @@ choose_team(team)
     return 1;
 }
 
-int main(argc, argv)
-    int     argc;
-    char  **argv;
+int main(int argc, char **argv)
 {
     register int i;
     int     snakemove(), exitSnake();
@@ -277,7 +271,8 @@ int main(argc, argv)
     }
 }
 
-int findtestslot()
+int
+findtestslot(void)
 {
     register int i;
 
@@ -295,7 +290,8 @@ int findtestslot()
     return (i);
 }
 
-int findrslot()
+int
+findrslot(void)
 {
     register int i;
 
@@ -322,14 +318,14 @@ int findrslot()
 }
 
 void 
-warning(mess)
-    char   *mess;
+warning(char *mess)
 {
     if (debug)
 	fprintf(stderr, "warning: %s\n", mess);
 }
 
-int config()
+int
+config(void)
 {
     /* mostly not used */
     myship->s_phaser.cost = 0;
@@ -351,7 +347,8 @@ int config()
 
 /*---------------------[ prints the usage of snake ]---------------------*/
 
-void printsnakeUsage()
+void
+printsnakeUsage(void)
 {
     printf("Usage: snake [options]\n");
     printf("Options:\n\

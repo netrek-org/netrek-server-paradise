@@ -24,10 +24,7 @@ suitability of this software for any purpose.  This software is provided
 #include "plutil.h"
 
 void 
-credit_armiesbombed(plyr, armies, plan)
-    struct player *plyr;
-    int     armies;
-    struct planet *plan;
+credit_armiesbombed(struct player *plyr, int armies, struct planet *plan)
 {
     double  factor;
 

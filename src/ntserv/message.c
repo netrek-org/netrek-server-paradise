@@ -138,13 +138,6 @@ static int god_silent = 0;
 
 /* static char *con_shipnos = "0123456789abcdefghijklmnopqrstuvwxyz";*/
 
-extern int pmessage2();
-extern int pmessage();
-extern int detourneyqueue();
-extern void compute_ratings();
-
-static void respond();
-
 #if 0
 static enum token_names_e tokstring[128];	/* list of tokens */
 static char *thestrings[128];	/* list of corresponding strings */
@@ -342,10 +335,7 @@ struct control_cmd {
    */
 
 enum token_names_e
-next_token(cmd, legals, after)
-    char   *cmd;
-    struct control_cmd *legals;
-    char  **after;
+next_token(char *cmd, struct control_cmd *legals, char **after)
 {
     char    buf[80];		/* space for the token */
     char   *s;
@@ -389,10 +379,7 @@ next_token(cmd, legals, after)
 }
 
 int
-match_token(cmd, token, after)
-    char	*cmd;
-    char	*token;
-    char	**after;
+match_token(char *cmd, char *token, char **after)
 {
     struct control_cmd	legals[2];
     legals[0].literal = token;
@@ -405,9 +392,8 @@ match_token(cmd, token, after)
    Returns -1 on failure, slot number on success.
    Slot number is guaranteed to be <MAXPLAYER. */
 
-int get_slotnum(cmd, after)
-    char	*cmd;
-    char	**after;
+int
+get_slotnum(char *cmd, char **after)
 {
     int	rval;
     while (*cmd && isspace(*cmd))
@@ -442,8 +428,8 @@ int get_slotnum(cmd, after)
     return rval;
 }
 
-void bad_slotnum(msg)
-    char	*msg;
+void
+bad_slotnum(char *msg)
 {
     char	buf[256];
     sprintf(buf, "`%s' requires player slot number", msg);
@@ -455,11 +441,8 @@ void bad_slotnum(msg)
    Returns 0 on failure, 1 on success.
    Token is returned in dst. */
 
-int get_one_token(cmd, dst, dstsize, after)
-    char	*cmd;
-    char	*dst;		/* destination */
-    int		dstsize;
-    char	**after;
+int
+get_one_token(char *cmd, char *dst, int dstsize, char **after)
 {
     while (*cmd && isspace(*cmd))
 	cmd++;
@@ -488,10 +471,8 @@ int get_one_token(cmd, dst, dstsize, after)
    Returns 0 on failure without modifying dst.
    */
 
-int get_int(cmd, dst, after)
-    char	*cmd;
-    int	*dst;
-    char	**after;
+int
+get_int(char *cmd, int *dst, char **after)
 {
     int	rval, offset;
 
@@ -519,10 +500,8 @@ int get_int(cmd, dst, after)
    Returns 0 on failure without modifying dst.
    */
 
-int get_double(cmd, dst, after)
-    char	*cmd;
-    double	*dst;
-    char	**after;
+int
+get_double(char *cmd, double *dst, char **after)
 {
     double	rval;
     int		offset;
@@ -546,10 +525,8 @@ int get_double(cmd, dst, after)
     return 1;
 }
 
-int get_teamid(cmd, team, after)
-     char	*cmd;
-     int	*team;
-     char	**after;
+int
+get_teamid(char *cmd, int *team, char **after)
 {
     int	i,j;
 
@@ -580,10 +557,8 @@ int get_teamid(cmd, team, after)
     return i<NUMTEAM;
 }
 
-int get_shipid(cmd, shipn, after)
-     char	*cmd;
-     int	*shipn;
-     char	**after;
+int
+get_shipid(char *cmd, int *shipn, char **after)
 {
     int	i;
 
@@ -623,8 +598,7 @@ int get_shipid(cmd, shipn, after)
 /* writes a comma-separated list of help strings into the message window */
 
 void 
-respond_with_help_string(legals)
-    struct control_cmd *legals;
+respond_with_help_string(struct control_cmd *legals)
 {
     int     i;
     char    buf[65];		/* leave space for the message prefix */
@@ -654,9 +628,7 @@ respond_with_help_string(legals)
 /**********************************************************************/
 
 static void 
-respond(msg, type)
-    char   *msg;
-    int     type;
+respond(char *msg, int type)
 {
     if (type == 1)
 	warning(msg);
@@ -673,8 +645,7 @@ respond(msg, type)
  */
 
 static int 
-parse_control_player(cmd)
-    char	*cmd;
+parse_control_player(char *cmd)
 {
     char    buf[120];
     int     pnum;
@@ -1008,8 +979,7 @@ parse_control_player(cmd)
 }
 
 static int 
-parse_control(str)
-    char   *str;
+parse_control(char *str)
 {
     char    buf[120];
     struct player *victim;
@@ -1230,8 +1200,7 @@ parse_control(str)
  */
 
 static int 
-parse_info(cmd)
-    char	*cmd;
+parse_info(char *cmd)
 {
     char    buf[120];
     char	*nexttoken;
@@ -1277,8 +1246,7 @@ parse_info(cmd)
 }
 
 static int 
-parse_player(cmd)
-    char	*cmd;
+parse_player(char *cmd)
 {
     static int passver = 0;
     char    buf[80];
@@ -1400,16 +1368,13 @@ parse_player(cmd)
 #ifdef LEAGUE_SUPPORT
 
 static void 
-umpire_speak(msg)
-    char   *msg;
+umpire_speak(char *msg)
 {
     pmessage(msg, -1, MALL, UMPIRE);
 }
 
 static void 
-talk_about_team(team, type)
-    struct league_team *team;
-    char   *type;
+talk_about_team(struct league_team *team, char *type)
 {
     char    buf[120];
     struct player *captain;
@@ -1440,8 +1405,7 @@ talk_about_team(team, type)
 }
 
 static int 
-team_really_ready(team)
-    struct league_team *team;
+team_really_ready(struct league_team *team)
 {
     if (team->index < 0) {
 	respond("You haven't chosen an empire", 1);
@@ -1455,13 +1419,8 @@ team_really_ready(team)
 }
 
 void 
-trydefect(victim, dest, destname, from, fromname, actor)
-    struct player *victim;
-    enum HomeAway dest;
-    char   *destname;
-    enum HomeAway from;
-    char   *fromname;
-    struct player *actor;
+trydefect(struct player *victim, enum HomeAway dest, char *destname, 
+          enum HomeAway from, char *fromname, struct player *actor)
 {
     char    buf[120];
     struct league_team *fromteam =
@@ -1524,8 +1483,7 @@ trydefect(victim, dest, destname, from, fromname, actor)
 }
 
 static int 
-parse_league(subcommand)
-    char   *subcommand;
+parse_league(char *subcommand)
 {
     struct league_team *myteam, *otherteam;
     char   *teamtype;
@@ -2128,9 +2086,7 @@ parse_league(subcommand)
  */
 
 int 
-parse_command_mess(str, who)
-    char   *str;
-    unsigned char who;
+parse_command_mess(char *str, unsigned char who)
 {
     char    buf[120];
     char   *nexttoken;

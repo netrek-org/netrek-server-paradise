@@ -35,8 +35,6 @@ suitability of this software for any purpose.  This software is provided
 #include "struct.h"
 #include "data.h"
 
-extern void (*r_signal()) ();
-
 extern struct planet *planets;
 
 #define COS(x) ((x) >= 0.0 ? Cosine[(int)(x)] : Cosine[(int)(-(x))])
@@ -61,7 +59,7 @@ int     planeti, planetj;
 
 
 void
-pinit()
+pinit(void)
 {
     double  dx, dy;
     int     i, j;
@@ -134,7 +132,7 @@ pinit()
 
 /* call once per second */
 void
-pmove()
+pmove(void)
 {
     int     i, j;
     double  dir;

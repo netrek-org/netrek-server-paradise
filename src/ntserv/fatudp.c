@@ -68,7 +68,8 @@ FAT_LIST fatlist[MAX_FAT_LIST], tmplist[MAX_FAT_LIST];
 #define MAX_NONFAT	10	/* if we have this much left, stop */
 
 
-void reset_fat_list()
+void
+reset_fat_list(void)
 {
     int	i;
     for (i = 0; i < MAX_FAT_LIST; i++)
@@ -89,8 +90,7 @@ void reset_fat_list()
  * This routine looks too complex... there must be a simpler way to do this.
  */
 void 
-dequeue(fatp)
-    FAT_NODE *fatp;
+dequeue(FAT_NODE *fatp)
 {
     int     i;
 
@@ -161,9 +161,7 @@ dequeue(fatp)
  * sent.
  */
 void 
-enqueue(fatp, list)
-    FAT_NODE *fatp;
-    int     list;
+enqueue(FAT_NODE *fatp, int list)
 {
 #ifdef FATDIAG
     printf("added to tmplist %d\n", list);	/* FATDIAG */
@@ -184,10 +182,9 @@ enqueue(fatp, list)
 /*
  * This updates the "fat" tables; it's called from sendClientData().
  */
+/* pick a random type for the packet */
 void 
-updateFat(packet)
-/* Pick a random type for the packet */
-    struct player_spacket *packet;
+updateFat(struct player_spacket *packet)
 {
     FAT_NODE *fatp;
     struct kills_spacket *kp;
@@ -299,7 +296,7 @@ updateFat(packet)
  * will never go away though.
  */
 int
-fatten()
+fatten(void)
 {
     int     bytesleft;
     FAT_NODE *fatp, *nextfatp;
@@ -359,7 +356,7 @@ done:
  * fat queues, where they will be eligible for fattening next transmission.
  */
 void 
-fatMerge()
+fatMerge(void)
 {
     int     i;
 

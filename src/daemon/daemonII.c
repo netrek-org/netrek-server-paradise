@@ -60,21 +60,7 @@ char binary[] = "@(#)daemonII";
                        }
 /*--------------------------FUNCTION PROTOTYPES---------------------------*/
 
-typedef void sig_ret_t;
-
-void    move();
-sig_ret_t reaper();
-sig_ret_t setflag();
-sig_ret_t freemem();
-char   *getenv();
-char   *twoletters();
-void    starttimer();
-void    stoptimer();
-void    printdaemonIIUsage();
-void check_load();
-void teamtimers();
-void shipbuild_timers();
-extern void (*r_signal()) ();
+typedef void sig_ret_t;	/* replace by RETSIGTYPE from config.h.in */
 
 /*------------------------------------------------------------------------*/
 
@@ -131,9 +117,7 @@ files are to be found.  Kurt added this to make things a hell of a lot
 easier.  */
 
 int
-main(argc, argv)
-    int     argc;
-    char  **argv;
+main(int argc, char **argv)
 {
     register int i;		/* looping var */
     int     jjk;		/* looping var */
@@ -430,13 +414,13 @@ printdaemonIIUsage(char *myname)
 
 /* signal handler for SIGALRM */
 sig_ret_t
-setflag()
+setflag(void)
 {
     doMove = 1;
 }
 
 void 
-starttimer()
+starttimer(void)
 {
     struct itimerval udt;
 
@@ -448,7 +432,7 @@ starttimer()
 }
 
 void 
-stoptimer()
+stoptimer(void)
 {
     struct itimerval udt;
 
@@ -461,7 +445,7 @@ stoptimer()
 
 #ifdef LEAGUE_SUPPORT
 static void 
-handle_pause_goop()
+handle_pause_goop(void)
 {
     if (status2->paused) {
 	if (!status2->home.desirepause && !status2->away.desirepause) {
@@ -515,7 +499,7 @@ handle_pause_goop()
 a second.  It decides which  functions of the deamon need to be run.  */
 
 void
-move()
+move(void)
 {
     static int oldtourn = 0;	/* are we in t-mode or not */
     int     i, j;		/* looping vars */
@@ -770,8 +754,7 @@ move()
 
 
 sig_ret_t
-freemem(sig)
-    int     sig;
+freemem(int sig)
 {
     register int i;
     register struct player *j;
@@ -801,7 +784,7 @@ freemem(sig)
 
 
 void
-check_load()
+check_load(void)
 {
 #ifndef sys_hpux	/* breaks under hpux... it's fixable, though */
     FILE   *fp, *popen();
@@ -858,8 +841,7 @@ check_load()
 }
 
 void
-ghostmess(victim)
-    struct player *victim;
+ghostmess(struct player *victim)
 {
     char    buf[80];
     static float ghostkills = 0.0;
@@ -891,8 +873,7 @@ ghostmess(victim)
 }
 
 void
-saveplayer(victim)
-    struct player *victim;
+saveplayer(struct player *victim)
 {
     int     fd;
     char   *paths;
@@ -923,10 +904,7 @@ saveplayer(victim)
 /* CRD feature: number (or -1) for starting planet - MAK,  2-Jun-93 */
 
 void
-rescue(team, target, planet)
-    int     team;
-    int     target;
-    int     planet;
+rescue(int team, int target, int planet)
 {
     char   *arg1, argp[5];
     int     pid;
@@ -1015,7 +993,7 @@ rescue(team, target, planet)
 /* Don't fear the ... */
 
 sig_ret_t
-reaper(sig)
+reaper()
 {
     static int status;
     static int pid;
@@ -1033,8 +1011,7 @@ reaper(sig)
 }
 
 unsigned char 
-getcourse(x, y, xme, yme)
-    int     x, y, xme, yme;
+getcourse(int x, int y, int xme, int yme)
 {
     return ((unsigned char) (int) (atan2((double) (x - xme),
 				     (double) (yme - y)) / 3.14159 * 128.));
@@ -1043,7 +1020,7 @@ getcourse(x, y, xme, yme)
 int     tm_robots[MAXTEAM + 1];	/* To limit the number of robots */
 
 void
-teamtimers()
+teamtimers(void)
 {
     register int i;
     for (i = 0; i <= MAXTEAM; i++) {
@@ -1053,7 +1030,7 @@ teamtimers()
 }
 
 void
-shipbuild_timers()
+shipbuild_timers(void)
 {
     int     i, t;
 

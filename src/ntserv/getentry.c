@@ -29,41 +29,15 @@ suitability of this software for any purpose.  This software is provided
 
 extern int overload;		/* 7/31/91 TC let overloaded join any team */
 
-extern int updateShips();
-extern int sendMaskPacket();
-int     tournamentMask();
-extern int briefUpdateClient();
-extern int flushSockBuf();
-extern int socketPause();
-extern int readFromClient();
-extern int isClientDead();
-extern int exitGame();
-extern int closeUdpConn();
-extern unsigned int sleep();
-extern int connectToClient();
-extern int updateSelf();
-extern int sendPickokPacket();
-extern int allowed_ship();
-extern int time_access();
-int     deadTeam();
-int     realNumShips();
-
-#if 1
-
 void 
-detourneyqueue()
+detourneyqueue(void)
 {
     me->p_status = POUTFIT;
     me->p_whydead = KPROVIDENCE;
 }
 
-#endif
-
-
 void 
-getEntry(team, stype)
-    int    *team;
-    int    *stype;
+getEntry(int *team, int *stype)
 {
 
 
@@ -229,9 +203,7 @@ getEntry(team, stype)
 teams that the player can join.  */
 
 int 
-leaguemask(ishome, idx)
-    int     ishome;		/* team index */
-    int     idx;
+leaguemask(int ishome, int idx)
 {
 #ifdef LEAGUE_SUPPORT
     if (status2->league == 1)
@@ -242,8 +214,7 @@ leaguemask(ishome, idx)
 }
 
 int 
-tournamentMask(team)
-    int     team;		/* players current team */
+tournamentMask(int team)
 {
     int     i;			/* looping var */
     int     team1, team2;	/* for getting two possible teams */
@@ -339,8 +310,7 @@ tournamentMask(team)
 count of all the ships on a team that are not PFREE.  */
 
 int 
-realNumShips(owner)
-    int     owner;		/* the team to check for */
+realNumShips(int owner)		/* the team to check for */
 {
     int     i;			/* looping var */
     int     num;		/* to hold ship count */
@@ -365,8 +335,7 @@ realNumShips(owner)
 a 1 if the team has no planets, and a 0 if they have at least one planet. */
 
 int 
-deadTeam(owner)
-    int     owner;		/* team to check for */
+deadTeam(int owner)		/* team to check for */
 {
     int     i;			/* looping var */
     struct planet *p;		/* to point to a planets */

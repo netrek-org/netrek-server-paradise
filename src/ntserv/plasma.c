@@ -38,10 +38,11 @@ see if it is allowable to fire a plasma torp.  If so the the plasma if fire.
 The two styles of plasma torp are ones that fire in the direction the
 ship is going and ones that can fire independent of the ships direction.  */
 
+/* args:
+    unsigned char course;	direction plasma should go
+    int     type;		type of plasma */
 void 
-nplasmatorp(course, type)
-    unsigned char course;	/* direction plasma should go */
-    int     type;		/* type of plasma */
+nplasmatorp(unsigned char course, int type)
 {
     register int i;		/* looping var */
     register struct plasmatorp *k;	/* to point to plasma torp */

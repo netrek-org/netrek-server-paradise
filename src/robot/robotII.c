@@ -37,12 +37,6 @@ char binary[] = "@(#)robotII";
 #include "shmem.h"
 #include "grid.h"
 
-extern void (*r_signal()) ();
-
-void config();
-int findrslot();
-int enter();
-
 struct itimerval udt;
 extern int redrawall;		/* maint: missing "extern" 6/22/92 TC */
 extern int lastm;		/* maint: missing "extern" 6/22/92 TC */
@@ -96,7 +90,7 @@ char   *rnames[6] = {"M5", "Colossus", "Guardian", "HAL", "DreadPirate Bob",
 
 #ifdef ROBOTSTATS
 void 
-do_robot_login()
+do_robot_login(void)
 {
     int     plfd, position, entries;
     char   *path;
@@ -149,7 +143,7 @@ do_robot_login()
 }
 
 void 
-save_robot()
+save_robot(void)
 {
     int     fd;
     char   *path;
@@ -167,9 +161,7 @@ save_robot()
 }
 #endif
 
-int main(argc, argv)
-    int     argc;
-    char  **argv;
+int main(int argc, char **argv)
 {
     register int i;
     int     rmove();
@@ -421,7 +413,8 @@ int main(argc, argv)
     return 0;
 }
 
-int findrslot()
+int
+findrslot(void)
 {
     register int i;
 
@@ -449,15 +442,14 @@ int findrslot()
 }
 
 void 
-warning(mess)
-    char   *mess;
+warning(char *mess)
 {
     if (debug)
 	fprintf(stderr, "warning: %s\n", mess);
 }
 
 void
-config()
+config(void)
 {
     /* calc class-specific stuff */
 

@@ -198,7 +198,7 @@ variable so that the corresponding peace message series can be printed.  */
 
 
 void 
-warmessage()
+warmessage(void)
 {
     int     i;			/* to hold index */
     int     n;			/* number of messages in a series */
@@ -222,7 +222,7 @@ warmessage()
 variable series to decide which message series to print.  */
 
 void 
-peacemessage()
+peacemessage(void)
 {
     int     i;			/* to hold index */
     int     n;			/* number of messages in a series */
@@ -244,8 +244,7 @@ peacemessage()
 same and the slot is not free, then the ship is counted.  */
 
 int 
-realNumShips(owner)
-    int     owner;
+realNumShips(int owner)
 {
     int     i, num;		/* for looping and counting */
     struct player *p;		/* to point to a player */
@@ -266,7 +265,7 @@ or more teams have enough players for t-mode.  It returns a 0 for no team
 mode.  */
 
 int 
-tournamentMode()
+tournamentMode(void)
 {
 #ifdef LEAGUE_SUPPORT
     if (status2->league) {
@@ -385,12 +384,13 @@ tournamentMode()
 in the next position of the array of messages.  The message will ahve a
 header attached to the front of it.  */
 
+/* args:
+    char   *str;		 the message
+    int     recip;		 who is the recipient
+    int     group;		 group sent to and other flags
+    char   *address;		 the header attached to front */
 void 
 pmessage(str, recip, group, address)
-    char   *str;		/* the message */
-    int     recip;		/* who is the recipient */
-    int     group;		/* group sent to and other flags */
-    char   *address;		/* the header attached to front */
 {
     struct message *cur;	/* to pnt to where to put message */
     int     mesgnum;		/* to hold index into array of messgs */
@@ -413,9 +413,7 @@ pmessage(str, recip, group, address)
    */
 
 void 
-god2player(str, pno)
-    char   *str;
-    int     pno;
+god2player(char *str, int pno)
 {
     struct message *cur;	/* to pnt to where to put message */
 
@@ -439,7 +437,7 @@ god2player(str, pno)
 look at it later.  It is used to record messages to god.  */
 
 void 
-log_message(char * who, char * info, char * str)
+log_message(char *who, char *info, char *str)
 {
     char   *path;
     FILE   *logfile;
@@ -469,7 +467,7 @@ if the keyword 'GOD' is at the first of the message.  If it is, then the
 message is written to the logfile so the server god can read it.  */
 
 void 
-parse_godmessages()
+parse_godmessages(void)
 {
     static int lastparsed = 0;		/* keeps track of last message */
 

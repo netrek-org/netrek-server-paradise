@@ -107,8 +107,8 @@ size_t	client_packet_sizes[] = {
 
 #define num_cpacket_sizes	sizeof(client_packet_sizes)/sizeof(*client_packet_sizes)
 
-int size_of_cpacket(pkt)
-     void	*pkt;
+int
+size_of_cpacket(void *pkt)
 {
     CARD8	type;
     CARD8	subtype;
@@ -256,8 +256,8 @@ int vtisize[9] =
 {4, 7, 9, 11, 13, 16, 18, 20, 22};	/* 4 byte Header + torpdata */
 
 
-static int padto4(sz)
-     int	sz;
+static int
+padto4(int sz)
 {
     return (sz%4) ? (sz/4+1)*4 : sz;
 
@@ -265,8 +265,7 @@ static int padto4(sz)
 #endif
 
 int 
-size_of_spacket(pkt)
-    unsigned char *pkt;
+size_of_spacket(unsigned char *pkt)
 {
   switch(pkt[0]) {
     case SP_GPARAM:

@@ -27,8 +27,6 @@ suitability of this software for any purpose.  This software is provided
 #include "packets.h"
 #include "util.h"
 
-void    updateWarnings();
-
 #define WQLEN 8
 #define WARN_GAP 300000		/* microseconds */
 
@@ -55,8 +53,7 @@ be a maximum of 79 characters plus the delimiter.  */
 
 
 void 
-warning(text)
-    char   *text;		/* the warning string */
+warning(char *text)	/* warning string */
 {
     struct warning_spacket warn;/* warning packet to send warning in */
     struct warning_spacket *wp;
@@ -101,7 +98,7 @@ warning(text)
 send one when enough time has gone by */
 
 void 
-updateWarnings()
+updateWarnings(void)
 {
     if (!numw)
 	return;			/* nothing queued */
@@ -123,8 +120,7 @@ updateWarnings()
    that are sent more frequently then the time interval allows. */
 
 void 
-imm_warning(text)
-    char   *text;
+imm_warning(char *text)
 {
     struct warning_spacket warn;
 

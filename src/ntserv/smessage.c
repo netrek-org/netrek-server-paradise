@@ -26,24 +26,19 @@ suitability of this software for any purpose.  This software is provided
 #include "data.h"
 #include "shmem.h"
 
-/*int parse_control_mess();*/
-
-
 /*-----------------------------VISIBLE FUNCTIONS--------------------------*/
 
 /*---------------------------------PMESSAGE-------------------------------*/
 /*  This function sends a message.  It marks a message as being sent from
 God.  */
 
-
-void     pmessage2();
-
+/* args:
+    char   *str;		the message
+    int     recip;		who will receive it
+    int     group;		the group (type of recipient)
+    char   *address;		attached to front of message */
 void 
-pmessage(str, recip, group, address)
-    char   *str;		/* the message */
-    int     recip;		/* who will receive it */
-    int     group;		/* the group (type of recipient) */
-    char   *address;		/* attached to front of message */
+pmessage(char *str, int recip, int group, char *address)
 {
     pmessage2(str, recip, group, address, 255);
 }
@@ -55,13 +50,14 @@ pmessage(str, recip, group, address)
 /*  This function sends a message.  It places the message in the array of
 messages.  */
 
+/* args:
+    char   *str;		the message
+    int     recip;		who will receive it
+    int     group;		the group (type of recipient)
+    char   *address;		attached to front of message
+    unsigned char from;		who the message is from */
 void
-pmessage2(str, recip, group, address, from)
-    char   *str;		/* the message */
-    int     recip;		/* who will receive it */
-    int     group;		/* the group (type of recipient) */
-    char   *address;		/* attached to front of message */
-    unsigned char from;		/* who the message is from */
+pmessage2(char *str, int recip, int group, char *address, unsigned char from)
 {
     struct message *cur;	/* to point to where to put message */
     int     mesgnum;		/* to hold index number in message array */

@@ -36,10 +36,11 @@ suitability of this software for any purpose.  This software is provided
 /*  This function gets the particular ship type the player wants.  It takes
 the ship values from the shipvals array.  */
 
+/* args:
+   shipp: ship structure to load
+   s_type: type of ship to get */
 void 
-getship(shipp, s_type)
-    struct ship *shipp;		/* the ship structure to load */
-    int     s_type;		/* the type of ship to get */
+getship(struct ship *shipp, int s_type)
 {
     memcpy((char *) shipp, (char *) &(shipvals[s_type]), sizeof(struct ship));
 }
@@ -53,9 +54,7 @@ getship(shipp, s_type)
 
 
 void 
-get_ship_for_player(me, s_type)
-    struct player *me;
-    int     s_type;
+get_ship_for_player(struct player *me, int s_type)
 {
     getship(&me->p_ship, s_type);
 

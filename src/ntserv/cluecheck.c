@@ -30,8 +30,8 @@ suitability of this software for any purpose.  This software is provided
 
 static char	clueword[40];
 
-void set_clue_word(word)
-     char	*word;
+void
+set_clue_word(char *word)
 {
   strncpy(clueword, word, sizeof(clueword));
   clueword[sizeof(clueword)-1] = 0;
@@ -40,13 +40,11 @@ void set_clue_word(word)
 #ifdef MOTD_SUPPORT
 static char	*motdstring=0;
 static int	motdlen=0;
-
-void free_motdstruct();
 #endif
 
 /* read the MOTD into core so we can parse it later */
-void init_motdbuf(fname)
-    char	*fname;
+void
+init_motdbuf(char *fname)
 {
 #ifdef MOTD_SUPPORT
     struct stat	stats;
@@ -111,7 +109,8 @@ struct page	*motdhead=0;
 
 
 #define MAXATTEMPTS	10
-void find_suitable_motd_word()
+void
+find_suitable_motd_word(void)
 {
     int	attempts;
     int	pagecount;
@@ -213,7 +212,8 @@ void printout_motd()
 #endif
 
 
-void parse_motd()
+void
+parse_motd(void)
 {
     struct page **currp;
     int	idx;
@@ -303,7 +303,7 @@ char **phrases=0;
 int	num_phrases=0;
 
 void
-parse_clue_phrases()
+parse_clue_phrases(void)
 {
     char	*s;
     int	size;
@@ -329,7 +329,8 @@ parse_clue_phrases()
 #define BERATE(msg)	pmessage( (msg), me->p_no, MINDIV, "   CC")
 
 /* print the message that tells the person how to respond to the clue check */
-void remind_cluecheck()
+void
+remind_cluecheck(void)
 {
     char	buf[120];
     BERATE("This is a clue check!  You must send yourself the message");
@@ -389,7 +390,8 @@ static char *fallback_cluewords[] = {
 
 /* Once in a great while (hour?) the server demands a clue check from
    the player.  This makes sure you are paying attention. */
-void demand_clue()
+void
+demand_clue(void)
 {
     clueword[0] = 0;
     page = -1;
@@ -420,7 +422,8 @@ void demand_clue()
 }
 
 /* every tick, check the person's clue status */
-void countdown_clue()
+void
+countdown_clue(void)
 {
     if (me->p_status==POUTFIT || me->p_status==PTQUEUE)
 	return;
@@ -457,8 +460,8 @@ void countdown_clue()
 }
 
 /* the person sent themselves the message "cluecheck..." */
-int accept_cluecheck(word)
-    char	*word;
+int
+accept_cluecheck(char *word)
 {
   int	i;
   char	buf[120];
@@ -497,14 +500,14 @@ int accept_cluecheck(word)
 /**********************************************************************/
 
 #ifdef MOTD_SUPPORT
-void free_word(wd)
-    struct word *wd;
+void 
+free_word(struct word *wd)
 {
   free(wd->s);
 }
 
-void free_line(ln)
-    struct line *ln;
+void
+free_line(struct line *ln)
 {
   int	i;
   for (i=0; i<ln->nwords; i++)
@@ -512,8 +515,8 @@ void free_line(ln)
   free(ln->words);
 }
 
-void free_page(pg)
-    struct page *pg;
+void
+free_page(struct page *pg)
 {
   int	i;
   for (i=0; i<LINESPERPAGE; i++) {
@@ -521,7 +524,8 @@ void free_page(pg)
   }
 }
 
-void free_motdstruct()
+void 
+free_motdstruct(void)
 {
     struct page	*temp;
     while (motdhead) {
@@ -576,13 +580,15 @@ static char *fallback_cluewords[] = {
 
 /* -------------------------[ Functions ]------------------------- */
 
-void set_clue_word(char *word)
+void
+set_clue_word(char *word)
 {
   strncpy(clueword, word, sizeof(clueword));
   clueword[sizeof(clueword)-1] = 0;
 }
 
-void parse_clue_phrases()
+void 
+parse_clue_phrases(void)
 {
     char    *s;
     int    size;
@@ -605,7 +611,8 @@ void parse_clue_phrases()
 /*
 // print the message that tells the person how to respond to the clue check
 */
-void remind_cluecheck()
+void
+remind_cluecheck(void)
 {
     char    buf[120];
 
@@ -630,7 +637,8 @@ void remind_cluecheck()
 }
 
 /* called the first time */
-void demand_clue()
+void
+demand_clue(void)
 {
     char    buf[255];
     char    syou[32];
@@ -667,7 +675,8 @@ void demand_clue()
 
 
 /* every tick, check the person's clue status */
-void countdown_clue()
+void
+countdown_clue(void)
 {
     if (me->p_cluecountdown != -1) {
         if (me->p_status==POUTFIT
@@ -730,7 +739,8 @@ void countdown_clue()
 // the person sent themselves the message "cluecheck..."
 // called in controls (message.c)
 */
-int accept_cluecheck(char *word)
+int
+accept_cluecheck(char *word)
 {
     int     i;
     char    buf[120];

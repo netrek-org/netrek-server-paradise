@@ -35,11 +35,8 @@ checked to see if the phaser should be allowed to fire.  If the player can
 fire then, a player is found in the direction the phaser was fired.  */
 
 
-/* extern int angdist(); */
-
 void 
-phaser(course)
-    unsigned char course;
+phaser(unsigned char course)
 {
     int i;		/* looping var */
     struct player *j, *target=0;	/* to hold player found */

@@ -65,7 +65,8 @@ static char *systemtypes[SHIPS_SYSTEMS] = {
 
 /*-----------------------------INTERNAL FUNCTIONS-------------------------*/
 
-static void load_clue_phrases()
+static void 
+load_clue_phrases(void)
 {
     char	*path;
     FILE	*fp;
@@ -101,15 +102,14 @@ the file and matches one of the strings in the array, then the corresponding
 element in the parameter 'array' is set to 1.  All keys must be of the
 same length.  */
 
-
-
+/* args:
+    char   *type;		 Used to specify the type for err messages
+    char   *string;		 the string to parse.
+    char  **keys;		 the array of key strings
+    int    *array;		 the array tofill with 1's
+    int     max;		 the size of the array */
 void 
-readstrings(type, string, keys, array, max)
-    char   *type;		/* Used to specify the type for err messages */
-    char   *string;		/* the string to parse. */
-    char  **keys;		/* the array of key strings */
-    int    *array;		/* the array tofill with 1's */
-    int     max;		/* the size of the array */
+readstrings(char *type, char *string, char **keys, int *array, int max)
 {
     int     i;			/* looping var */
 
@@ -136,10 +136,7 @@ readstrings(type, string, keys, array, max)
 
 /* modifies flagp to return result */
 void 
-read_longflags(flagp, str, names)
-    long   *flagp;
-    char   *str;
-    char  **names;
+read_longflags(long *flagp, char *str, char **names)
 {
     char    buf[80];
 
@@ -176,9 +173,7 @@ into the shipvals so that the next time getship is called, the new values
 will be used.  */
 
 void 
-shipdefs(s, f)
-    int     s;			/* ship number */
-    FILE   *f;			/* file to load from */
+shipdefs(int s, FILE *f)
 {
     struct ship *currship = shipvals + s;
     char    buf[256];		/* to get a string from file */
@@ -254,7 +249,7 @@ shipdefs(s, f)
 
 /*--------------------------------------------------------------------------*/
 void 
-initteamvals()
+initteamvals(void)
 {
     strcpy(teams[NOBODY].nickname, "Independent");
     strcpy(teams[NOBODY].name, "Independents");
@@ -384,7 +379,7 @@ defaults are set and if the file contains keywords with different settings
 then they are changed.  */
 
 void 
-readsysdefaults()
+readsysdefaults(void)
 {
     int     i;			/* looping var */
     FILE   *f;			/* to open sysdefaults file */
@@ -726,7 +721,7 @@ readsysdefaults()
 zero is returned.  */
 
 int 
-update_sys_defaults()
+update_sys_defaults(void)
 {
     struct stat newstat;
     static char   *paths = NULL;		/* to hold full pathname */

@@ -30,9 +30,8 @@ char   *names[] = {"Neutral", "Fed", "Rom", "", "Kli", "", "", "", "Ori"};
 void Usage(char *myname);
 void pmessage();
 
-int main(argc, argv)
-    int     argc;
-    char  **argv;
+int
+main(int argc, char *argv)
 {
     int     i;
     int     pno;
@@ -225,7 +224,8 @@ int main(argc, argv)
     return 0;
 }
 
-void Usage(char *myname)
+void
+Usage(char *myname)
 {
     printf("-- NetrekII (Paradise), %s --\n", PARAVERS);
     printf("\
@@ -273,15 +273,12 @@ twoletters(pl)
 
 
 /*------------------------------PMESSAGE----------------------------------*/
-/*  This function sens a message to the message board.  It places the message
+/*  This function sends a message to the message board.  It places the message
 in the next position of the array of messages.  The message will ahve a
 header attached to the front of it.  */
 
 void 
-pmessage(str, recip, group)
-    char   *str;		/* the message */
-    int     recip;		/* who is the recipient */
-    int     group;		/* group sent to and other flags */
+pmessage(char *str, int recip, int group)
 {
     struct message *cur;	/* to pnt to where to put message */
     int     mesgnum;		/* to hold index into array of messgs */

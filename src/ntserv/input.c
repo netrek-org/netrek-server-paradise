@@ -35,27 +35,15 @@ express or implied warranty.
 
 static int sendflag = 0;
 
-extern int intrupt();
-extern void start_interruptor();
-extern int isClientDead();
-int     reconnect();
-extern int readFromClient();
-extern void stop_interruptor();
-extern int exitGame();
-extern int closeUdpConn();
-extern unsigned int sleep();
-extern int connectToClient();
-extern void (*r_signal()) ();
-
 void 
-setflag()
+setflag(void)
 {
     sendflag = 1;
 }
 
 
 void 
-input()
+input(void)
 {
     fd_set  readfds;
 
@@ -113,7 +101,7 @@ input()
 }
 
 int 
-reconnect()
+reconnect(void)
 {
     int     i;
 

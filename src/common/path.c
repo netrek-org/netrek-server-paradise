@@ -27,9 +27,8 @@ char    netrekpath[256] = "/local/lib/paradise";
 static char buf[512];
 static int initted = 0;
 
-char   *
-build_path(suffix)
-    char   *suffix;
+char *
+build_path(char *suffix)
 {
     int     len;
     if (!initted) {
