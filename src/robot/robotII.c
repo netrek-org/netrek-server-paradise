@@ -71,21 +71,17 @@ int     runfast;		/* run speed (gain etemp) */
 int     closeslow;		/* approach speed (hard turn) */
 int     closefast;		/* approach speed (soft turn) */
 
-static char *rnames[6] = 
-{
+static char *rnames[6] = {
   "M5", "Colossus", "Guardian", "HAL", "DreadPirate Bob", "TERMINATOR"
 };
 
-static void 
-do_robot_login(void)
-{
+static void do_robot_login(void) {
   int     plfd, position, entries;
   char   *path;
   struct statentry player;
   struct stat buf;
 
-  if(configvals->robot_stats)
-  {
+  if(configvals->robot_stats) {
     path = build_path(PLAYERFILE);
     plfd = open(path, O_RDONLY, 0);
     if (plfd < 0) {
@@ -105,6 +101,7 @@ do_robot_login(void)
 	}
 	position++;
     }
+
     /* Not in there, so create it */
     strcpy(player.name, pseudo);
     strcpy(player.password, "*");	/* an invalid password to prevent
@@ -119,7 +116,7 @@ do_robot_login(void)
 		argv0, errno);
 	me->p_pos = -1;
 	return;
-    }
+    } 
     else {
 	fstat(plfd, &buf);
 	entries = buf.st_size / sizeof(struct statentry);
@@ -137,19 +134,13 @@ do_robot_login(void)
    ntserv, which would hose things up pretty good.  Since the robot isn't
    interested in warnings from the server, we define a null function
    here instead. */
-void
-warning(char *t)
-{
-}
+void warning(char *t) { }
 
-void 
-save_robot(void)
-{
+void save_robot(void) {
   int     fd;
   char   *path;
 
-  if(configvals->robot_stats)
-  {
+  if(configvals->robot_stats) {
     if (me->p_pos < 0)
 	return;
     path = build_path(PLAYERFILE);
@@ -163,9 +154,7 @@ save_robot(void)
   }
 }
 
-void
-config(void)
-{
+void config(void) {
     /* calc class-specific stuff */
 
     phrange = PHASEDIST * me->p_ship.s_phaser.damage / 100;
@@ -295,9 +284,7 @@ config(void)
     }
 }
 
-int
-main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     register int i;
     int     team = -1;
     int     bteam=0;
@@ -319,6 +306,7 @@ main(int argc, char **argv)
     }
 
     target = -1;		/* no target 7/27/91 TC */
+
     for (; argc > 1 && argv[1][0] == '-'; argc--, argv++) {
 	switch (argv[1][1]) {
 	case 'S':
@@ -360,17 +348,18 @@ main(int argc, char **argv)
 	    break;
 	case 'c':		/* ship class */
 	    {
-		char    cstr[NUM_TYPES + 1];
+	        char    cstr[NUM_TYPES + 1];
 
-		for (class = 0; class <= NUM_TYPES; class++) {
+	        for (class = 0; class <= NUM_TYPES; class++) {
 		    if (class == NUM_TYPES) {
-			cstr[NUM_TYPES] = 0;
-			fprintf(stderr, "Unknown ship class, must be one of [%s].\n", cstr);
-			exit(1);
+		        cstr[NUM_TYPES] = 0;
+		        fprintf(stderr, 
+			    "Unknown ship class, must be one of [%s].\n", cstr);
+		        exit(1);
 		    }
 		    if (argv[1][2] == shipvals[class].s_letter)
-			break;
-		    cstr[class] = shipvals[class].s_letter;
+		        break;
+	            cstr[class] = shipvals[class].s_letter;
 		}
 	    }
 	    break;
@@ -397,7 +386,8 @@ main(int argc, char **argv)
 		team = 4;
 		bteam = FED | ROM | KLI | ORI;	/* don't like anybody */
 		break;
-	    case 't':{
+	    case 't':
+		{
 		    char    c;
 		    c = argv[1][3];
 
@@ -419,16 +409,16 @@ main(int argc, char **argv)
 		}		/* end case 't' */
 		break;
 	    default:
-		fprintf(stderr, "Unknown team type.  Usage -Tx where x is [frko]\n");
+		fprintf(stderr, 
+		    "Unknown team type.  Usage -Tx where x is [frko]\n");
 		exit(1);
 	    }			/* end switch argv */
 	    break;
 	default:
-	    fprintf(stderr, "Unknown option '%c' (must be one of: bcdfpsFPT)\n", argv[1][1]);
+	    fprintf(stderr, 
+		"Unknown option '%c' (must be one of: bcdfpsFPT)\n", argv[1][1]);
 	    exit(1);
 	}			/* end switch argv[1][1] */
-
-
     }				/* end for */
 
     /* init ranks */
@@ -499,9 +489,10 @@ main(int argc, char **argv)
 
     if (practice)
 	me->p_flags |= PFPRACTR;/* Mark as a practice robot */
-    r_signal(SIGALRM, rmove);
 
+    r_signal(SIGALRM, rmove);
     config();
+
     if (practice) {
 	udt.it_interval.tv_sec = 1;	/* Robots get to move 1/sec */
 	udt.it_interval.tv_usec = 000000;
@@ -510,14 +501,17 @@ main(int argc, char **argv)
 	udt.it_interval.tv_sec = 0;	/* Robots get to move 2/sec */
 	udt.it_interval.tv_usec = 500000;
     }
+
     udt.it_value.tv_sec = 1;
     udt.it_value.tv_usec = 0;
+
     if (setitimer(ITIMER_REAL, &udt, 0) < 0) {
 	perror("setitimer");
 	me->p_status = PFREE;	/* Put robot in game */
 	move_player(me->p_no, -1, -1, 1);
 	exit(1);
     }
+
     /* allows robots to be forked by the daemon on some systems */
     {
       sigset_t unblock_everything;
@@ -542,7 +536,8 @@ main(int argc, char **argv)
     }
     if (!fleet) {
 	for (i = 0; i < MAXPLAYER; i++) {
-	    if ((players[i].p_status == PALIVE) && (players[i].p_team == bteam)) {
+	    if ((players[i].p_status == PALIVE) 
+		&& (players[i].p_team == bteam)) {
 		if (debug)
 		    fprintf(stderr, "Galaxy already defended\n");
 		players[pno].p_status = PFREE;

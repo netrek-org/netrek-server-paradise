@@ -43,6 +43,12 @@ void config P((void));
 #define AVOID_TIME		4
 #define AVOID_CLICKS		200
 
+/*
+   STARTDELTA was moved from rmove() - no idea why it was there
+   In fact, I have no idea where this #define is used - 04/11/00 JWW
+*/
+#define STARTDELTA 5000		/* ships appear +/- delta of home planet */
+
 #define BOREDOM_TIME		1200	/* 10 minutes since last torp fired
 					   => become hostile to all 4/13/92
 					   TC */
@@ -769,34 +775,38 @@ exitRobot(void)
 	    messAll(buf);
 	}
 	else {
-/*	    sprintf(buf, "%s %s (%s) leaving the game (%.16s@%.16s)",
-		    ranks[me->p_stats.st_rank].name,
-		    me->p_name,
-		    me->p_mapchars,
-		    me->p_login,
-		    me->p_monitor);
-	    messAll(buf);*/
+	    sprintf(buf, "%s %s (%s) leaving the game (%.16s@%.16s)",
+		ranks[me->p_stats.st_rank].name,
+		me->p_name,
+		twoletters(me),
+		me->p_login,
+		me->p_monitor);
+	    messAll(buf);
 	}
     }
 
     if(configvals->robot_stats)
       save_robot();
 
+    if (debug)
+	fprintf(stderr, "%s is exiting.  Have a nice day.\n", twoletters(me));
+
+    /* Set flags and move robot before getting rid of it. 04/11/00 JWW */
+    me->p_status = PFREE;
+    move_player(me->p_no, -1,-1, 1);
+
+    /* 
+       Something about Terminators hangs up the slot when a human
+       tries to log in on that slot, so...
+    */
     strcpy(buf, me->p_name);
-    /* something about Terminators hangs up the slot when a human */
-    /* tries to log in on that slot, so... */
     memset(me, 0, sizeof(struct player));	/* confusion 8/5/91 TC */
     strcpy(me->p_name, buf);
-
-/*    me->p_status = PFREE;
-      move_player(me->p_no, -1,-1, 1);
-*/
 
     /*
        all right, so zeroing out p_stats.st_tticks has undesireable side
        effects when the client tries to compute ratings...
     */
-
     me->p_stats.st_tticks = 1;	/* quick fix 3/15/92 TC */
     exit(0);
 }
@@ -826,9 +836,7 @@ rmove(int unused)
 	if (debug)
 	    fprintf(stderr, "Robot: Augh! exploding.\n");
 
-
 	/* hack:  get rid of robot processes! */
-
 	if (1) {
 	    sleep(3);
 	}
@@ -849,9 +857,6 @@ rmove(int unused)
     }
     if (me->p_status == PDEAD) {
 	r_signal(SIGALRM, SIG_IGN);
-/*	me->p_status = PFREE;
-	move_player(me->p_no, -1,-1, 1);
-	exit(0);*/
 	exitRobot();
     }
     /* keep ghostbuster away */
@@ -864,55 +869,58 @@ rmove(int unused)
     }
     if (!timer && !sticky) {
 	r_signal(SIGALRM, SIG_IGN);
-	me->p_status = PFREE;
-	move_player(me->p_no, -1, -1, 1);
-	exit(0);
+	exitRobot();
     }
-    /* if I'm a Terminator, quit if he quits, and quit if he dies and */
-    /* I'm not "sticky" (-s) */
 
+    /* 
+       if I'm a Terminator, quit if he quits, and quit if he dies and
+       I'm not "sticky" (-s)
+    */
     if (target >= 0) {
-	if (players[target].p_status == PFREE) {	/* he went away */
+	/* he went away */
+	if (players[target].p_status == PFREE) {
 	    me->p_status = PEXPLODE;
 	    return;
 	}
-	if ((!sticky) && (players[target].p_status != PALIVE)) {	/* he died */
+	/* he died */
+	if ((!sticky) && (players[target].p_status != PALIVE)) {
 	    me->p_status = PEXPLODE;
 	    return;
 	}
     }
+
     /*
        If it's been BOREDOM_TIME updates since we fired a torp, become
        hostile to all races, if we aren't already, and if we're not a
        practice robot (intended for guardian bots). 4/13/92 TC
     */
-
     if ((clock - lastTorpped > BOREDOM_TIME) && (!practice) && (!hostile) &&
 	(me->p_team != 0)) {
 	messAll("Bored, Bored, Bored.");
 	hostile++;
 	declare_war(ALLTEAM);
     }
+
     /* Our first priority is to phaser plasma torps in nearby vicinity... */
     /* If we fire, we aren't allowed to cloak... */
     no_cloak = phaser_plasmas();
 
     /* Find an enemy */
-
     enemy_buf = get_nearest();
 
-    if ((enemy_buf != NULL) && (enemy_buf != NOENEMY)) {	/* Someone to kill */
+    /* Someone to kill */
+    if ((enemy_buf != NULL) && (enemy_buf != NOENEMY)) {
 	enemy = &players[enemy_buf->e_info];
 	if (((lrand48() % messfuse) == 0) &&
-	    (ihypot(me->p_x - enemy->p_x, me->p_y - enemy->p_y) < 20000)) {
-	    /* change 5/10/21 TC ...neut robots don't message */
+	    (ihypot(me->p_x - enemy->p_x, me->p_y - enemy->p_y) < GWIDTH/10)) {
 	    messfuse = MESSFUSEVAL;
+	    /* change 5/10/21 TC ...neutral robots don't message */
 	    if (me->p_team != 0) {
 		sprintf(towhom, " %s->%s",
-			twoletters(&players[me->p_no]),
-			twoletters(&players[enemy->p_no]));
+		    twoletters(&players[me->p_no]),
+		    twoletters(&players[enemy->p_no]));
 		pmessage2(robo_message(enemy), enemy->p_no,
-			  MINDIV, towhom, me->p_no);
+		    MINDIV, towhom, me->p_no);
 	    }
 	    else if (target >= 0) {
 		/*
@@ -920,10 +928,10 @@ rmove(int unused)
 		   messAll(termie_message(enemy));
 		*/
 		sprintf(towhom, " %s->%s",
-			twoletters(&players[me->p_no]),
-			twoletters(&players[enemy->p_no]));
+		    twoletters(&players[me->p_no]),
+		    twoletters(&players[enemy->p_no]));
 		pmessage2(termie_message(enemy), enemy->p_no,
-			  MINDIV, towhom, me->p_no);
+		    MINDIV, towhom, me->p_no);
 	    }
 	}
 	else if (--messfuse == 0)
@@ -937,13 +945,13 @@ rmove(int unused)
 	    return;
 	}
 	go_home(0);
-/*	if (debug)
-	    fprintf(stderr, "%d) No players in game.\n", me->p_no);*/
+	if (debug)
+	    fprintf(stderr, "%d) No players in game.\n", me->p_no);
 	return;
     }
     else if (enemy_buf == 0) {	/* no one hostile */
-/*	if (debug)
-	    fprintf(stderr, "%d) No hostile players in game.\n", me->p_no);*/
+	if (debug)
+	    fprintf(stderr, "%d) No hostile players in game.\n", me->p_no);
 	if (do_repair()) {
 	    return;
 	}
@@ -971,20 +979,19 @@ rmove(int unused)
 ** If we are a practice robot, we will do all but the second.  One
 ** will be modified to shoot poorly and not use phasers.
 **/
-    /* Fire weapons!!! */
-    /*
-       * get_nearest() has already determined if torpedoes and phasers * will
-       hit.  It has also determined the courses which torps and * phasers
-       should be fired.  If so we will go ahead and shoot here. * We will
-       lose repair and cloaking for the rest of this interrupt. * if we fire
-       here.
-    */
 
+    /* Fire weapons!!!
+       get_nearest() has already determined if torpedoes and phasers
+       will hit.  It has also determined the courses which torps and 
+       phasers should be fired.  If so we will go ahead and shoot here.
+       We will lose repair and cloaking for the rest of this interrupt.
+       if we fire here.
+    */
     if (practice) {
 	no_cloak = 1;
 	if (enemy_buf->e_flags & E_TSHOT) {
-/*	    if (debug)
-		fprintf(stderr, "%d) firing torps\n", me->p_no);*/
+	    if (debug)
+		fprintf(stderr, "%d) firing torps\n", me->p_no);
 	    for (burst = 0; (burst < 3) && (me->p_ntorp < MAXTORP); burst++) {
 		ntorp(enemy_buf->e_tcourse, TMOVE);
 	    }
@@ -992,20 +999,20 @@ rmove(int unused)
     }
     else {
 	if (enemy_buf->e_flags & E_TSHOT) {
-/*	    if (debug)
-		fprintf(stderr, "%d) firing torps\n", me->p_no);*/
+	    if (debug)
+		fprintf(stderr, "%d) firing torps\n", me->p_no);
 	    for (burst = 0; (burst < 2) && (me->p_ntorp < MAXTORP); burst++) {
 		repair_off();
 		cloak_off();
-		ntorp(enemy_buf->e_tcourse, TMOVE);	/* was TSTRAIGHT 8/9/91
-							   TC */
+		ntorp(enemy_buf->e_tcourse, TMOVE);
+		   /* was TSTRAIGHT 8/9/91 TC */
 		no_cloak++;
 		lastTorpped = clock;	/* record time of firing 4/13/92 TC */
 	    }
 	}
 	if (enemy_buf->e_flags & E_PSHOT) {
-/*	    if (debug)
-		fprintf(stderr, "%d) phaser firing\n", me->p_no);*/
+	    if (debug)
+		fprintf(stderr, "%d) phaser firing\n", me->p_no);
 	    no_cloak++;
 	    repair_off();
 	    cloak_off();
@@ -1014,6 +1021,7 @@ rmove(int unused)
     }
 
     /* auto pressor 7/27/91 TC */
+
     /* tractor/pressor rewritten on 5/1/92... glitches galore :-| TC */
 
     /*
@@ -1035,7 +1043,7 @@ rmove(int unused)
 	    if (!(enemy->p_flags & PFCLOAK)) {
 		if (debug)
 		    fprintf(stderr, "%d) pressoring %d\n", me->p_no,
-			    enemy_buf->e_info);
+			enemy_buf->e_info);
 		pressor_player(enemy->p_no);
 		no_cloak++;
 		repair_off();
@@ -1043,13 +1051,13 @@ rmove(int unused)
 	    }
 	}
     }
+
     /* auto tractor 7/31/91 TC */
 
-    /* tractor if not pressoring and... */
-
-    /* tractor if: in range, not too close, and not headed +/- 90 degrees */
-    /* of me, and I'm not hurt */
-
+    /* 
+       Tractor if not pressoring and tractor if in range, not too close, 
+       and not headed +/- 90 degrees of me, and I'm not hurt
+    */
     if ((!(me->p_flags & PFPRESS)) &&
 	(enemy_buf->e_flags & E_TRACT) &&
 	(angdist(enemy_buf->e_edir, enemy_buf->e_course) < 64) &&
@@ -1057,7 +1065,7 @@ rmove(int unused)
 	if (!(me->p_flags & PFTRACT)) {
 	    if (debug)
 		fprintf(stderr, "%d) tractoring %d\n", me->p_no,
-			enemy_buf->e_info);
+		    enemy_buf->e_info);
 	    tractor_player(enemy->p_no);
 	    no_cloak++;
 	}
@@ -1088,7 +1096,7 @@ rmove(int unused)
 		    newcourse = NORMALIZE(stardir - 128);
 		    if (debug) {
 			fprintf(stderr, "Steering away from star %s, dir = %d\n",
-				l->pl_name, newcourse);
+			    l->pl_name, newcourse);
 		    }
 		}
 		else if (angdist(me->p_dir, stardir) < 16) {
@@ -1097,7 +1105,7 @@ rmove(int unused)
 			NORMALIZE((me->p_dir < stardir) ? stardir - 32 : stardir + 32);
 		    if (debug) {
 			fprintf(stderr, "Adjusting course away from star %s, dir = %d\n",
-				l->pl_name, newcourse);
+			    l->pl_name, newcourse);
 		    }
 		}
 		if (newcourse != -1) {	/* Change course and speed */
@@ -1114,22 +1122,19 @@ rmove(int unused)
 
     /* Avoid torps */
     /*
-       * This section of code allows robots to avoid torps. * Within a
-       specific range they will check to see if * any of the 'closest'
-       enemies torps will hit them. * If so, they will evade for four
-       updates. * Evading is all they will do for this round, other than
+       This section of code allows robots to avoid torps. Within a
+       specific range they will check to see if any of the 'closest'
+       enemies torps will hit them.  If so, they will evade for four
+       updates.  Evading is all they will do for this round, other than
        shooting.
     */
-
     if (!practice) {
 	if ((enemy->p_ntorp < 5)) {
 	    if ((enemy_buf->e_dist < 15000) || (avoidTime > 0)) {
 		numHits = projectDamage(enemy->p_no, &avDir);
 		if (debug) {
-		    /*
-		       fprintf(stderr, "%d hits expected from %d from dir =
-		       %d\n", numHits, enemy->p_no, avDir);
-		    */
+		    fprintf(stderr, "%d hits expected from %d from dir =
+		    %d\n", numHits, enemy->p_no, avDir);
 		}
 		if (numHits == 0) {
 		    if (--avoidTime > 0) {	/* we may still be avoiding */
@@ -1148,7 +1153,7 @@ rmove(int unused)
 		    tDir = NORMALIZE(tDir);
 		    if (debug)
 			fprintf(stderr, "mydir = %d avDir = %d tDir = %d q = %d\n",
-				me->p_dir, avDir, tDir, tDir / 64);
+			    me->p_dir, avDir, tDir, tDir / 64);
 		    switch (tDir / 64) {
 		    case 0:
 		    case 1:
@@ -1168,7 +1173,7 @@ rmove(int unused)
 			me->p_desspeed = dogfast;
 
 		    shield_up();
-		    detothers();/* hmm */
+		    detothers();	/* hmm */
 		    if (debug)
 			fprintf(stderr, "evading to dir = %d\n", me->p_desdir);
 		    return;
@@ -1176,12 +1181,10 @@ rmove(int unused)
 	    }
 	}
 	/*
-	   * Trying another scheme. * Robot will keep track of the number of
-	   torps a player has * launched.  If they are greater than say four,
-	   the robot will * veer off immediately.  Seems more humanlike to
-	   me.
+	   Trying another scheme.  Robot will keep track of the number of
+	   torps a player has launched.  If they are greater than say four,
+	   the robot will veer off immediately.  Seems more humanlike to me.
 	*/
-
 	else if (enemy_buf->e_dist < 15000) {
 	    if (--avoidTime > 0) {	/* we may still be avoiding */
 		if (angdist(me->p_desdir, me->p_dir) > 64)
@@ -1206,17 +1209,14 @@ rmove(int unused)
 	    return;
 	}
     }
-    /* Run away */
-    /*
-       * The robot has taken damage.  He will now attempt to run away from *
-       the closest player.  This obviously won't do him any good if there *
-       is another player in the direction he wants to go. * Note that the
-       robot will not run away if he dodged torps, above. * The robot will
+
+    /* Run away
+       The robot has taken damage.  He will now attempt to run away from
+       the closest player.  This obviously won't do him any good if there
+       is another player in the direction he wants to go.  Note that the
+       robot will not run away if he dodged torps, above.  The robot will
        lower his shields in hopes of repairing some damage.
     */
-
-#define STARTDELTA 5000		/* ships appear +/- delta of home planet */
-
     if (me->p_damage > 0 && enemy_buf->e_dist < 13000) {
 	if (me->p_etemp > 900)	/* 90% of 1000 */
 	    me->p_desspeed = runslow;
@@ -1229,33 +1229,33 @@ rmove(int unused)
 	set_course(enemy_buf->e_course - 128);
 	if (debug)
 	    fprintf(stderr, "%d(%d)(%d/%d) running from %s %16s damage (%d/%d) dist %d\n",
-		    me->p_no,
-		    (int) me->p_kills,
-		    me->p_damage,
-		    me->p_shield,
-		    twoletters(enemy),
-		    enemy->p_login,
-		    enemy->p_damage,
-		    enemy->p_shield,
-		    enemy_buf->e_dist);
+	        me->p_no,
+		(int) me->p_kills,
+		me->p_damage,
+		me->p_shield,
+		twoletters(enemy),
+		enemy->p_login,
+		enemy->p_damage,
+		enemy->p_shield,
+		enemy_buf->e_dist);
 	return;
     }
+
     /* Repair if necessary (we are safe) */
     /*
-       * The robot is safely away from players.  It can now repair in peace. *
+       The robot is safely away from players.  It can now repair in peace.
        It will try to do so now.
     */
-
     if (do_repair()) {
 	return;
     }
+
     /* Attack. */
     /*
-       * The robot has nothing to do.  It will check and see if the nearest *
-       enemy fits any of its criterion for attack.  If it does, the robot *
+       The robot has nothing to do.  It will check and see if the nearest
+       enemy fits any of its criterion for attack.  If it does, the robot
        will speed in and deliver a punishing blow.  (Well, maybe)
     */
-
     if ((enemy_buf->e_flags & E_INTRUDER) || (enemy_buf->e_dist < 15000)
 	|| (hostile)) {
 	if ((!no_cloak) && (enemy_buf->e_dist < 10000))
@@ -1263,15 +1263,15 @@ rmove(int unused)
 	shield_up();
 	if (debug)
 	    fprintf(stderr, "%d(%d)(%d/%d) attacking %s %16s damage (%d/%d) dist %d\n",
-		    me->p_no,
-		    (int) me->p_kills,
-		    me->p_damage,
-		    me->p_shield,
-		    twoletters(enemy),
-		    enemy->p_login,
-		    enemy->p_damage,
-		    enemy->p_shield,
-		    enemy_buf->e_dist);
+		me->p_no,
+		(int) me->p_kills,
+		me->p_damage,
+		me->p_shield,
+		twoletters(enemy),
+		enemy->p_login,
+		enemy->p_damage,
+		enemy->p_shield,
+		enemy_buf->e_dist);
 
 	if (enemy_buf->e_dist < 15000) {
 	    set_course(enemy_buf->e_course +
