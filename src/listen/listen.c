@@ -206,17 +206,6 @@ fatlerr(int exit_code, char *func, char *fmt, ...)
   exit(exit_code);
 }
 
-#ifdef USED
-char *
-lasterr(void)
-{
-    if (errno < sys_nerr)
-	return sys_errlist[errno];
-    else
-	return "No message text for this error.";
-}
-#endif
-
 
 /***********************************************************************
  * Detach process in various ways.

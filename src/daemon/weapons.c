@@ -249,15 +249,6 @@ pnear(struct plasmatorp *plasmatorp)	/* the plasma torp to check for */
     return near_player(&plasmatorp->pt_base, EXPDIST);
 }
 
-#ifdef USED
-int 
-outofbounds(int x, int y)
-{
-    return x < 0 || x > GWIDTH || y < 0 || y > GWIDTH;
-}
-#endif
-
-
 /*--------------------------------GET_BEARING------------------------------*/
 /*  This function takes two set of coordinates and a direction.  One set
 of coordinates is the current coords of a trop.  The other set is some other

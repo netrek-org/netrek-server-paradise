@@ -156,9 +156,6 @@ void tlog_plankill P((struct player *, struct planet *, struct player *));
 void tlog_plandest P((struct planet *, struct player *));
 void tlog_plantake P((struct planet *, struct player *));
 void tlog_planaban P((struct planet *, struct player *));
-#ifdef USED
-void tlog_jsassist P((struct player *));
-#endif
 void tlog_beamup P((struct planet *, struct player *));
 void tlog_beamdown P((struct planet *, struct player *));
 void tlog_Bbeamup P((struct player *, struct player *));
@@ -174,17 +171,8 @@ void udtourny P((void));
 void starttourn P((void));
 void endtourn P((void));
 
-/* daemon/wander2.c (unused as of now, I believe) */
-#ifdef USED
-void pinit P((void));
-void pmove P((void));
-#endif
-
 /* daemon/weapons.c */
 void udphaser P((void));
-#ifdef USED
-int outofbounds P((int, int));
-#endif
 void udtorps P((void));
 void udmissiles P((void));
 void udplasmatorps P((void));

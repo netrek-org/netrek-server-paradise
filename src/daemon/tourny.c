@@ -228,19 +228,6 @@ tlog_planaban(struct planet *pl, struct player *killer)
 	    id_player(killer));
 }
 
-#ifdef USED
-void 
-tlog_jsassist(struct player *js)
-{
-    if (!TOURNEYMODE)
-	return;
-    if (!tlog)
-	return;
-
-    fprintf(tlog, "%ld\tjsassist %s\n", status->clock, id_player(js));
-}
-#endif
-
 /* call before transferring the army */
 void 
 tlog_beamup(struct planet *pl, struct player *carrier)

@@ -200,11 +200,6 @@ static struct status_spacket2 clientStatus2;	/* new stats packets */
 static struct stats_spacket2 clientStats2[MAXPLAYER];
 static struct planet_spacket2 clientPlanets2[MAXPLANETS];
 
-#ifdef USED
-static struct youss_spacket	clientSelfShip;
-static struct youshort_spacket	clientSelfShort;
-#endif
-
 static int		send_threshold	= 0;	/* infinity */
 static int		send_short	= 0;
 static int		send_mesg 	= 1;

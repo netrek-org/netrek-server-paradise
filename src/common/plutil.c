@@ -52,23 +52,6 @@ mask_to_idx(int m)
     return i;
 }
 
-#ifdef USED
-/*
- *
- */
-
-int 
-in_warp(struct player *pl)
-{
-    if (pl->p_flags & PFDOCK) {
-	/* if we are docked, then we have the same state as our base */
-	return in_warp(&players[pl->p_docked]);
-    }
-    return (pl->p_flags & PFWARP) || pl->p_warptime;
-}
-#endif
-
-
 int 
 undock_player(struct player *pl)
 {

@@ -287,22 +287,6 @@ shield_down(void)
 
 
 
-
-/*--------------------------------SHIELD_TOGGLE---------------------------*/
-/*  This function toggles the players shields on and off.  */
-
-#ifdef USED
-void
-shield_tog(void)
-{
-    me->p_flags ^= PFSHIELD;	/* toggle shield flag */
-    me->p_flags &= ~(PFBOMB | PFREPAIR | PFBEAMUP | PFBEAMDOWN);
-    me->p_lastman = 0;
-}
-#endif
-
-
-
 /*--------------------------------BOMB_PLANET------------------------------*/
 /*  This function sets the bomb flag if certain conditions are met, such as
 you are bombing enemy planets.  */
@@ -501,38 +485,6 @@ repair_off(void)
 {
     me->p_flags &= ~PFREPAIR;
 }
-
-
-
-
-/*---------------------------------REPEAT---------------------------------*/
-/* This function repeats the last message.  */
-
-#ifdef USED
-void 
-repeat_message(void)
-{
-    if (++lastm == MAXMESSAGE)	/* go to next message */
-	lastm = 0;		/* account for rollover */
-}
-#endif
-
-
-
-/*---------------------------------CLOAK----------------------------------*/
-/*  This function toggles the cloak flag.  Tractors and pressor are turned
-off.  */
-
-#ifdef USED
-void 
-cloak(void)
-{
-    if (me->p_flags & PFCLOAK)
-	cloak_off();
-    else
-	cloak_on();
-}
-#endif
 
 
 

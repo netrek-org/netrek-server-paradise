@@ -78,18 +78,11 @@ void set_speed P((int, int));
 void set_course P((unsigned char));
 void shield_up P((void));
 void shield_down P((void));
-#ifdef USED
-void shield_tog P((void));
-#endif
 void bomb_planet P((void));
 void beam_up P((void));
 void beam_down P((void));
 void repair P((void));
 void repair_off P((void));
-#ifdef USED
-void repeat_message P((void));
-void cloak P((void));
-#endif
 void cloak_on P((void));
 void cloak_off P((void));
 void lock_planet P((int));
@@ -118,9 +111,6 @@ void phaser P((unsigned char));
 /* common/plutil.c */
 int idx_to_mask P((int));
 int mask_to_idx P((int));
-#ifdef USED
-int in_warp P((struct player *));
-#endif
 int undock_player P((struct player *));
 int base_undock P((struct player *, int));
 void enforce_dock_position P((struct player *));

@@ -137,7 +137,7 @@ long    packets_received = 0;	/* # all packets received from client */
 int     ping_ghostbust = 0;	/* ghostbust timer */
 
 
-char    _PARAVERS[] = "@(#)version 3.0 patch 0 DEV";
+char    _PARAVERS[] = "@(#)version 3.2";
 char    *PARAVERS = &(_PARAVERS[4]);
 char    MCONTROL[] = "CONTROL->";
 char    UMPIRE[] = "Umpire ";
