@@ -27,27 +27,17 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
-#include "config.h"
-#include <sys/types.h>
+#include <ctype.h>
+#include <errno.h>
 #include <sys/stat.h>
-#ifdef HAVE_SYS_FILE_H
-#include <sys/file.h>
-#endif
-#include <sys/ipc.h>
-#include <sys/shm.h>
+#include "config.h"
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
-#include <errno.h>
-#include <pwd.h>
-#include <ctype.h>
-#include "defs.h"
-#include "struct.h"
-#include "data.h"
-#include "packets.h"
-#include "shmem.h"
 #include "proto.h"
 #include "ntserv.h"
+#include "data.h"
+#include "shmem.h"
 
 /* replace non-printable characters in string with spaces */
 static void 
@@ -81,7 +71,6 @@ handleLogin(void)
     int     entries;
     struct stat buf;
     char   *paths;
-    char   *pwd;
     char    pwbuf[16];
 
     paths = build_path(PLAYERFILE);

@@ -334,6 +334,7 @@ notice appear in all copies.
 #define KEYMAP_LEN 96
 
 /* random number stuff */
+#if 0
 #ifdef HAVE_RAND48
 
 #define MAXRAND INT_MAX
@@ -357,6 +358,7 @@ notice appear in all copies.
 #define drand48() ((double)random() / (double)MAXRAND)
 
 #endif				/* HAVE_RAND48 */
+#endif
 
 
 #endif				/* DEFS_H */

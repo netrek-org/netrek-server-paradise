@@ -28,11 +28,10 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-#include "defs.h"
-#include "struct.h"
-#include "shmem.h"
 #include "proto.h"
 #include "daemonII.h"
+#include "data.h"
+#include "shmem.h"
 
 void 
 credit_armiesbombed(struct player *plyr, int armies, struct planet *plan)

@@ -174,7 +174,7 @@ int hypotlookup[] = {
 };
 
 int 
-ihypot(int x, inty)
+ihypot(int x, int y)
 {
   int max, min;
 

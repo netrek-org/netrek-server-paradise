@@ -28,17 +28,9 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <errno.h>
-#include <pwd.h>
-#include <ctype.h>
-#include "defs.h"
-#include "struct.h"
+#include "proto.h"
 #include "data.h"
 #include "shmem.h"
-#include "proto.h"
 
 /*------------------------------NUMBER DEFINES-----------------------------*/
 #define INDEP (GWIDTH/3)	/* width of region in the center of galaxy */
@@ -49,8 +41,7 @@ notice appear in all copies.
 /*-------------------------------------------------------------------------*/
 
 
-#ifdef USED
-int 
+static int 
 find_start_planet(int team, int flag)
 {
     int     valid[MAXPLANETS];
@@ -68,9 +59,6 @@ find_start_planet(int team, int flag)
 
     return valid[lrand48() % nvalid];
 }
-#endif
-
-
 
 /*------------------------------VISIBLE FUNCTIONS-------------------------*/
 
@@ -127,9 +115,9 @@ peanut_gallery(void)
 
     }
     else if (strcmp(me->p_name, "wibble") == 0) {
-	pmessage("No mountain is unclimbable, no river uncrossable, no client RSA"
+	pmessage2("No mountain is unclimbable, no river uncrossable, no client RSA"
 		 ,0, MALL, "EGO->wibble", me->p_no);
-	pmessage("key unbreakable.  We can just make it bloody difficult!",
+	pmessage2("key unbreakable.  We can just make it bloody difficult!",
 		 0, MALL, "EGO->wibble", me->p_no);
 
     }
@@ -145,16 +133,16 @@ peanut_gallery(void)
 
 	sprintf(buf, "It's %d:%02d%s, time [for me] to die.", hour,
 		tmstruct->tm_min, tmstruct->tm_hour >= 12 ? "pm" : "am");
-	pmessage(buf, 0, MALL, "GOD->ALL", me->p_no);
+	pmessage2(buf, 0, MALL, "GOD->ALL", me->p_no);
 
     }
     else if (strcmp(me->p_name, "MikeL") == 0) {
-	pmessage("<This space for rent>", 0, MALL, "GOD->ALL", me->p_no);
+	pmessage2("<This space for rent>", 0, MALL, "GOD->ALL", me->p_no);
 
 
     }
     else if (strcmp(me->p_name, "Bolo") == 0) {
-	pmessage("Bolo Mk. MCLXVII On-line.", 0, MALL, MSERVA, me->p_no);
+	pmessage2("Bolo Mk. MCLXVII On-line.", 0, MALL, MSERVA, me->p_no);
     }
 }
 
@@ -272,9 +260,6 @@ findrslot(void)
         }
     }
     if ((i == MAXPLAYER) || (i == -1)) {
-        if (debug) {
-            fprintf(stderr, "No more room in game\n");
-        }
         return -1;
     }
     memset(&players[i].p_stats, 0, sizeof(struct stats));

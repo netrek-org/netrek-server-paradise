@@ -27,14 +27,12 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
-#include "config.h"
 #include <math.h>
-
-#include "defs.h"
-#include "struct.h"
+#include "config.h"
+#include "proto.h"
+#include "daemonII.h"
 #include "data.h"
 #include "shmem.h"
-#include "proto.h"
 
 #define SYSWIDTH	(GWIDTH/8)	/* width of a system */
 

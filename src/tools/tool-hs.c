@@ -32,12 +32,6 @@ notice appear in all copies.
 */
 
 #include "config.h"
-
-#include <malloc.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include "struct.h"
-#include "data.h"
 #include "proto.h"
 
 static int     topn = 1;

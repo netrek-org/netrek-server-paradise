@@ -28,15 +28,10 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-
-#include "defs.h"
-#include "struct.h"
+#include "proto.h"
+#include "daemonII.h"
 #include "data.h"
 #include "shmem.h"
-#include "proto.h"
 
 
  /* This defines the core flags for a normal ship */

@@ -28,15 +28,6 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-
-#include <malloc.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include "defs.h"
-#include "data.h"
-#include "struct.h"
-#include "shmem.h"
 #include "proto.h"
 
 #ifdef sparc

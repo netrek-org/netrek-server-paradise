@@ -28,8 +28,6 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-#include "defs.h"
-#include "struct.h"
 #include "proto.h"
 
 char   *argv0;
@@ -90,8 +88,6 @@ unsigned char F_gz_motd_major;	/* Major gzipped format client can handle */
 unsigned char F_gz_motd_minor;	/* Minor gzipped format client can handle */
 
 double  oldmax = 0.0;
-
-extern double Sin[], Cos[];	/* Initialized in sintab.c */
 
 char    pseudo[PSEUDOSIZE];
 char    login[PSEUDOSIZE];

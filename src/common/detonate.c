@@ -28,11 +28,9 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-#include "defs.h"
-#include "struct.h"
+#include "proto.h"
 #include "data.h"
 #include "shmem.h"
-#include "proto.h"
 
 /*
 ** Here we have another flaw.  Detonating other players torps can be a

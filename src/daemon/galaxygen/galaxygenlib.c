@@ -27,14 +27,11 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
-#include "config.h"
-
 #include <math.h>
-
-#include "defs.h"
-#include "struct.h"
-#include "shmem.h"
+#include "config.h"
 #include "proto.h"
+#include "data.h"
+#include "shmem.h"
 
 /*
 
@@ -157,7 +154,7 @@ randomize_atmospheres(struct planet *first, int count,
    -RF
 
    */
-static void
+void
 randomize_resources(struct planet *first, int count, 
                     int nm, int nd, int na)
 {

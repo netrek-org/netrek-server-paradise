@@ -30,18 +30,16 @@ notice appear in all copies.
 #define PLANETS 1
 #define GRID 0			/* for space grid */
 
-#include "config.h"
 #include <math.h>
-#include <setjmp.h>
-#include <sys/types.h>
+#include "config.h"
+
 #ifdef LOADABLE_PLGEN
 #include <dlfcn.h>
 #endif
 
-#include "struct.h"
-#include "data.h"
 #include "proto.h"
 #include "daemonII.h"
+#include "data.h"
 #include "shmem.h"
 
 #define	friendly(fred, bart) \
@@ -450,7 +448,7 @@ pvisible(void)
 
 
 static void 
-blast_resource(struct player *p, struct player *l, int res, double dival)
+blast_resource(struct player *p, struct planet *l, int res, double dival)
 {
     if (status->tourn) {
 	p->p_stats.st_di += dival;

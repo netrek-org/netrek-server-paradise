@@ -28,15 +28,9 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-
-#include <math.h>
-#include <signal.h>
-#include <ctype.h>
-#include "defs.h"
-#include "struct.h"
+#include "proto.h"
 #include "data.h"
 #include "shmem.h"
-#include "proto.h"
 
 /*-----------------------------VISIBLE FUNCTIONS--------------------------*/
 

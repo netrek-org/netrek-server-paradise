@@ -27,26 +27,22 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
-#include "config.h"
-
-#include <sys/types.h>
-#include <sys/socket.h>
+#include <ctype.h>
+#include <errno.h>
 #include <sys/stat.h>
+#include <signal.h>
+#include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
-#include <math.h>
-#include <signal.h>
-#include <errno.h>
-#include <ctype.h>
 #include <zlib.h>
-#include "defs.h"
-#include "struct.h"
-#include "data.h"
-#include "packets.h"
-#include "shmem.h"
-#include "gppackets.h"
+#include "config.h"
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
 #include "proto.h"
 #include "ntserv.h"
+#include "data.h"
+#include "shmem.h"
 
 /* comment this out to disable it */
 #undef DOUBLE_UDP
@@ -60,7 +56,7 @@ notice appear in all copies.
 static void forceUpdate P((void));
 static int  isCensured P((char *));
 static int  parseIgnore P((struct mesg_cpacket *));
-static int  parseQuery P((struct mesg_cpacket *));
+static int  parseQuery P((struct mesg_spacket *));
 static int  bouncePingStats P((struct mesg_spacket *));
 static void bounce P((char *, int));
 
@@ -86,10 +82,10 @@ static void    handleAskMOTD();
 static void    handleRSAKey();
 static void    handlePingResponse();
 static void	handleShortReq(), handleThresh(), handleSMessageReq();
-static void    handleFeature(), sendFeature(); /* in feature.c */
 
 static int remoteaddr = -1;	/* inet address in net format */
-extern int errno;
+
+extern int ignored[MAXPLAYER];
 
 static struct packet_handler handlers[] = {
     {0},			/* record 0 */
@@ -204,8 +200,10 @@ static struct status_spacket2 clientStatus2;	/* new stats packets */
 static struct stats_spacket2 clientStats2[MAXPLAYER];
 static struct planet_spacket2 clientPlanets2[MAXPLANETS];
 
+#ifdef USED
 static struct youss_spacket	clientSelfShip;
 static struct youshort_spacket	clientSelfShort;
+#endif
 
 static int		send_threshold	= 0;	/* infinity */
 static int		send_short	= 0;
@@ -1229,11 +1227,13 @@ updateMessages(void)
 		/* means eat message 4/17/92 TC */
 
 		if (!parseQuery(&msg))
+		{
 		    if (ignored[cur->m_from] & MINDIV)
 			bounce("That player is currently ignoring you.",
 			       cur->m_from);
 		    else
 			sendClientPacket((struct player_spacket *) & msg);
+		}
 	    }
 	}
 	msgCurrent = (msgCurrent + 1) % MAXMESSAGE;
@@ -1771,6 +1771,50 @@ updateShips(void)
     }
 }
 
+static int 
+input_allowed(int packettype)
+{
+    switch (packettype) {
+    case CP_MESSAGE:
+    case CP_SOCKET:
+    case CP_OPTIONS:
+    case CP_BYE:
+    case CP_UPDATES:
+    case CP_RESETSTATS:
+    case CP_RESERVED:
+    case CP_RSA_KEY:
+    case CP_ASK_MOTD:
+    case CP_PING_RESPONSE:
+    case CP_UDP_REQ:
+    case CP_FEATURE:
+    case CP_S_MESSAGE:
+	return 1;
+    default:
+	if (!me)
+		return 0;
+
+	if (me->p_status == PTQUEUE)
+	    return (packettype == CP_OUTFIT
+		);
+	else if (me->p_status == POBSERVE)
+	    return (packettype == CP_QUIT
+		    || packettype == CP_PLANLOCK
+		    || packettype == CP_PLAYLOCK
+		    || packettype == CP_SCAN
+		    || packettype == CP_SEQUENCE	/* whatever this is */
+		);
+
+	if (inputMask >= 0 && inputMask != packettype)
+	    return 0;
+	if (me == NULL)
+	    return 1;
+	if (!(me->p_flags & (PFWAR | PFREFITTING)))
+	    return 1;
+
+	return 0;
+    }
+}
+
 /* flushSockBuf, socketPause, socketWait
    were here */
 
@@ -1960,50 +2004,6 @@ readFromClient(void)
 	}
     }
     return (retval != 0);	/* convert to 1/0 */
-}
-
-static int 
-input_allowed(int packettype)
-{
-    switch (packettype) {
-    case CP_MESSAGE:
-    case CP_SOCKET:
-    case CP_OPTIONS:
-    case CP_BYE:
-    case CP_UPDATES:
-    case CP_RESETSTATS:
-    case CP_RESERVED:
-    case CP_RSA_KEY:
-    case CP_ASK_MOTD:
-    case CP_PING_RESPONSE:
-    case CP_UDP_REQ:
-    case CP_FEATURE:
-    case CP_S_MESSAGE:
-	return 1;
-    default:
-	if (!me)
-		return 0;
-
-	if (me->p_status == PTQUEUE)
-	    return (packettype == CP_OUTFIT
-		);
-	else if (me->p_status == POBSERVE)
-	    return (packettype == CP_QUIT
-		    || packettype == CP_PLANLOCK
-		    || packettype == CP_PLAYLOCK
-		    || packettype == CP_SCAN
-		    || packettype == CP_SEQUENCE	/* whatever this is */
-		);
-
-	if (inputMask >= 0 && inputMask != packettype)
-	    return 0;
-	if (me == NULL)
-	    return 1;
-	if (!(me->p_flags & (PFWAR | PFREFITTING)))
-	    return 1;
-
-	return 0;
-    }
 }
 
 static void 
@@ -2380,7 +2380,7 @@ handleTractorReq(struct tractor_cpacket *packet)
     }
 }
 
-struct void 
+static void 
 handleRepressReq(struct repress_cpacket *packet)
 {
     int     target;

@@ -35,33 +35,24 @@ Note that descriptor 2 is duped to descriptor 1, so that stdout and
 stderr go to the same file.
 --------------------------------------------------------------------------*/
 
-#include "config.h"
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <sys/stat.h>
-#ifdef HAVE_SYS_WAIT_H
-#include <sys/wait.h>
-#endif
-#ifdef SVR4
-#include <sys/termios.h>
-#endif				/* SVR4 */
-#include <netdb.h>
+#include <stdarg.h>
 #include <errno.h>
-#include <time.h>
+#include <sys/stat.h>
+#include <sys/socket.h>
 #include <netinet/in.h>
+#include <netdb.h>
+#include "config.h"
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
-#include <varargs.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <string.h>
-#include "defs.h"
-#include "data.h"
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
 #include "proto.h"
+#include "data.h"
 
 /* #define DEF_PORT	2592*/	/* port to listen on */
 /* #define NTSERV		"bin/ntserv"
@@ -128,18 +119,13 @@ dateTime(void)
  */
 
 static void
-multClose(va_alist) va_dcl
+multClose(int *fds_not_to_close)
 {
-    va_list args;
-    int     fds[100], nfds, fd, ts, i, j;
+    int     nfds, ts, i, j, fds[100] = {0};
 
     /* get all descriptors to be saved into the array fds */
-    va_start(args);
-    for (nfds = 0; nfds < 99; nfds++) {
-	if ((fd = va_arg(args, int)) == -1)
-	    break;
-	else
-	    fds[nfds] = fd;
+    for (nfds = 0; nfds < 99 && fds_not_to_close[nfds] != -1; nfds++) {
+        fds[nfds] = fds_not_to_close[nfds];
     }
 
 #ifdef HAVE_SYSCONF
@@ -168,60 +154,55 @@ multClose(va_alist) va_dcl
  */
 
 static void
-syserr(va_alist) va_dcl
+err(char *func, char *fmt, va_list args)
 {
-    va_list args;
-    int     rc;
+  if (program)
+    fprintf(stderr, "%s", program);
 
-    va_start(args);
-    rc = va_arg(args, int);
-    err(args);
-    if (errno < sys_nerr)
-	fprintf(stderr, "     system message: %s\n", sys_errlist[errno]);
+  if (func && strcmp(func, ""))
+    fprintf(stderr, "(%s)", func);
 
-    exit(rc);
+  fprintf(stderr, ": ");
+
+  vfprintf(stderr, fmt, args);
+  fprintf(stderr, "\n");
+  fflush(stderr);
 }
 
 static void
-warnerr(va_alist) va_dcl
+syserr(int exit_code, char *func, char *fmt, ...)
 {
-    va_list args;
+  va_list vp;
 
-    va_start(args);
-    err(args);
+  va_start(vp, fmt);
+  err(func, fmt, vp);
+  if(errno < sys_nerr)
+    fprintf(stderr, "     system message: %s\n", sys_errlist[errno]);
+  va_end(vp);
+
+  exit(exit_code);
 }
 
 static void
-fatlerr(va_alist) va_dcl
+warnerr(char *func, char *fmt, ...)
 {
-    va_list args;
-    int     rc;
+  va_list vp;
 
-    va_start(args);
-    rc = va_arg(args, int);
-    err(args);
-
-    exit(rc);
+  va_start(vp, fmt);
+  err(func, fmt, vp);
+  va_end(vp);
 }
 
 static void
-err(args)
-    va_list args;
+fatlerr(int exit_code, char *func, char *fmt, ...)
 {
+  va_list vp;
 
-    char   *func, *fmt;
+  va_start(vp, fmt);
+  err(func, fmt, vp);
+  va_end(vp);
 
-    if (program != 0)
-	fprintf(stderr, "%s", program);
-    func = va_arg(args, char *);
-    if (func != 0 && strcmp(func, "") != 0)
-	fprintf(stderr, "(%s)", func);
-    fprintf(stderr, ": ");
-
-    fmt = va_arg(args, char *);
-    vfprintf(stderr, fmt, args);
-    fputc('\n', stderr);
-    fflush(stderr);
+  exit(exit_code);
 }
 
 #ifdef USED
@@ -245,6 +226,7 @@ detach(void)
 {
     int     fd, rc, mode;
     char   *fname;
+    int     fds_not_to_close[] = {1, 2, -1};
 
     mode = S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR;
     fname = build_path("logs/startup.log");
@@ -252,8 +234,8 @@ detach(void)
 	syserr(1, "detach", "couldn't open log file. [%s]", dateTime());
     dup2(fd, 2);
     dup2(fd, 1);
-    multClose(1, 2, -1);	/* close all other file descriptors */
-    warnerr(0, "started at %s on port %d.", dateTime(), port);
+    multClose(fds_not_to_close);	/* close all other file descriptors */
+    warnerr(NULL, "started at %s on port %d.", dateTime(), port);
 
     /* fork once to escape the shells job control */
     if ((rc = fork()) > 0)
@@ -334,6 +316,7 @@ getConnections(void)
     struct sockaddr_in addr;
     struct hostent *he;
     char    host[100];
+    int     fds_not_to_close[] = {0, 1, 2, -1};
 
     len = sizeof(addr);
     while ((sock = accept(listenSock, (struct sockaddr *) & addr, &len)) < 0) {
@@ -360,7 +343,7 @@ getConnections(void)
     if (pa == meta_addr)
 	metaserverflag = 1;
     /* else */
-    warnerr(0, "connect: %-33s[%s][%d]", host, dateTime(), metaserverflag);
+    warnerr(NULL, "connect: %-33s[%s][%d]", host, dateTime(), metaserverflag);
 
     /* fork off a server */
     if ((pid = fork()) == 0) {
@@ -370,7 +353,7 @@ getConnections(void)
 	char   *binname;
 	binname = build_path(ntserv_binary);
 	dup2(sock, 0);
-	multClose(0, 1, 2, -1);	/* close everything else */
+	multClose(fds_not_to_close);	/* close everything else */
 
 	newargv[newargc++] = "ntserv";
 	if (metaserverflag == 1)

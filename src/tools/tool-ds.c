@@ -28,9 +28,6 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-#include "shmem.h"
-#include "structdesc.h"
-#include "data.h"
 #include "proto.h"
 
 extern struct field_desc *ship_fields;

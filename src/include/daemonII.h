@@ -96,9 +96,8 @@ int enemy_admiral P((int));
 /* daemon/misc.c */
 void warmessage P((void));
 void peacemessage P((void));
-int realNumShips P((void));
+int realNumShips P((int));
 int tournamentMode P((void));
-void pmessage P((char *, int, int, char *));
 void god2player P((char *, int));
 void parse_godmessages P((void));
 
@@ -120,9 +119,9 @@ void beam P((void));
 void udcloak P((void));
 void udplayers P((void));
 
-/* daemon/pl_gen/pl_gen*.c */
+/* daemon/galaxygen/galaxygen*.c */
 int place_stars P((struct planet *, int, int, int, int, struct planet *, int));
-void zero_pflags P((struct planet *, int));
+void zero_plflags P((struct planet *, int));
 void randomize_atmospheres P((struct planet *, int, int, int, int, int));
 void randomize_resources P((struct planet *, int, int, int, int));
 void justify_galaxy P((int));
@@ -153,8 +152,7 @@ void doTerrainEffects P((void));
 
 /* daemon/tourny.c */
 void tlog_plkill P((struct player *, struct player *, struct player *));
-void tlog_plquit P((struct player *));
-void tlog_plankill P((struct player *, struct player *, struct player *));
+void tlog_plankill P((struct player *, struct planet *, struct player *));
 void tlog_plandest P((struct planet *, struct player *));
 void tlog_plantake P((struct planet *, struct player *));
 void tlog_planaban P((struct planet *, struct player *));

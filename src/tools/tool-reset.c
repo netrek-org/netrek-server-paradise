@@ -28,10 +28,6 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-
-#include "defs.h"
-#include "shmem.h"
-#include "data.h"
 #include "proto.h"
 
 #define STEP 10

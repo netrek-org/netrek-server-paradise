@@ -27,24 +27,16 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
-#include "config.h"
-
-#include <sys/types.h>
+#include <errno.h>
 #include <sys/stat.h>
-#ifdef HAVE_SYS_FILE_H
-#include <sys/file.h>
-#endif
+#include <signal.h>
+#include "config.h"
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
-#include <signal.h>
-#include <setjmp.h>
-#include <errno.h>
-#include "defs.h"
-#include "struct.h"
+#include "proto.h"
 #include "data.h"
 #include "shmem.h"
-#include "proto.h"
 
 /* from rmove.c */
 RETSIGTYPE rmove();
@@ -179,6 +171,138 @@ save_robot(void)
   }
 }
 
+void
+config(void)
+{
+    /* calc class-specific stuff */
+
+    phrange = PHASEDIST * me->p_ship.s_phaser.damage / 100;
+    trrange = TRACTDIST * me->p_ship.s_tractrng;
+
+    switch (myship->s_type) {
+    case SCOUT:
+	dogslow = 5;
+	dogfast = 7;
+	runslow = 8;
+	runfast = 9;
+	closeslow = 5;
+	closefast = 7;
+	break;
+    case DESTROYER:
+	dogslow = 4;
+	dogfast = 6;
+	runslow = 6;
+	runfast = 8;
+	closeslow = 4;
+	closefast = 6;
+	break;
+    case CRUISER:
+	dogslow = 4;
+	dogfast = 6;
+	runslow = 6;
+	runfast = 7;
+	closeslow = 4;
+	closefast = 6;
+	break;
+    case BATTLESHIP:
+	dogslow = 3;
+	dogfast = 5;
+	runslow = 5;
+	runfast = 6;
+	closeslow = 3;
+	closefast = 4;
+	break;
+    case FRIGATE:
+	dogslow = 3;
+	dogfast = 5;
+	runslow = 5;
+	runfast = 6;
+	closeslow = 3;
+	closefast = 4;
+	break;
+    case ASSAULT:
+	dogslow = 3;
+	dogfast = 5;
+	runslow = 6;
+	runfast = 7;
+	closeslow = 3;
+	closefast = 4;
+	break;
+    case JUMPSHIP:
+	dogslow = 2;
+	dogfast = 3;
+	runslow = 2;
+	runfast = 3;
+	closeslow = 2;
+	closefast = 3;
+	break;
+    case STARBASE:
+	dogslow = 2;
+	dogfast = 2;
+	runslow = 2;
+	runfast = 2;
+	closeslow = 2;
+	closefast = 2;
+	break;
+    case WARBASE:
+	dogslow = 2;
+	dogfast = 2;
+	runslow = 2;
+	runfast = 2;
+	closeslow = 2;
+	closefast = 2;
+	break;
+    case LIGHTCRUISER:
+	dogslow = 5;
+	dogfast = 6;
+	runslow = 6;
+	runfast = 7;
+	closeslow = 5;
+	closefast = 7;
+	break;
+    case CARRIER:
+	dogslow = 3;
+	dogfast = 4;
+	runslow = 5;
+	runfast = 6;
+	closeslow = 4;
+	closefast = 6;
+	break;
+    case UTILITY:
+	dogslow = 3;
+	dogfast = 4;
+	runslow = 5;
+	runfast = 6;
+	closeslow = 4;
+	closefast = 5;
+	break;
+    case PATROL:
+	dogslow = 7;
+	dogfast = 8;
+	runslow = 9;
+	runfast = 10;
+	closeslow = 8;
+	closefast = 9;
+	break;
+    }
+
+    if (debug)
+	printf("My phaser range: %d.\n", phrange);
+    if (debug)
+	printf("My tractor range: %d.\n", trrange);
+
+    if (!nofuel) {
+	myship->s_phaser.cost = 0;
+	myship->s_torp.cost = 0;
+	myship->s_cloakcost = 0;
+    }
+    if (target >= 0) {		/* 7/27/91 TC */
+	myship->s_imp.maxspeed = 20;	/* was 10, so you can't run */
+	myship->s_imp.cost = 1;
+	myship->s_egncoolrate = 100;
+    }
+}
+
 int main(int argc, char **argv)
 {
     register int i;
@@ -311,6 +435,9 @@ int main(int argc, char **argv)
 
     }				/* end for */
 
+    /* init trig tables */
+    init_trig();
+
     if (team < 0 || team >= 6) {/* change 7/27/91 TC was 4 now 6 */
 	if (debug)
 	    fprintf(stderr, "Choosing random team.\n");
@@ -429,136 +556,4 @@ int main(int argc, char **argv)
 	pause();
     }
     return 0;
-}
-
-void
-config(void)
-{
-    /* calc class-specific stuff */
-
-    phrange = PHASEDIST * me->p_ship.s_phaser.damage / 100;
-    trrange = TRACTDIST * me->p_ship.s_tractrng;
-
-    switch (myship->s_type) {
-    case SCOUT:
-	dogslow = 5;
-	dogfast = 7;
-	runslow = 8;
-	runfast = 9;
-	closeslow = 5;
-	closefast = 7;
-	break;
-    case DESTROYER:
-	dogslow = 4;
-	dogfast = 6;
-	runslow = 6;
-	runfast = 8;
-	closeslow = 4;
-	closefast = 6;
-	break;
-    case CRUISER:
-	dogslow = 4;
-	dogfast = 6;
-	runslow = 6;
-	runfast = 7;
-	closeslow = 4;
-	closefast = 6;
-	break;
-    case BATTLESHIP:
-	dogslow = 3;
-	dogfast = 5;
-	runslow = 5;
-	runfast = 6;
-	closeslow = 3;
-	closefast = 4;
-	break;
-    case FRIGATE:
-	dogslow = 3;
-	dogfast = 5;
-	runslow = 5;
-	runfast = 6;
-	closeslow = 3;
-	closefast = 4;
-	break;
-    case ASSAULT:
-	dogslow = 3;
-	dogfast = 5;
-	runslow = 6;
-	runfast = 7;
-	closeslow = 3;
-	closefast = 4;
-	break;
-    case JUMPSHIP:
-	dogslow = 2;
-	dogfast = 3;
-	runslow = 2;
-	runfast = 3;
-	closeslow = 2;
-	closefast = 3;
-	break;
-    case STARBASE:
-	dogslow = 2;
-	dogfast = 2;
-	runslow = 2;
-	runfast = 2;
-	closeslow = 2;
-	closefast = 2;
-	break;
-    case WARBASE:
-	dogslow = 2;
-	dogfast = 2;
-	runslow = 2;
-	runfast = 2;
-	closeslow = 2;
-	closefast = 2;
-	break;
-    case LIGHTCRUISER:
-	dogslow = 5;
-	dogfast = 6;
-	runslow = 6;
-	runfast = 7;
-	closeslow = 5;
-	closefast = 7;
-	break;
-    case CARRIER:
-	dogslow = 3;
-	dogfast = 4;
-	runslow = 5;
-	runfast = 6;
-	closeslow = 4;
-	closefast = 6;
-	break;
-    case UTILITY:
-	dogslow = 3;
-	dogfast = 4;
-	runslow = 5;
-	runfast = 6;
-	closeslow = 4;
-	closefast = 5;
-	break;
-    case PATROL:
-	dogslow = 7;
-	dogfast = 8;
-	runslow = 9;
-	runfast = 10;
-	closeslow = 8;
-	closefast = 9;
-	break;
-    }
-
-    if (debug)
-	printf("My phaser range: %d.\n", phrange);
-    if (debug)
-	printf("My tractor range: %d.\n", trrange);
-
-    if (!nofuel) {
-	myship->s_phaser.cost = 0;
-	myship->s_torp.cost = 0;
-	myship->s_cloakcost = 0;
-    }
-    if (target >= 0) {		/* 7/27/91 TC */
-	myship->s_imp.maxspeed = 20;	/* was 10, so you can't run */
-	myship->s_imp.cost = 1;
-	myship->s_egncoolrate = 100;
-    }
 }

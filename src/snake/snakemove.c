@@ -28,13 +28,6 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-#include <signal.h>
-#include <limits.h>
-#include <math.h>
-#include "defs.h"
-#include "struct.h"
-#include "data.h"
-#include "shmem.h"
 #include "proto.h"
 
 #define SYSWIDTH      (GWIDTH/5)/* width of a system */

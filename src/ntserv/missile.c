@@ -28,17 +28,10 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-#include <sys/types.h>
-
-#include "defs.h"
-#include "struct.h"
-#include "data.h"
-#include "shmem.h"
-
 #include "proto.h"
 #include "ntserv.h"
-
-
+#include "data.h"
+#include "shmem.h"
 
 
 

@@ -32,11 +32,6 @@ notice appear in all copies.
 */
 
 #include "config.h"
-
-#include "defs.h"
-#include "data.h"
-#include "struct.h"
-#include "shmem.h"
 #include "proto.h"
 
 #define CNORMAL   "\33[37;0m"

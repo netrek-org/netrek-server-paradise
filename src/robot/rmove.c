@@ -27,15 +27,13 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
-#include "config.h"
-#include <signal.h>
 #include <math.h>
-#include "defs.h"
-#include "struct.h"
-#include "data.h"
-#include "weapons.h"
-#include "shmem.h"
+#include <signal.h>
+#include "config.h"
 #include "proto.h"
+#include "data.h"
+#include "shmem.h"
+#include "weapons.h"
 
 /* from robot/robotII.c */
 void save_robot P((void));
@@ -751,6 +749,15 @@ termie_message(struct player *enemy)
 }
 
 static void
+messAll(char *buf)
+{
+    static char addrbuf[20];
+
+    sprintf(addrbuf, " %s->ALL", twoletters(me));
+    pmessage2(buf, 0, MALL, addrbuf, me->p_no);
+}
+
+static void
 exitRobot(void)
 {
     static char buf[80];
@@ -792,15 +799,6 @@ exitRobot(void)
 
     me->p_stats.st_tticks = 1;	/* quick fix 3/15/92 TC */
     exit(0);
-}
-
-static void
-messAll(char *buf)
-{
-    static char addrbuf[20];
-
-    sprintf(addrbuf, " %s->ALL", twoletters(me));
-    pmessage2(buf, 0, MALL, addrbuf, me->p_no);
 }
 
 RETSIGTYPE

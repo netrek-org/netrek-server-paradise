@@ -28,9 +28,8 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-#include "structdesc.h"
-#include "struct.h"
 #include "proto.h"
+#include "structdesc.h"
 
 #define OFFSET_OF(field)	( (char*)(&((struct ship*)0)->field) -\
  			  (char*)0)

@@ -27,17 +27,15 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
-#include "config.h"
-
 #include <math.h>
-#include <signal.h>
-#include "defs.h"
-#include "struct.h"
+#include "config.h"
+#include "proto.h"
 #include "data.h"
 #include "shmem.h"
-#include "proto.h"
 
 struct player *me;
+struct ship *myship;
+struct stats *mystats;
 
 /*----------------------------VISIBLE FUNCTIONS---------------------------*/
 

@@ -27,16 +27,13 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
-#include "config.h"
-
 #include <errno.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include "data.h"
-#include "packets.h"
-#include "shmem.h"
+#include <netdb.h>
+#include "config.h"
 #include "proto.h"
 #include "ntserv.h"
+#include "data.h"
+#include "shmem.h"
 
 #define BUFSIZE 16738
 static char buf[BUFSIZE];	/* Socket buffer */
@@ -323,8 +320,6 @@ sendTCPbuffered(void *packet, int size)
 
 void
 sendTCPdeferred(void *packet, int size)
-    void	*packet;
-    int		size;
 {
     /* I'm having problems with UDP connection packet */
     sendTCPbuffered(packet, size);

@@ -28,10 +28,6 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-
-#include "tool-util.h"
-#include "shmem.h"
-#include "data.h"
 #include "proto.h"
 
 char 

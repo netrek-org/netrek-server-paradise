@@ -21,6 +21,8 @@ char *playerFile;
 int
 main(int argc, char *argv[])
 {
+	char *rf;
+
 	myname = argv[0];
 
 	if(argc > 2) {
@@ -30,7 +32,8 @@ main(int argc, char *argv[])
 
 	signal(SIGWINCH, getTTYinfo);
 
-	init_data();
+	rf = build_path(RANKS_FILENAME);
+	init_data(rf);
 
 	if(argc == 2)
 		playerFile = argv[1];

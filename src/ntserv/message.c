@@ -48,19 +48,16 @@ notice appear in all copies.
 
 */
 
-#include "config.h"
 #include <signal.h>
 #include <ctype.h>
+#include "config.h"
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
-
-#include "defs.h"
-#include "data.h"
-#include "struct.h"
-#include "shmem.h"
 #include "proto.h"
 #include "ntserv.h"
+#include "data.h"
+#include "shmem.h"
 
 enum token_names_e {
     HELPTOK = 128,
@@ -262,6 +259,17 @@ get_slotnum(char *cmd, char **after)
     return rval;
 }
 
+/**********************************************************************/
+
+static void 
+respond(char *msg, int type)
+{
+    if (type == 1)
+	warning(msg);
+    else
+	pmessage2(msg, me->p_no, MINDIV, MCONTROL, 255);
+}
+
 static void
 bad_slotnum(char *msg)
 {
@@ -457,17 +465,6 @@ respond_with_help_string(struct control_cmd *legals)
     }
     if (buf[0])
 	respond(buf, 0);
-}
-
-/**********************************************************************/
-
-static void 
-respond(char *msg, int type)
-{
-    if (type == 1)
-	warning(msg);
-    else
-	pmessage2(msg, me->p_no, MINDIV, MCONTROL, 255);
 }
 
 /*
@@ -1065,7 +1062,7 @@ parse_player(char *cmd)
     case PASSWDTOK:
 	{
 	    static char  newpass[16];
-            char       * pwd;
+
 	    if (me->p_pos < 0) { /* guest login */
 		respond("You don't have a password!", 0);
 	    } else if (*nexttoken==0) {

@@ -28,16 +28,10 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-#include <math.h>
-#include <setjmp.h>
-
-#include "defs.h"
-#include "struct.h"
-#include "data.h"
 #include "proto.h"
 #include "daemonII.h"
+#include "data.h"
 #include "shmem.h"
-
 
 /*----------------------------NUMBER DEFINES-------------------------------*/
 #define SURRSTART  4		/* # planets where surrender starts */
@@ -78,6 +72,9 @@ swap(int *a, int *b)
 
 
 
+#define OUT pmessage(buf, 0, MALL | MGENO, " "); \
+	if (conqfile) fprintf(conqfile, "  %s\n", buf); \
+	tlog_conquerline(buf)
 
 
 
@@ -160,7 +157,9 @@ genocide(int *team1, int *team2)	/* where to put first/second team */
     int     t1, t2;		/* to hold two teams */
     int     n1, n2;		/* to hold number of ships on teams */
     int     t;			/* temp var */
-    int     i;			/* looping var */
+#ifdef OLD_GENO
+    int     i;			/* loop var */
+#endif
 
     t1 = FED;			/* set first team */
     n1 = realNumShips(FED);	/* get players on it */
@@ -343,9 +342,6 @@ conquerMessage(int winners, int losers, int pno)
 	perror("");
 	fprintf(stderr, "failed to open file %s\n", paths);
     }
-#define OUT pmessage(buf, 0, MALL | MGENO, " "); \
-	if (conqfile) fprintf(conqfile, "  %s\n", buf); \
-	tlog_conquerline(buf);
 
     time(&curtime);		/* get current time */
     strcpy(buf, "\nConquer! ");	/* this is a genocide */

@@ -27,15 +27,10 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
-#include "config.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <ctype.h>
-#include "defs.h"
-#include "struct.h"
-#include "data.h"
+#include "config.h"
 #include "proto.h"
+#include "data.h"
 
 typedef struct tagRANK_NODE
 {
@@ -78,9 +73,10 @@ static char *builtin_ranks[] =
 };
 
 static int
-rank_order_fn(void *aa, void *bb)
+rank_order_fn(const void *aa, const void *bb)
 {
-  struct rank *r1 = (struct rank *)aa, *r2 = (struct rank *)bb;
+  const struct rank *r1 = (const struct rank *)aa;
+  const struct rank *r2 = (const struct rank *)bb;
 
   if(r1->genocides < r2->genocides)
     return(-1);

@@ -27,15 +27,13 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
+#include <netdb.h>
 #include "config.h"
-#include <sys/types.h>
-#include <netinet/in.h>
-#include "defs.h"
-#include "gppackets.h"
-#include "shmem.h"
-#include "data.h"
 #include "proto.h"
 #include "ntserv.h"
+#include "data.h"
+#include "shmem.h"
+#include "gppackets.h"
 
 /* some game params packet stuff */
 /* status experimental */

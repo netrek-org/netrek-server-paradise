@@ -9,7 +9,7 @@
 #include <fcntl.h>
 #endif
 
-#include <struct.h>
+#include "struct.h"
 #include "common.h"
 #include "db.h"
 #include "main.h"

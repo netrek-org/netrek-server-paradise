@@ -27,25 +27,15 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
-#include "config.h"
-#include <sys/types.h>
 #include <signal.h>
-#include <setjmp.h>
-#include <pwd.h>
+#include "config.h"
 #ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
 #endif
-#include <sys/resource.h>
-#include <stdlib.h>
-
-#include "defs.h"
-#include "struct.h"
-#include "data.h"
-#include "packets.h"
-#include "shmem.h"
-
 #include "proto.h"
 #include "ntserv.h"
+#include "data.h"
+#include "shmem.h"
 
 int     startTkills, startTlosses, startTarms, startTplanets, startTticks;
 char    start_login[16];	/* change 1/25/91 TC */
@@ -73,7 +63,6 @@ reaper(int unused)
 #else
     while (waitpid(0, NULL, WNOHANG) > 0);
 #endif				/* SVR4 */
-    return 0;
 }
 
 void
@@ -307,6 +296,9 @@ main(int argc, char **argv)
 
 	exit(1);
     }
+
+    /* init the trig tables */
+    init_trig();
 
     openmem(1, homeaway != NEITHER);
 

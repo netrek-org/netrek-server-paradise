@@ -18,11 +18,11 @@ PLAYER_EDITOR=pped
 
 dnl Checks for libraries.
 dnl Replace `main' with a function in -lncurses:
-AC_CHECK_LIB(ncurses, main,
+AC_CHECK_LIB(ncurses, tcgetattr,
   [CURSESLIBS="-lncurses"],
 
   dnl Replace `main' with a function in -lcurses:
-  AC_CHECK_LIB(curses, main,
+  AC_CHECK_LIB(curses, tcgetattr,
     [CURSESLIBS="-lcurses"],
     [
       PLAYER_EDITOR=""
@@ -31,19 +31,13 @@ AC_CHECK_LIB(ncurses, main,
       echo "--- Couldn't find a curses library."
       echo "--- The player editor (pped) will not be built."
       echo
-    ])
+    ]
   )
 )
 
-[ 
-  if test "x$PLAYER_EDITOR" = xpped; then
-    AC_CHECK_LIB(termcap, main,
-      [TERMLIBS="-ltermcap"])
-  fi
-]
-
-dnl Replace `main' with a function in -ltermcap:
-AC_CHECK_LIB(termcap, main)
+[ if test "x$PLAYER_EDITOR" = xpped; then ]
+    AC_CHECK_LIB(termcap, tcgetattr, [TERMLIBS="-ltermcap"])
+[ fi ]
 
 ZLIB=""
 
@@ -69,7 +63,7 @@ dnl this software requires STD ANSI headers.
 
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS(fcntl.h limits.h malloc.h sys/file.h sys/ioctl.h)
+AC_CHECK_HEADERS(fcntl.h limits.h malloc.h sys/file.h sys/ioctl.h unistd.h sys/time.h arpa/inet.h)
 
 dnl Check for ZLIB headers
 AC_CHECK_HEADERS(zlib.h, [/bin/true],
@@ -137,6 +131,7 @@ AC_ARG_ENABLE(rsa,
                    [ echo "  *** Cannot find gmp.h"
 		     ac_have_gmp_h="no" ])
   [ if test "x$ac_have_gmp_h" = xyes; then ]
+
     AC_CHECK_LIB(gmp, mpz_init,
                  [
 		   AUTH_OBJS="rsa-server.o rsa_utilmp.o"
@@ -144,6 +139,7 @@ AC_ARG_ENABLE(rsa,
 		 ],
 		 [ echo "  *** Cannot find -lgmp" 
 		   ac_have_gmp_lib="no" ])
+
   [ fi
     if test "x$ac_have_gmp_lib" = xno; then ]
     AC_CHECK_HEADERS(mp.h,
@@ -187,4 +183,4 @@ AC_SUBST(PLAYER_EDITOR)
 AC_SUBST(HAVE_UPTIME)
 AC_SUBST(SETSID)
 
-AC_OUTPUT(src/Makefile src/common/Makefile src/daemon/Makefile src/daemon/pl_gen/Makefile src/listen/Makefile src/ntserv/Makefile src/robot/Makefile src/snake/Makefile src/tools/Makefile src/pped/Makefile Makefile)
+AC_OUTPUT(src/Makefile src/common/Makefile src/daemon/Makefile src/daemon/galaxygen/Makefile src/listen/Makefile src/ntserv/Makefile src/robot/Makefile src/snake/Makefile src/tools/Makefile src/pped/Makefile Makefile)

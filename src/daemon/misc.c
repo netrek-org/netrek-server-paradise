@@ -28,15 +28,9 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-
-#include <math.h>
-#include <setjmp.h>
-
-#include "defs.h"
-#include "struct.h"
-#include "data.h"
 #include "proto.h"
 #include "daemonII.h"
+#include "data.h"
 #include "shmem.h"
 
 /*------------------------------MODULE VARIABLES--------------------------*/

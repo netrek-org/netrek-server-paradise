@@ -27,15 +27,12 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
+#include <netdb.h>
 #include "config.h"
-#include <sys/types.h>
-#include <netinet/in.h>
-#include "defs.h"
-#include "data.h"
-#include "struct.h"
-#include "packets.h"
 #include "proto.h"
 #include "ntserv.h"
+#include "data.h"
+#include "shmem.h"
 
 /*
  * Feature.c
@@ -138,10 +135,6 @@ void handleFeature(struct feature_cpacket *packet)
     
 void
 sendFeature(char *name, int feature_type, int value, int arg1, int arg2)
-    char   *name;
-    int     feature_type;
-    int     value;
-    int     arg1, arg2;
 {
     struct feature_cpacket packet;
 

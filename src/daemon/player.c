@@ -27,16 +27,11 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
-#include "config.h"
-
 #include <math.h>
-#include <setjmp.h>
-
-#include "defs.h"
-#include "struct.h"
-#include "data.h"
+#include "config.h"
 #include "proto.h"
 #include "daemonII.h"
+#include "data.h"
 #include "shmem.h"
 
 /*-----------------------------NUMBER DEFINES----------------------------*/
@@ -57,6 +52,9 @@ notice appear in all copies.
 /* from daemonII.c */
 extern int ticks;
 extern int dietime;
+/* this doesn't look like it's used BUT check the definition of NotTmode 
+   in daemonII.h */
+extern int tourntimestamp;
 
 /*---------------------------INTERNAL FUNCTIONS---------------------------*/
 
@@ -1118,7 +1116,7 @@ checkmaxkills(int pl)		/* # of player to check */
     struct player *dude;	/* to point to his stats struct */
 
     if (!status->tourn && 
-        (configvals->robotstats && !(players[pl].p_flags & PFROBOT)))
+        (configvals->robot_stats && !(players[pl].p_flags & PFROBOT)))
 	return;
     dude = &(players[pl]);	/* get player's player struct */
     stats = &(dude->p_stats);	/* get player's stat struct */
@@ -1173,12 +1171,14 @@ udcloak(void)
 
     for (i = 0; i < MAXPLAYER; i++) {	/* go through all players */
 	if (isAlive(&players[i]))	/* if player is alive */
+	{
 	    if ((players[i].p_flags & PFCLOAK)	/* if cloaking */
 		&&(players[i].p_cloakphase < (CLOAK_PHASES - 1)))
 		players[i].p_cloakphase++;	/* on to next pahse */
 	    else if (!(players[i].p_flags & PFCLOAK)	/* if uncloaking */
 		     &&(players[i].p_cloakphase > 0))
 		players[i].p_cloakphase--;	/* on to next phase */
+	 }
     }
 }
 

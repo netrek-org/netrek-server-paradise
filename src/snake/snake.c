@@ -28,18 +28,6 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#ifdef HAVE_SYS_FILE_H
-#include <sys/file.h>
-#endif
-#include <signal.h>
-#include <setjmp.h>
-#include <ctype.h>
-#include "defs.h"
-#include "struct.h"
-#include "data.h"
-#include "shmem.h"
 #include "proto.h"
 
 /* from snakemove.c */
@@ -248,6 +236,9 @@ int main(int argc, char **argv)
 #endif
 
 /*   readsysdefaults();*/
+
+    /* init trig tables */
+    init_trig();
 
     (void) r_signal(SIGHUP, exitSnake);
     (void) r_signal(SIGINT, exitSnake);

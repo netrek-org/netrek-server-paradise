@@ -28,11 +28,6 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-
-#include "defs.h"
-#include "data.h"
-#include "shmem.h"
-#include "tool-util.h"
 #include "proto.h"
 
 static char *names[] = {"Neutral", "Fed", "Rom", "", "Kli", "", "", "", "Ori"};

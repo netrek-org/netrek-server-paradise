@@ -28,23 +28,6 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-
-#include <malloc.h>
-#include <sys/types.h>
-#include <signal.h>
-#include <setjmp.h>
-#ifdef HAVE_SYS_FILE_H
-#include <sys/file.h>
-#endif
-#include <math.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <errno.h>
-#include <pwd.h>
-#include <ctype.h>
-#include "defs.h"
-#include "struct.h"
-#include "data.h"
 #include "proto.h"
 #include "daemonII.h"
 

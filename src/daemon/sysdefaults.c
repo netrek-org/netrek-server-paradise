@@ -27,20 +27,13 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
-#include "config.h"
-
-#include <math.h>
-
-#include <sys/types.h>
 #include <sys/stat.h>
-
-#include "defs.h"
-#include "struct.h"
+#include "config.h"
+#include "proto.h"
+#include "daemonII.h"
 #include "data.h"
 #include "shmem.h"
 #include "structdesc.h"
-#include "proto.h"
-#include "daemonII.h"
 
 
 /*-----------------------------MODULE VARS--------------------------------*/

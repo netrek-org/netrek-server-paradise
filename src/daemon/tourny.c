@@ -28,12 +28,10 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-#include "defs.h"
-#include "struct.h"
-#include "shmem.h"
-#include "data.h"
 #include "proto.h"
 #include "daemonII.h"
+#include "data.h"
+#include "shmem.h"
 
 #define TLOGNAME "/tmp/tourney.log"
 #define MAXTIME 120
@@ -174,7 +172,7 @@ tlog_plquit(struct player *victim)
 /* player was killed by planet.
    call before erasing armies */
 void 
-tlog_plankill(struct player *victim, struct player *killer1, 
+tlog_plankill(struct player *victim, struct planet *killer1, 
               struct player *killer2)
 {
     if (!TOURNEYMODE)
@@ -380,7 +378,7 @@ scan_for_unexpected_tourny_events(void)
 	}
 
 	if (p->p_status != PALIVE) {
-	    tlog_plquit(p, 0, 0);
+	    tlog_plquit(p);
 	    status_cache[i] = p->p_status;
 	}
 	else if (ship_cache[i] < 0) {

@@ -27,15 +27,17 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
-#include "config.h"
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <errno.h>
-#include <signal.h>
+
+#include "config.h"
 #include "proto.h"
 
 #include "shmem.h"
+
 #define SHMEM_C
 #include "data.h"
 #undef SHMEM_C

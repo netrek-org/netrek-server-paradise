@@ -33,6 +33,7 @@ notice appear in all copies.
 #include "config.h"
 #include "defs.h"
 #include "struct.h"
+#include "packets.h"
 
 /* *************************************************************************
    from ntserv/
@@ -94,72 +95,7 @@ int size_of_cpacket P((void *));
 int size_of_spacket P((unsigned char *));
 
 /* ntserv/parsexbm.c */
-int ParseXbmFile P((FILE *, int *, int *, char **));
-
-/* ntserv/ping.c */
-void pingResponse P((struct ping_cpacket *packet));
-void sendClientPing P((void));
-/* *************************************************************************
-   from ntserv/
-   ************************************************************************* */
-
-/* ntserv/cluecheck.c */
-void init_motdbuf P((char *));
-void countdown_clue P((void));
-int accept_cluecheck P((char *));
-
-/* ntserv/death.c */
-void compute_ratings P((struct player *, struct rating *));
-void death P((void));
-
-/* ntserv/fatudp.c */
-void reset_fat_list P((void));
-void updateFat P((struct player_spacket *));
-int fatten P((void));
-void fatMerge P((void));
-
-/* ntserv/feature.c */
-void handleFeature P((struct feature_cpacket *));
-void sendFeature P((char *, int, int, int, int));
-
-/* ntserv/findslot.c */
-int findslot P((int, enum HomeAway));
-
-/* ntserv/gameconf.c */
-void updateGameparams P((void));
-
-/* ntserv/getentry.c */
-void detourneyqueue P((void));
-void getEntry P((int *, int *));
-int realNumShips P((int)); /* duplicated in daemon code? */
-
-/* ntserv/getname.c */
-void getname P((void));
-void savestats P((void));
-
-/* ntserv/input.c */
-void setflag P((void));
-void input P((void));
-int reconnect P((void));
-
-/* ntserv/main.c */
-void stop_interruptor P((void));
-void start_interruptor P((void));
-void exitGame P((void));
-void sendMotd P((void));
-
-/* ntserv/message.c */
-int parse_command_mess P((char *, unsigned char ));
-
-/* ntserv/missile.c */
-void fire_missile_dir P((unsigned char));
-
-/* ntserv/packets.c */
-int size_of_cpacket P((void *));
-int size_of_spacket P((unsigned char *));
-
-/* ntserv/parsexbm.c */
-int ParseXbmFile P((FILE *, int *, int *, char **));
+int ParseXbmFile P((FILE *, int *, int *, unsigned char **));
 
 /* ntserv/ping.c */
 void pingResponse P((struct ping_cpacket *packet));
@@ -171,10 +107,6 @@ void nplasmatorp P((unsigned char, int));
 /* ntserv/redraw.c */
 void intrupt P((void));
 void auto_features P((void));
-
-/* ntserv/smessage.c */
-void pmessage P((char *, int, int, char *));
-void pmessage2 P((char *, int, int, char *, unsigned char));
 
 /* ntserv/socket.c */
 int connectToClient P((char *, int));
@@ -204,12 +136,12 @@ void printUdpInfo P((void));
 #ifdef DOUBLE_UDP
 void sendSC P((void));
 #endif
-void bounce P((char *, int));
 void sendShipCap P((void));
 void sendMotdPic P((int, int, char *, int, int, int));
 void sendMotdNopic P((int, int, int, int, int));
 void sendMissileNum P((int));
 int site_rsa_exempt P((void));
+void sendClientLogin P((struct stats *));
 
 /* ntserv/sockio.c */
 int buffersEmpty P((void));
@@ -229,10 +161,5 @@ void undeferDeferred P((void));
 /* ntserv/timecheck.c */
 void load_time_access P((void));
 int time_access P((void));
-
-/* ntserv/warning.c */
-void warning P((char *));
-void updateWarnings P((void));
-void imm_warning P((char *));
 
 #endif

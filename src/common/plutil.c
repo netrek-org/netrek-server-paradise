@@ -27,17 +27,14 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
-#include "config.h"
 #include <math.h>
-#include <limits.h>
-
+#include "config.h"
+#include "proto.h"
 #include "data.h"
 #include "shmem.h"
-#include "proto.h"
 
 int 
 idx_to_mask(int i)
-    int     i;
 {
     if (i >= 0)
 	return 1 << i;
@@ -47,7 +44,6 @@ idx_to_mask(int i)
 
 int 
 mask_to_idx(int m)
-    int     m;
 {
     int     i;
     if (!m)

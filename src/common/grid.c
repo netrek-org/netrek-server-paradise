@@ -28,9 +28,9 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-#include "struct.h"
-#include "shmem.h"
 #include "proto.h"
+#include "data.h"
+#include "shmem.h"
 
 /* This function should be called any time a planet is relocated.
    It is in charge of updating the space grid. */

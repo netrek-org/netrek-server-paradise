@@ -28,8 +28,6 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-#include "defs.h"
-#include "struct.h"
 #include "proto.h"
 
 int

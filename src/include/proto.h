@@ -45,7 +45,7 @@ notice appear in all copies.
 void (*r_signal 
          P( (int, void (*)()) ) 
      ) ();
-#ifndef HAVE_STDUP
+#ifndef HAVE_STRDUP
 char *strdup P((char *));
 #endif
 
@@ -56,9 +56,6 @@ void init_data P((char *));
 void detothers P((void));
 
 /* common/enter.c */
-#ifdef USED
-int find_start_planet P((int, int));
-#endif
 int findrslot P((void));
 int enter P((int, int, int, int, int));
 
@@ -139,7 +136,8 @@ void startdaemon P((int, int));
 void openmem P((int, int));
 void blast_shmem P((void));
 
-/* common/sintab.c - redo this from client's sintab */
+/* common/sintab.c */
+void init_trig P((void));
 
 /* common/smessage.c */
 void pmessage P((char *, int, int, char *));
@@ -155,5 +153,10 @@ int temporally_spaced P((struct timeval *, int));
 int check_fire_warp P((void));
 int check_fire_warpprep P((void));
 int check_fire_docked P((void));
+
+/* common/warning.c */
+void warning P((char *));
+void updateWarnings P((void));
+void imm_warning P((char *));
 
 #endif /* PROTO_H */

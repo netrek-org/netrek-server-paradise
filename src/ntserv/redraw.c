@@ -28,17 +28,10 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-#include <signal.h>
-#include <setjmp.h>		/* change 4/14/91 TC */
-#include <math.h>
-
-#include "defs.h"
-#include "struct.h"
-#include "data.h"
-#include "packets.h"
-#include "shmem.h"
 #include "proto.h"
 #include "ntserv.h"
+#include "data.h"
+#include "shmem.h"
 
 extern char start_login[], start_name[];	/* change 4/14/91 TC */
 extern int goAway;		/* change 4/14/91 TC */

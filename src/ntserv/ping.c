@@ -27,19 +27,12 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
+#include <netdb.h>
 #include "config.h"
-#include <signal.h>
-#include <sys/types.h>
-#include <math.h>
-#include <errno.h>
-#include <netinet/in.h>
-#include "defs.h"
-#include "struct.h"
-#include "data.h"
-#include "packets.h"
-#include "shmem.h"
 #include "proto.h"
 #include "ntserv.h"
+#include "data.h"
+#include "shmem.h"
 
 #define PING_DEBUG				0	/* debugging */
 
@@ -77,8 +70,8 @@ static void
 calc_loss(int i, struct ping_cpacket *packet)
 {
     /* tloss vars */
-    register cp_recv,		/* client packets recv */
-            cp_sent;		/* client packets sent */
+    register int cp_recv,		/* client packets recv */
+                 cp_sent;		/* client packets sent */
     int     s_to_c_dropped,	/* server to client */
             c_to_s_dropped;	/* client to server */
     static int old_s_to_c_dropped,	/* previous update */
@@ -268,6 +261,7 @@ mstime(void)
 	(tv.tv_usec - tv_base.tv_usec) / 1000;
 }
 
+#ifdef PING_DEBUG
 /* debugging */
 static int
 msetime(void)
@@ -276,6 +270,7 @@ msetime(void)
     gettimeofday(&tv, NULL);
     return (tv.tv_sec - 732737182) * 1000 + tv.tv_usec / 1000;
 }
+#endif
 
 static int
 uchar_diff(int x, int y)
@@ -299,7 +294,7 @@ uchar_diff(int x, int y)
 void
 pingResponse(struct ping_cpacket *packet)
 {
-    register i;
+    register int i;
     static int last_num;
 
     if (!ping || packet->pingme != 1)
@@ -361,9 +356,9 @@ sendClientPing(void)
     packet.iloss_cs = iloss_cs;
 
     ping_sent[PITH(ping_id)].time = mstime();
-    /*
+    #ifdef PING_DEBUG
        printf("ping sent at %d\n", msetime());
-    */
+    #endif
 
     sendClientPacket(&packet);
 

@@ -27,18 +27,13 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
-#include "config.h"
-#include <math.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <signal.h>
-#include <errno.h>
-#include "defs.h"
-#include "struct.h"
-#include "data.h"
-#include "shmem.h"
+#include <sys/socket.h>
+#include "config.h"
 #include "proto.h"
 #include "ntserv.h"
+#include "data.h"
+#include "shmem.h"
 
 static int sendflag = 0;
 

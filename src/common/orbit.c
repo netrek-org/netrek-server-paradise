@@ -27,18 +27,11 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
-#include "config.h"
 #include <math.h>
-#include <limits.h>
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-
-#include "defs.h"
-#include "struct.h"
+#include "config.h"
+#include "proto.h"
 #include "data.h"
 #include "shmem.h"
-#include "proto.h"
 
 static void 
 deactivate_friendly_tractors(void)

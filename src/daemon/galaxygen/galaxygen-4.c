@@ -27,15 +27,12 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
-#include "config.h"
 #include <math.h>
-#include <memory.h>
-
-#include "defs.h"
-#include "struct.h"
+#include "config.h"
+#include "proto.h"
+#include "daemonII.h"
 #include "data.h"
 #include "shmem.h"
-#include "proto.h"
 
 #define SYSTEMS		0	/* number of planetary systems */
 

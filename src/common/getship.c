@@ -28,17 +28,9 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-
-#include "defs.h"
-#include "struct.h"
+#include "proto.h"
 #include "data.h"
 #include "shmem.h"
-#include "proto.h"
-
-
 
 /*-------------------------------INTERNAL FUNCTONS------------------------*/
 

@@ -27,13 +27,12 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
-#include "config.h"
 #include <math.h>
-#include "struct.h"
-#include "data.h"
-#include "shmem.h"
+#include "config.h"
 #include "proto.h"
 #include "daemonII.h"
+#include "data.h"
+#include "shmem.h"
 
 #define MAXALTITUDE 255
 #define MAXSTARS 20

@@ -28,31 +28,17 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-#include <signal.h>
-#ifdef HAVE_SYS_FILE_H
-#include <sys/file.h>
-#endif
 #include <setjmp.h>
-#include <sys/ioctl.h>
+#include <errno.h>
 #ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
 #endif
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
-
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <math.h>
-#include <errno.h>
-
-#include "defs.h"
-#include "struct.h"
-#include "data.h"
 #include "proto.h"
 #include "daemonII.h"
-#include "weapons.h"
+#include "data.h"
 #include "shmem.h"
 
 #define TellERR(x)     fprintf(stderr, "!  %s: %s\n", argv0, x)
@@ -73,6 +59,8 @@ int     ticks = 0;		/* counting ticks for game timing */
 int     plfd;			/* for the planet file */
 int     glfd;			/* for the status file */
 
+int     tourntimestamp = 0;	/* ticks since t-mode started */
+
 /*---------------------------LOCAL VARIABLES------------------------------*/
 
 static jmp_buf env;			/* to hold long jump back into main */
@@ -82,9 +70,6 @@ static int debug = 0;		/* set if an arg is passed to main on the
 				   debuf info is printed.  */
 
 static int doMove;		/* indicates whether it's time to call move() */
-
-static int tourntimestamp = 0;	        /* ticks since t-mode started */
-
 
 static int tm_robots[MAXTEAM + 1];	/* To limit the number of robots */
 
@@ -240,6 +225,56 @@ check_load(void)
 #endif
 }
 
+static void 
+handle_pause_goop(void)
+{
+    if (status2->paused) {
+	if (!status2->home.desirepause && !status2->away.desirepause) {
+	    /* countdown to game resumption */
+	    status2->paused--;
+	    if (status2->paused) {
+		if (status2->paused % TICKSPERSEC == 0) {
+		    char    buf[80];
+		    sprintf(buf, "Game will resume in %d seconds",
+			    status2->paused / TICKSPERSEC);
+		    pmessage(buf, -1, MALL, UMPIRE);
+		}
+	    }
+	    else {
+		pmessage("Let the carnage resume!", -1, MALL, UMPIRE);
+	    }
+	}
+	else {
+	    status2->pausemsgfuse++;
+	    if (status2->pausemsgfuse > SECONDS(15)) {
+		status2->pausemsgfuse = 0;
+		pmessage("Game is PAUSEd.  Captains `LEAGUE CONTINUE' to resume play.",
+			 -1, MALL, UMPIRE);
+		if (!status2->home.desirepause)
+		    pmessage("The home team wishes to CONTINUE the game.",
+			     -1, MALL, UMPIRE);
+		if (!status2->away.desirepause)
+		    pmessage("The away team wishes to CONTINUE the game.",
+			     -1, MALL, UMPIRE);
+	    }
+	}
+    }
+    else {
+	if (!status2->home.desirepause && !status2->away.desirepause)
+	    return;
+
+	status2->pausemsgfuse++;
+	if (status2->pausemsgfuse > SECONDS(15)) {
+	    char    buf[80];
+	    status2->pausemsgfuse = 0;
+	    sprintf(buf, "The %s team wishes to PAUSE the game!",
+		    status2->home.desirepause ? "home" : "away");
+	    pmessage(buf, -1, MALL, UMPIRE);
+	}
+    }
+}
+
+
 /*---------------------------------MOVE-----------------------------------*/
 /*  This is the main loop for the program.  It is called every 1/10th of
 a second.  It decides which  functions of the deamon need to be run.  */
@@ -291,7 +326,7 @@ move(void)
 		tourntimestamp = ticks;	/* record t-mode ending */
 		peacemessage();	/* send peace message */
 	    } else {
-		static fuse=0;
+		static int fuse=0;
 		fuse++;
 		if(fuse>60 && status2->starttourn > 0) {
 		    fuse = 0;
@@ -541,6 +576,9 @@ main(int argc, char **argv)
         fclose(fptr);
     }
 
+    /* build the trig tables */
+    init_trig();
+
     fprintf(stderr, "Daemon says 'hello!'\n");	/* say hi */
     srand48(getpid());		/* seed random # gen */
 
@@ -732,56 +770,6 @@ stoptimer(void)
     udt.it_value.tv_usec = 0;
     setitimer(ITIMER_REAL, &udt, (struct itimerval *) 0);
 }
-
-static void 
-handle_pause_goop(void)
-{
-    if (status2->paused) {
-	if (!status2->home.desirepause && !status2->away.desirepause) {
-	    /* countdown to game resumption */
-	    status2->paused--;
-	    if (status2->paused) {
-		if (status2->paused % TICKSPERSEC == 0) {
-		    char    buf[80];
-		    sprintf(buf, "Game will resume in %d seconds",
-			    status2->paused / TICKSPERSEC);
-		    pmessage(buf, -1, MALL, UMPIRE);
-		}
-	    }
-	    else {
-		pmessage("Let the carnage resume!", -1, MALL, UMPIRE);
-	    }
-	}
-	else {
-	    status2->pausemsgfuse++;
-	    if (status2->pausemsgfuse > SECONDS(15)) {
-		status2->pausemsgfuse = 0;
-		pmessage("Game is PAUSEd.  Captains `LEAGUE CONTINUE' to resume play.",
-			 -1, MALL, UMPIRE);
-		if (!status2->home.desirepause)
-		    pmessage("The home team wishes to CONTINUE the game.",
-			     -1, MALL, UMPIRE);
-		if (!status2->away.desirepause)
-		    pmessage("The away team wishes to CONTINUE the game.",
-			     -1, MALL, UMPIRE);
-	    }
-	}
-    }
-    else {
-	if (!status2->home.desirepause && !status2->away.desirepause)
-	    return;
-
-	status2->pausemsgfuse++;
-	if (status2->pausemsgfuse > SECONDS(15)) {
-	    char    buf[80];
-	    status2->pausemsgfuse = 0;
-	    sprintf(buf, "The %s team wishes to PAUSE the game!",
-		    status2->home.desirepause ? "home" : "away");
-	    pmessage(buf, -1, MALL, UMPIRE);
-	}
-    }
-}
-
 
 void
 ghostmess(struct player *victim)

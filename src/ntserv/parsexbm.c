@@ -48,10 +48,10 @@ return(-1); \
 #define MAX_LINE 500
 
 int 
-ParseXbmFile(FILE *stream, int *widthP, int *heightP, char **dataP)
+ParseXbmFile(FILE *stream, int *widthP, int *heightP, unsigned char **dataP)
 {
     char    line[MAX_LINE], name_and_type[MAX_LINE];
-    char   *ptr;
+    unsigned char   *ptr;
     char   *t;
     int     raster_length, v;
     register int bytes, bytes_per_line;
@@ -92,8 +92,8 @@ ParseXbmFile(FILE *stream, int *widthP, int *heightP, char **dataP)
     bytes_per_line = (*widthP + 7) / 8;
 
     raster_length = bytes_per_line * *heightP;
-    *dataP = (char *) malloc(raster_length);
-    if (*dataP == (char *) 0)
+    *dataP = (unsigned char *) malloc(raster_length);
+    if (*dataP == NULL)
 	pm_error("out of memory");
 
     /* Initialize hex_table. */
@@ -157,7 +157,7 @@ ParseXbmFile(FILE *stream, int *widthP, int *heightP, char **dataP)
 	    else
 		break;
 	}
-	*ptr++ = (char) (value1 ^ 0xFF);
+	*ptr++ = (unsigned char) (value1 ^ 0xFF);
     }
     return (raster_length);
 }

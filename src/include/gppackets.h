@@ -31,6 +31,8 @@ notice appear in all copies.
 #define GPPACKETS_H
 
 /* the definitions of {INT,CARD}{8,16,32} are in packets.h */
+#include "config.h"
+#include "defs.h"
 #include "packets.h"
 
 struct gameparam_spacket {

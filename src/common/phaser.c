@@ -27,15 +27,12 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
-#include "config.h"
 #include <math.h>
-#include <signal.h>
-#include "defs.h"
-#include "struct.h"
-#include "data.h"
-#include "weapons.h"
-#include "shmem.h"
+#include "config.h"
 #include "proto.h"
+#include "data.h"
+#include "shmem.h"
+#include "weapons.h"
 
 /*-----------------------------VISIBLE FUNCTIONS---------------------------*/
 

@@ -30,14 +30,11 @@ notice appear in all copies.
 /* cutil.c - misc utility fuctions common to all the binaries */
 
 #include "config.h"
+#include "proto.h"
 
 #include <signal.h>
 #include <sys/types.h>
-#include <utime.h>
-#include <math.h>
-
-#include "proto.h"
-#include "data.h"
+#include <string.h>
 
 /* r_signal - reliable version of signal()
    the System-V signal() function provides the older, unreliable signal

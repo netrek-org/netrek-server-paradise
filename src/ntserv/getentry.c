@@ -27,16 +27,12 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
-#include "config.h"
-#include <sys/types.h>
 #include <sys/socket.h>
-#include "defs.h"
-#include "struct.h"
-#include "data.h"
-#include "packets.h"
-#include "shmem.h"
+#include "config.h"
 #include "proto.h"
 #include "ntserv.h"
+#include "data.h"
+#include "shmem.h"
 
 extern int overload;		/* 7/31/91 TC let overloaded join any team */
 

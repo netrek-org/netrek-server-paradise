@@ -28,13 +28,11 @@ notice appear in all copies.
 --------------------------------------------------------------------*/
 
 #include "config.h"
-
-#include "defs.h"
-#include "packets.h"
-#include "gppackets.h"
-#include "wtext.h"
 #include "proto.h"
 #include "ntserv.h"
+#include "gppackets.h"
+#include "packets.h"
+#include "wtext.h"
 
 static size_t client_packet_sizes[] = {
   0, 

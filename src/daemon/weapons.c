@@ -27,19 +27,13 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
-#include "config.h"
-
 #include <math.h>
-#include <setjmp.h>
-
-#include "defs.h"
-#include "struct.h"
-#include "data.h"
+#include "config.h"
 #include "proto.h"
 #include "daemonII.h"
-#include "weapons.h"
+#include "data.h"
 #include "shmem.h"
-
+#include "weapons.h"
 
 /*------------------------------VISIBLE FUNCTIONS-------------------------*/
 
@@ -50,8 +44,6 @@ notice appear in all copies.
 
 static int 
 hostile_to(int warmask, int team, struct player *pl)
-    int     warmask, team;
-    struct player *pl;
 {
     return (warmask & pl->p_team) || (team & (pl->p_swar | pl->p_hostile));
 }
@@ -288,6 +280,64 @@ get_bearing(int dx, int dy, int dir)
 	return ((unsigned char) (phi - dir));
     else
 	return ((unsigned char) (256 + phi - dir));
+}
+
+/* args:
+    int	w;		 speed of torp
+    int	dx,dy;		 distance to target
+    int	s, dir;		 speed of target */
+static int
+anticipate_impact(int w, int dx, int dy, int s, int dir)
+{
+    float	sdx, sdy;
+    float	a, b, c, d;
+    float	t;
+    float	tdx, tdy;
+    float	theta;
+
+				/* mathematically, these affect t, but
+				   not the return value */
+    s *= WARP1 * TICKSPERSEC;
+    w *= WARP1 * TICKSPERSEC;
+
+    sdx = s*Cos[dir];
+    sdy = s*Sin[dir];
+
+    a = s*(float)s - w*(float)w;
+    b = 2*(sdx*(float)dx + sdy*(float)dy);
+    c = dx*(float)dx + dy*(float)dy;
+
+    if (a==0) {
+	t = -c/b;
+    } else {
+
+	d = b*b - 4*a*c;
+	if (d<0)
+	    return -1;
+	d = sqrt(d);
+
+	if (a<0) {
+	    a = -a;
+	    b = -b;
+	}
+
+	t = (-b - d)/(2*a);
+
+	if (t<0)
+	    t = (-b + d)/(2*a);
+    }
+
+    if (t<0)
+      return -1;
+
+    if (t>10)
+      return -1;
+
+    tdx = dx/t + sdx;
+    tdy = dy/t + sdy;
+
+    theta = atan2(tdx, -tdy);
+    return (unsigned char) (int) (theta * 128 / 3.14159);
 }
 
 
@@ -662,6 +712,7 @@ udmissiles(void)
 	    if (terrain_grid[(int)(mis->ms_x)/TGRID_GRANULARITY * TGRID_SIZE +
 		             (int)(mis->ms_y)/TGRID_GRANULARITY].types 
 		 & T_ASTEROIDS)
+	    {
 	      if ((mis->ms_type == FIGHTERTHINGY) &&
 		  ast_effect[SS_FIGHTER] &&
 		  (FIGHTER_HIT_AST > (lrand48()%100))) {
@@ -674,6 +725,7 @@ udmissiles(void)
 		explode(&mis->ms_base);
 		break;
 	      }
+	    }
 	
 	    if ((((sun_effect[SS_MISSILE] && mis->ms_type == MISSILETHINGY)
 		 || (sun_effect[SS_FIGHTER] && mis->ms_type == FIGHTERTHINGY))
@@ -760,65 +812,6 @@ udmissiles(void)
 	}
     }
 }
-
-/* args:
-    int	w;		 speed of torp
-    int	dx,dy;		 distance to target
-    int	s, dir;		 speed of target */
-static int
-anticipate_impact(int w, int dx, int dy, int s, int dir)
-{
-    float	sdx, sdy;
-    float	a, b, c, d;
-    float	t;
-    float	tdx, tdy;
-    float	theta;
-
-				/* mathematically, these affect t, but
-				   not the return value */
-    s *= WARP1 * TICKSPERSEC;
-    w *= WARP1 * TICKSPERSEC;
-
-    sdx = s*Cos[dir];
-    sdy = s*Sin[dir];
-
-    a = s*(float)s - w*(float)w;
-    b = 2*(sdx*(float)dx + sdy*(float)dy);
-    c = dx*(float)dx + dy*(float)dy;
-
-    if (a==0) {
-	t = -c/b;
-    } else {
-
-	d = b*b - 4*a*c;
-	if (d<0)
-	    return -1;
-	d = sqrt(d);
-
-	if (a<0) {
-	    a = -a;
-	    b = -b;
-	}
-
-	t = (-b - d)/(2*a);
-
-	if (t<0)
-	    t = (-b + d)/(2*a);
-    }
-
-    if (t<0)
-      return -1;
-
-    if (t>10)
-      return -1;
-
-    tdx = dx/t + sdx;
-    tdy = dy/t + sdy;
-
-    theta = atan2(tdx, -tdy);
-    return (unsigned char) (int) (theta * 128 / 3.14159);
-}
-
 
 
 /*------------------------------UDPLASMATORPS-----------------------------*/
