@@ -13,6 +13,7 @@
 #include <math.h>
 #include <signal.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 
 /* Netrek includes that we need */
 #include "config.h"

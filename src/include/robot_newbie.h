@@ -12,6 +12,10 @@
 #include "robot_functions.h"
 #include "defs.h"
 
+
+/* This is RobotServ's heartbeat - used by checkmess() */
+static int ticks = 0;
+
 /* Here are some names */
 char* mastername = "RobotServ";
 static char* team_s[4] = { "Federation", "Romulan", "Klingon", "Orion" };
@@ -38,13 +42,13 @@ static char* names[NUMNAMES] = {
 /* System dependend setups */
 #define MIN_NUM_PLAYERS	(MAXPLAYER - 1) /* How many players to maintain. */
 #define OROBOT          ROBODIR("/robot")
+#define PORT		2592
 #define RCMD            ROBOT
 #define REMOTEHOST      "localhost"
 #define TREKSERVER      "localhost"
 
 
 /* Functions */
-#define HOWOFTEN 1   /* Robot moves every HOWOFTEN cycles */
 #define PERSEC (1000000/UPDATE/HOWOFTEN) /* # of robo calls per second*/
 #define ROBOCHECK (10*PERSEC)   /* start or stop a robot */
 #define SENDINFO  (120*PERSEC)		/* send info to all */
