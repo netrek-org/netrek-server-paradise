@@ -27,6 +27,7 @@ notice appear in all copies.
 
 --------------------------------------------------------------------*/
 
+#include <sys/types.h>
 #include <errno.h>
 #include <netdb.h>
 #include <sys/select.h>

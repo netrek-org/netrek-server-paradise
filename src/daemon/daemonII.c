@@ -572,9 +572,11 @@ main(int argc, char **argv)
         FILE *fptr;
 
         fname = build_path("logs/daemonII.pid");
-        fptr = fopen(fname, "w+");
-        fprintf(fptr, "%d", getpid());
-        fclose(fptr);
+        if((fptr = fopen(fname, "w+")))
+	{
+          fprintf(fptr, "%d", getpid());
+          fclose(fptr);
+	}
     }
 
     /* build the trig tables */
