@@ -42,11 +42,11 @@ all: robotII robot_newbie
 robotII: robot.a common.a $(ROBOT_OBJS)
 	$(CC) $(CFLAGS) -o robotII $(ROBOT_OBJS) ../common/robot.a ../common/common.a $(LDFLAGS) $(LIBS)
 
-robot_newbie: common.a $(NEWBIE_OBJS)
-	$(CC) $(CFLAGS) -o robot_newbie $(NEWBIE_OBJS) ../common/common.a $(LDFLAGS) $(LIBS)
+robot_newbie: robot.a common.a $(NEWBIE_OBJS)
+	$(CC) $(CFLAGS) -o robot_newbie $(NEWBIE_OBJS) ../common/robot.a ../common/common.a $(LDFLAGS) $(LIBS)
 
 clean:
-	-rm -f robotII $(ROBOT_OBJS)
+	-rm -f robotII $(ROBOT_OBJS) $(NEWBIE_OBJS)
 
 install:
 	$(INSTALL) robotII $(prefix)/bin

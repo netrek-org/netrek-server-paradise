@@ -19,6 +19,7 @@
 #include "config.h"
 #include "data.h"
 #include "defs.h"
+#include "ntserv.h"
 #include "proto.h"
 #include "shmem.h"
 #include "weapons.h"
@@ -126,6 +127,7 @@ void messAll(char*);
 
 /* This function destroys the robot gracefully */
 void exitRobot(void);
+
 
 #endif  /* #ifndef ROBOT_FUNCTIONS_H */
 

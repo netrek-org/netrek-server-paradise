@@ -11,6 +11,16 @@
 #include "robot_newbie.h"
 
 
+/* 
+ * yes, there is a warning() in ntserv/warning.c.  However, pulling
+ * in that version of warning() results in pulling in almost ALL of
+ * ntserv, which would hose things up pretty good.  Since the robot isn't
+ * interested in warnings from the server, we define a null function
+ * here instead.
+ */
+void warning(char *t) { }
+
+
 /* Not sure what this does */
 static int rprog(char *login) {
    if (strcmp(login, "robot!") == 0) {
@@ -143,7 +153,7 @@ static void cleanup(int unused) {
          }
       }  /* end for */
 
-      USLEEP(2000000);
+      usleep(2000000);
       retry=0;
 
       for (i = 0, j = players; i < MAXPLAYER; i++, j++) {
@@ -207,7 +217,7 @@ static void start_a_robot(char *team) {
    sprintf(command, "%s -T%s", RCMD, team);
 
    if (fork() == 0) {
-      SIGNAL(SIGALRM, SIG_DFL);
+      sigset(SIGALRM, SIG_DFL);
       execl("/bin/sh", "sh", "-c", command, 0);
       perror("newbie'execl");
       _exit(1);
@@ -276,11 +286,12 @@ static int is_robots_only(void) {
  */
 void checkmess(int unused) {
    static int no_humans = 0;
+   struct status game_status;
    int PKEY = 128;
    int shmemKey = PKEY;
    int i;
 
-   HANDLE_SIG(SIGALRM,checkmess);
+   sigset(SIGALRM,checkmess);
    me->p_ghostbuster = 0;         /* keep ghostbuster away */
 
    if (me->p_status != PALIVE) {  /* So I'm not alive now... */
@@ -315,7 +326,7 @@ void checkmess(int unused) {
       int next_team;
       int np = num_players(&next_team);
 
-      if (queues[QU_PICKUP].count > 0 || np > MIN_NUM_PLAYERS) {
+      if (game_status.wait > 0 || np > MIN_NUM_PLAYERS) {
          stop_a_robot();
       }
       else if (np < MIN_NUM_PLAYERS ) {
@@ -349,7 +360,7 @@ static void reaper(int sig) {
 
    while ((pid = WAIT3(&stat, WNOHANG, 0)) > 0);
 
-   HANDLE_SIG(SIGCHLD,reaper);
+   sigset(SIGCHLD,reaper);
 }  /* end reaper() */
 
 
@@ -364,23 +375,21 @@ int main(int argc, char *argv[]) {
    int i;
 
    srandom(time(NULL));
-   getpath();
 
-   SIGNAL(SIGCHLD, reaper);
+   sigset(SIGCHLD, reaper);
 
    openmem(1, 0);
-   readsysdefaults();
 
-   SIGNAL(SIGALRM, checkmess);
+   sigset(SIGALRM, checkmess);
 
    if (!debug) {
-      SIGNAL(SIGINT, cleanup);
+      sigset(SIGINT, cleanup);
    }
 
    class = ATT;
    target = -1;   /* no targeted player */
 
-   if ((pno = findslot(overload, homeaway)) < 0) {
+   if ((pno = findrslot()) < 0) {
       fprintf(stderr, "Unable to get a slot");
       exit(0);
    }
@@ -391,7 +400,7 @@ int main(int argc, char *argv[]) {
    lastm = mctl->mc_current;
 
    /* set the robot@nowhere fields */
-   robonameset(me);
+   set_robot_name(me);
 
    /* Enter the game */
    enter(team, 0, pno, class, -1);
@@ -418,7 +427,7 @@ int main(int argc, char *argv[]) {
    me->p_status = PALIVE;   /* Put robot in game */
 
    while (1) {
-      PAUSE(SIGALRM);
+      sigpause(SIGALRM);
    }
 }
 

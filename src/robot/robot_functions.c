@@ -9,7 +9,7 @@
 
 
 /* This function logs the robot in */
-static void do_robot_login(void) {
+void do_robot_login(void) {
    struct statentry player;
    struct stat buf;
    int     plfd, position, entries;
@@ -230,7 +230,7 @@ void config(void) {
  * Otherwise, it will head to the center of its own space.
  * CRD feature: robots now hover near their start planet - MAK,  2-Jun-93
  */
-static void go_home(struct Enemy *ebuf) {
+void go_home(struct Enemy *ebuf) {
    int     x, y;
    double  dx, dy;
    struct  player *j;
@@ -307,7 +307,7 @@ static void go_home(struct Enemy *ebuf) {
  * of the plasma torps in the game, and phasers any hostile ones in its
  * phaser range.  It returns TRUE if it phasored a plasma, FALSE otherwise.
  */
-static int phaser_plasmas(void) {
+int phaser_plasmas(void) {
    register struct plasmatorp *pt;
    register int i;
    int     myphrange = phrange;
@@ -347,7 +347,7 @@ static int phaser_plasmas(void) {
 
 
 /* Not quite sure what this does */
-static int projectDamage(int eNum, int *dirP) {
+int projectDamage(int eNum, int *dirP) {
    double  tdx, tdy, mdx, mdy;
    register int i, j, mx, my, tx, ty, dx, dy;
    register int numHits = 0;
@@ -394,7 +394,7 @@ static int projectDamage(int eNum, int *dirP) {
 
 
 /* Figures out if someone is tractoring or pressing the 'bot */
-static int isTractoringMe(struct Enemy *enemy_buf) {
+int isTractoringMe(struct Enemy *enemy_buf) {
    return ((enemy_buf->e_hisflags & PFTRACT) &&
       !(enemy_buf->e_hisflags & PFPRESS) &&
       (enemy_buf->e_tractor == me->p_no));
@@ -402,7 +402,7 @@ static int isTractoringMe(struct Enemy *enemy_buf) {
 
 
 /* Finds the nearest enemy and returns him */
-static struct Enemy* get_nearest(void) {
+struct Enemy* get_nearest(void) {
    static struct Enemy ebuf;
    register struct player *j;
    register int i;
@@ -613,7 +613,7 @@ static struct Enemy* get_nearest(void) {
 
 
 /* Returns the nearest planet */
-static struct planet * get_nearest_planet(void) {
+struct planet * get_nearest_planet(void) {
    register struct planet *l;
    register struct planet *nearest;
    register int i;
@@ -646,7 +646,7 @@ void set_robot_name(struct player *myself) {
  * This function will seek out a nearby repair planet if nearby, otherwise
  * it will just repair.
  */
-static int do_repair(void) {
+int do_repair(void) {
    /* Repair if necessary (we are safe) */
    register struct planet *l;
    int     dx, dy;
@@ -741,7 +741,7 @@ static int do_repair(void) {
 
 
 /* Sends a message to everyone */
-static void messAll(char *buf) {
+void messAll(char *buf) {
    static char addrbuf[20];
 
    sprintf(addrbuf, " %s->ALL", twoletters(me));
@@ -750,7 +750,7 @@ static void messAll(char *buf) {
 
 
 /* This function destroys the robot gracefully */
-static void exitRobot(void) {
+void exitRobot(void) {
    static char buf[80];
 
    r_signal(SIGALRM, SIG_IGN);

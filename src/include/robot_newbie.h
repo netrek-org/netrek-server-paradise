@@ -49,10 +49,17 @@ static char* names[NUMNAMES] = {
 
 
 /* Functions */
+#define HOWOFTEN 1                       /*Robot moves every HOWOFTEN cycles*/
 #define PERSEC (1000000/UPDATE/HOWOFTEN) /* # of robo calls per second*/
-#define ROBOCHECK (10*PERSEC)   /* start or stop a robot */
-#define SENDINFO  (120*PERSEC)		/* send info to all */
+#define ROBOCHECK (10*PERSEC)            /* start or stop a robot */
+#define SENDINFO  (120*PERSEC)           /* send info to all */
 
+/*
+ * Strange #defines from Vanilla needed to make RobotServ work -- they should
+ * be replaced with the Paradise equivalent when there is time
+ */
+#define MZERO(b1,l)     bzero(b1,l)
+#define WAIT3(x,y,z)    waitpid(-1, x, y )
 
 #endif  /* #ifndef ROBOT_NEWBIE_H */
 
