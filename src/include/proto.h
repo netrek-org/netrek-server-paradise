@@ -20,6 +20,10 @@ void (*r_signal
 int touch P((char *));
 #ifndef HAVE_STDUP
 char *strdup P((char *));
+#endif
+
+/* common/data.c */
+void init_data P((char *));
 
 /* common/detonate.c */
 void detothers P((void));
@@ -77,6 +81,9 @@ void unsuspendPrep P((void));
 /* common/orbit.c */
 void orbit P((void));
 void newdock P((int));
+
+/* common/parse-ranks.c */
+void parse_ranks P((char *));
 
 /* common/path.c */
 char *build_path P((char *));

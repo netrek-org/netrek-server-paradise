@@ -259,10 +259,12 @@ int main(int argc, char **argv)
 	}
 	exit(1);
     }
-#ifndef SVR4
-    /* allows robots to be forked by the daemon -- Evil ultrix bullshit */
-    sigsetmask(0);
-#endif				/* SVR4 */
+    /* allows robots to be forked by the daemon on some systems */
+    {
+      sigset_t unblock_everything;
+      sigfillset(&unblock_everything);
+      sigprocmask(SIG_UNBLOCK, &unblock_everything, NULL);
+    }
 
     /* NOTE: snakes do not become alive. */
 

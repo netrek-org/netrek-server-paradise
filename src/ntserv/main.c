@@ -17,8 +17,6 @@ suitability of this software for any purpose.  This software is provided
 --------------------------------------------------------------------------*/
 char binary[] = "@(#)ntserv";
 
-#define NEED_TIME 
-
 #include "config.h"
 #include <sys/types.h>
 #include <signal.h>
@@ -26,26 +24,15 @@ char binary[] = "@(#)ntserv";
 #include <pwd.h>
 #include <sys/wait.h>
 #include <sys/resource.h>
+#include <stdlib.h>
 
 #include "defs.h"
 #include "struct.h"
 #include "data.h"
 #include "packets.h"
 #include "shmem.h"
-#include "path.h"
 
 #include "gameconf.h"
-
-#if 0
-#define D(s) do { s } while(0)
-#else
-#define D(s)
-#endif
-
-
-#if 0
-jmp_buf env;
-#endif
 
 int     startTkills, startTlosses, startTarms, startTplanets, startTticks;
 char    start_login[16];	/* change 1/25/91 TC */
@@ -58,25 +45,18 @@ int     overload = 0;		/* global 7/31/91 TC */
 
 int     indie = 0;		/* always be indie 8/28/91 TC */
 
-
-#if defined(sparc) && !defined(SVR4)
-int     atexitfunc( /* int, caddr_t */ );
-#else
-void    atexitfunc();
-#endif
+static void atexitfunc(void);
 
 int 
 main(int argc, char **argv)
 {
-    int     intrupt();
-    char   *getenv();
     int     team, s_type;
     int     pno;
     int     usage = 0;   /* Flag saying tell usage */
     int     errorc = 0;  /* Error count */
     char   *errorv[5];   /* Error Vector (cannot have more than 5) */
     char   *name, *ptr;
-    int     reaper();
+    char   *rank_filename;
     int     callHost = 0;
     long    starttime;
     enum HomeAway homeaway = NEITHER;
@@ -86,6 +66,10 @@ main(int argc, char **argv)
 
     pno = time(NULL);
 
+
+    /* read in ranks file */
+    rank_filename = build_path(RANKS_FILE);
+    init_data(rank_filename);
 
     /* load_time_acess - read in the hours file, Larry's. */
 
@@ -234,20 +218,14 @@ main(int argc, char **argv)
 	exit(1);
     }
 
-#if defined(sparc) && !defined(SVR4)
-    on_exit(atexitfunc, (caddr_t) 0);
-#else
     atexit(atexitfunc);		/* register a function to execute at exit */
-#endif
 
     me = &players[pno];
     me->p_no = pno;
     galaxyValid[ me->p_no ] = 0;
     me->p_team = NOBODY;
     me->p_stats.st_royal = 0;
-#ifdef	RC_DISTRESS
     me->gen_distress = 0;	/* default to RCD off */
-#endif
     me->p_ntspid = getpid();
     myship = &me->p_ship;
     mystats = &me->p_stats;
@@ -255,10 +233,6 @@ main(int argc, char **argv)
     me->p_lastrefit = -1;
     me->p_spyable = 1;
     me->p_teamspy = ~0;
-#if 0
-    me->p_planfrac = 0;		/* reset fractional parts */
-    me->p_bombfrac = 0;		/* reset fractional parts */
-#endif
 
 /* --------------------------[ CLUECHECK stuff ]-------------------------- */
 #ifdef CLUECHECK1
@@ -305,12 +279,7 @@ main(int argc, char **argv)
 
     /* Get login name */
 
-#if 0
-    if ((pwent = getpwuid(getuid())) != NULL)
-	(void) strncpy(login, pwent->pw_name, sizeof(login));
-    else
-#endif
-	(void) strncpy(login, "Bozo", sizeof(login));
+    (void) strncpy(login, "Bozo", sizeof(login));
     login[sizeof(login) - 1] = '\0';
 
     strcpy(pseudo, "Guest");
@@ -480,142 +449,6 @@ start_interruptor(void)
     interrupting = 1;
 }
 
-#if 0
-
-/* this is TOTALLY untested.  It probably doesn't belong in this file,
-   either.  When I figure out all the mechanisms, this will replace
-   the while loop in main().  RF */
-
-void 
-inputloop()
-{
-    static int switching = -1;	/* is the player changing teams? */
-
-    int     status = me->p_status;
-
-    while (1) {
-	switch (status) {
-	case PFREE:
-	    status = me->p_status = PDEAD;
-	    me->p_explode = 600;
-	    stop_interruptor();
-	    break;
-
-	case POUTFIT:
-	case PTQUEUE:
-	    updateSelf();
-	    updateShips();
-	    sendMaskPacket(tournamentMask(me->p_team));
-	    briefUpdateClient();
-	    teamPick = -1;
-	    socketPause();
-	    break;
-
-	case PEXPLODE:
-	case PDEAD:
-	    inputMask = 0;
-	case PALIVE:
-	    socketWait();
-	    delay_interrupt();	/* don't let client read be interrupted by
-				   the interval timer */
-	    /*
-	       ^-- won't work.. delay_interrupt doesn't stop ALRMs from
-	       happening (HAK 9/21)
-	    */
-	    break;
-	}
-
-	/* me->p_status could change in here. */
-	readFromClient();
-
-	if (isClientDead()) {
-	    if (!reconnect()) {
-		/* me->p_status=PFREE; should this be done?  RF */
-		exit(0);
-	    }
-	}
-	switch (status) {
-	case POUTFIT:
-	case PTQUEUE:
-	    if (teamPick == -1)
-		break;
-
-	    if (teamPick < 0 || teamPick > 3 /* XXX */ ) {
-		warning("That is not a valid team.");
-		sendPickokPacket(0);
-	    }
-	    else if (!(tournamentMask(me->p_team) & (1 << teamPick))) {
-		warning("I cannot allow that.  Pick another team");
-		sendPickokPacket(0);
-	    }
-	    else if (((1 << teamPick) != me->p_team) &&
-		     (me->p_team != ALLTEAM) &&
-		     switching != teamPick &&
-		     me->p_whydead != KGENOCIDE) {	/* switching teams */
-		switching = teamPick;
-		warning("Please confirm change of teams.  Select the new team again.");
-		sendPickokPacket(0);
-	    }
-	    else if (shipPick < 0 || shipPick >= NUM_TYPES) {
-		/* His team choice is ok. */
-		warning("That is an illegal ship type.  Try again.");
-		sendPickokPacket(0);
-	    }
-	    else if (!allowed_ship(1 << teamPick, mystats->st_rank, mystats->st_royal, shipPick)) {
-		sendPickokPacket(0);
-	    }
-	    else {
-
-		if (goAway) {	/* what does this do ? */
-		    printStats();
-		    exit(0);
-		}
-		if (indie)
-		    me->p_team = 4;
-
-		inputMask = -1;
-
-		enter(teamPick, 0, me->p_no, shipPick, -1);
-
-		status = me->p_status = me->p_observer ? POBSERVER : PALIVE;
-		start_interruptor();	/* since we're alive, we need regular
-					   interrupts now */
-
-		me->p_ghostbuster = 0;
-
-		repCount = 0;
-
-	    }
-	    break;
-	case PALIVE:
-	case PEXPLODE:
-	case PDEAD:
-	    if (0 /* sendflag */ ) {	/* this is still busted, ugh */
-		check_authentication();
-		if (me->p_status == PFREE) {
-		    me->p_ghostbuster = 0;
-		    me->p_status = PDEAD;
-		}
-		if ((me->p_status == PDEAD || me->p_status == POUTFIT)
-		    && (me->p_ntorp <= 0)
-		    && (me->p_nplasmatorp <= 0)) {
-		    stop_interruptor();
-		    death();
-		    status = POUTFIT;
-		}
-		auto_features();
-		updateClient();
-
-		/* sendflag=0;   ugh, broke */
-	    }
-	    reenable_interrupt();
-	}
-    }
-}
-
-#endif
-
-
 void 
 exitGame(void)
 {
@@ -642,15 +475,8 @@ exitGame(void)
     exit(0);
 }
 
-#if defined(sparc) && !defined(SVR4)
-int 
-atexitfunc(status, arg)
-    int     status;
-    caddr_t arg;
-#else
-void 
-atexitfunc()
-#endif
+static void 
+atexitfunc(void)
 {
     me->p_ntspid = 0;
     me->p_status = PFREE;
@@ -753,14 +579,8 @@ sendSysDefs(void)
     sprintf(buf, "Tournament mode requires %d player%s per team",
 	    configvals->tournplayers, PLURAL(configvals->tournplayers));
     sendMotdLine(buf);
-    /* sendMotdLine(""); */
 
     /* We don't blab about newturn */
-#if 0
-    sendMotdLine(configvals->hiddenenemy ?
-		 "Visibility is restricted during T-mode" :
-		 "Visibility is unlimited all the time");
-#endif
     sendMotdLine(configvals->binconfirm ?
 		 "Only authorized binaries are allowed" :
 		 "Non-authorized binaries are detected but not rejected");
@@ -977,8 +797,8 @@ sendMotd(void)
 	doMotdPics();
 }
 
-void
-reaper(int sig)
+RETSIGTYPE
+reaper(int unused)
 {
 #ifdef HAVE_WAIT3
     while (wait3((int *) 0, (int) WNOHANG, (struct rusage *) 0) > 0);
@@ -1001,7 +821,6 @@ printStats(void)
 	return;
     curtime = time(NULL);
 
-#ifdef LOG_LONG_INFO		/*-[  Long info printed to logfiles and startup.log ]-*/
     fprintf(logfile, "Leaving: %-16s (%s) %3dP %3dA %3dW/%3dL %3dmin %drtt %dsdv %dls %dplan <%s@%s> %s",
 	    me->p_name,
 	    twoletters(me),
@@ -1013,11 +832,6 @@ printStats(void)
             me->p_avrt, me->p_stdv, me->p_pkls,
 	    numPlanets(me->p_team),
 
-#else
-
-    fprintf(logfile, "Leaving: %s <%s@%s> %s",
-	    me->p_name,
-#endif
 	    me->p_login,
 	    me->p_full_hostname,
 	    ctime((time_t *) &curtime));
@@ -1098,10 +912,6 @@ doMotdPics(void)
 			nlines = h - i * linesperblock;
 		    else
 			nlines = linesperblock;
-#if 0
-		    printf("Sending MotdPics: %s %d %d %d %d %d\n",
-			   fname, x, y + i * linesperblock, page, w, nlines);
-#endif
 		    sendMotdPic(x, y + i * linesperblock,
 				bits + bytesperline * linesperblock * i,
 				page, w, nlines);
@@ -1111,6 +921,3 @@ doMotdPics(void)
     }
     fclose(ptr);
 }
-
-
-#undef D

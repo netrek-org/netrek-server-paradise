@@ -16,8 +16,6 @@ suitability of this software for any purpose.  This software is provided
                                                     Brandon Gillespie
 --------------------------------------------------------------------------*/
 
-#define NEED_TIME 
-
 #include "config.h"
 
 #include <sys/types.h>
@@ -67,9 +65,7 @@ ntorp(unsigned char course, int type)
 {
     register int i;		/* looping var */
     register struct torp *k;	/* to point to a torp */
-#ifdef BUTTORP_PENALTY
     register unsigned char buttangle;
-#endif
 
     if (me->p_flags & PFWEP) {	/* no firing while */
 	warning("Torpedo launch tubes have exceeded maximum safe temperature!");
@@ -108,17 +104,22 @@ ntorp(unsigned char course, int type)
 
     me->p_ntorp++;		/* inc torps in the air */
     me->p_fuel -= myship->s_torp.cost;	/* dec the fuel */
-#ifdef BUTTORP_PENALTY
-/* figure out absolute difference of arc between rear of ship and torp */
-if ((buttangle = course - me->p_dir - 128) > 128) buttangle = 256 - buttangle;
 
-/* Check if in penalty limit.  Ships with no "front" are exempt, of course */
-if (myship->s_type == WARBASE || myship->s_type == STARBASE || myship->s_type ==
- JUMPSHIP || TORP_PENALTY_HALFARC < buttangle) {
+    if(configvals->butttorp_penalty)
+    {
+      /* figure out absolute difference of arc between rear of ship and torp */
+      if((buttangle = course - me->p_dir - 128) > 128)
+        buttangle = 256 - buttangle;
+
+      /* Check if in penalty limit.  Ships with no "front" are exempt, of
+         course */
+      if(myship->s_type == WARBASE || myship->s_type == STARBASE || 
+         myship->s_type == JUMPSHIP || TORP_PENALTY_HALFARC < buttangle) 
+      {
         me->p_wtemp += myship->s_torp.wtemp;
-}  
-else
-{
+      }  
+      else
+      {
         /* You call that dogfighting?  Bad dog!  No biscuit!  Bad dog! */
         me->p_wtemp += myship->s_torp.wtemp +
         (       myship->s_torp.wtemp *
@@ -126,11 +127,12 @@ else
                 TORP_PENALTY_FACTOR *
                 me->p_speed
         ) / (TORP_PENALTY_HALFARC * myship->s_imp.maxspeed);
-}
-#else
+      }
+    }
+    else
         me->p_wtemp += myship->s_torp.wtemp;
-#endif
-for (i = me->p_no * MAXTORP, k = &torps[i];	/* Find a free torp */
+
+    for (i = me->p_no * MAXTORP, k = &torps[i];	/* Find a free torp */
 	 i < me->p_no * MAXTORP + MAXTORP; i++, k++) {
 	if (k->t_status == TFREE)
 	    break;

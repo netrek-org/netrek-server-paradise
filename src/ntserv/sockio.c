@@ -280,18 +280,7 @@ sendTCPbuffered(void *packet, int size)
 {
     int	cc;
     /* these are critical packets; send them via TCP */
-#ifdef FEATURE_DIAG
-    /* check the packet & see if we're adding packet type 60 to the buffer */
-    if( *((char *)packet) == SP_FEATURE ){
-      fprintf( stderr, "Sending SP_FEATURE packet\n" );
-    }
-#endif
     if (bufptr - buf + size >= BUFSIZE) {
-#ifdef FEATURE_DIAG
-      if( *((char *)packet) == SP_FEATURE ){
-        fprintf( stderr, "Sending TCP buffer, delaying write.\n" );
-      }
-#endif
 	if ((cc = gwrite(sock, buf, bufptr - buf)) != bufptr - buf) {
 	    fprintf(stderr, "TCP gwrite failed (%d, error %d)\n",
 		    cc, errno);
@@ -299,11 +288,6 @@ sendTCPbuffered(void *packet, int size)
 	}
 	bufptr = buf		/* + addSequence(buf) */ ;
     }
-#ifdef FEATURE_DIAG
-    if( *((char *)packet) == SP_FEATURE ){
-      fprintf( stderr, "Adding SP_FEATURE packet to buffer.\n" );
-    }
-#endif
     memcpy(bufptr, packet, size);
     bufptr += size;
 }
@@ -331,24 +315,8 @@ sendTCPdeferred(void *packet, int size)
     void	*packet;
     int		size;
 {
-#if 1
     /* I'm having problems with UDP connection packet */
     sendTCPbuffered(packet, size);
-#else
-    struct deferred_packet	*pkt;
-    pkt = (struct deferred_packet*)malloc(sizeof(*pkt));
-    pkt->data = malloc(size);
-    pkt->size = size;
-    memcpy(pkt->data, packet, size);
-    pkt->next = 0;
-
-    if (df_tail) {
-	df_tail->next = pkt;
-    } else {
-	df_head = pkt;
-    }
-    df_tail = pkt;
-#endif
 }
 
 /* When the socket is ready for write, toss a packet through the pipe

@@ -46,19 +46,6 @@ suitability of this software for any purpose.  This software is provided
 
 /*-----------------------------------------------------------------------*/
 
-
-
-
-#ifndef LEAGUE_SUPPORT
-#define tlog_beamup(a,b)
-#define tlog_plandest(a,b)
-#define tlog_plantake(a,b)
-#define tlog_planaban(a,b)
-#define tlog_Bbeamup(a,b)
-#define tlog_beamdown(a,b)
-#define tlog_Bbeamdown(a,b)
-#endif
-
 /*---------------------------INTERNAL FUNCTIONS---------------------------*/
 
 /*-----------------------------BEAMMEUPSCOTTY-----------------------------*/
@@ -75,9 +62,7 @@ beammeupscotty(struct player *j)	/* the player beaming */
 	if (l->pl_armies == 0	/* cannot beam if no armies */
 	/* this prevents you from beaming up outside T-mode in a league game */
 	    || (!(configvals->evacuation) && (l->pl_armies < 5))
-#ifdef LEAGUE_SUPPORT
 	    || (status2->league && !status->tourn)
-#endif
 	    || j->p_armies >= j->p_ship.s_maxarmies
 	    || ((j->p_ship.s_nflags & SFNARMYNEEDKILL)
 	   && (j->p_armies >= (int) (j->p_kills * j->p_ship.s_armyperkill)))
@@ -235,9 +220,10 @@ beamdown(struct player *j)	/* the player beaming */
 				       twoletters(js));
 			(void) sprintf(buf, "Good assist, %s", js->p_name);
 			js->p_stats.st_jsplanets++;
-#ifdef JS_TPLANET_CREDIT
-			js->p_stats.st_tplanets++;
-#endif
+			
+			if(configvals->js_assist_credit)
+			    js->p_stats.st_tplanets++;
+
 			status->jsplanets++;
 			pmessage(buf, j->p_lastjs, MINDIV | MTAKE, buf1);
 		    }
@@ -302,9 +288,6 @@ doshipexplode(struct player *j)	/* the player to explode */
     }
     if (j->p_flags & PFORBIT) {	/* if orbiting then */
 	j->p_flags &= ~PFORBIT;	/* eject him from orbit */
-#if 0
-	planets[j->p_planet].pl_torbit &= ~j->p_team;	/* team not orbiting */
-#endif
     }				/* reset ship timers */
     if (j->p_status == PDEAD) {
 	/*
@@ -733,10 +716,6 @@ domove(struct player *j)	/* the player to move */
 	    ) {
 	    if (configvals->warpprepstyle == WPS_TSUSPEND && being_tractored(j)) {
 		/* whoa, warp prep suspended */
-#if 0
-		/* very noisy */
-		god2player("Warp prep suspended while in tractor beam!", j->p_no);
-#endif
 	    }
 	    else {
 		j->p_warptime--;/* countdown to warp powerup. */
@@ -756,10 +735,6 @@ domove(struct player *j)	/* the player to move */
 		    }
 		    else if (configvals->warpprepstyle == WPS_TPREVENT) {
 			if (being_tractored(j)) {
-#if 0
-			    /* very noisy */
-			    god2player("Warp prevented while in tractor beam!", j->p_no);
-#endif
 			    j->p_warptime++;
 			    success = 0;
 			}
@@ -923,9 +898,6 @@ dotractor(struct player *j)	/* the player to do */
 
 	    if (victim->p_flags & PFORBIT) {	/* pullplayer out of */
 		victim->p_flags &= ~PFORBIT;	/* orbit */
-#if 0
-		planets[victim->p_planet].pl_torbit &= ~victim->p_team;
-#endif
 	    }
 	    else if (victim->p_flags & PFDOCK) {
 		/* ooOooo, damage the base */
@@ -993,13 +965,9 @@ loserstats(int pl)		/* the dead player's number */
 {
     struct player *dude;	/* to point to player */
 
-#ifdef ROBOTSTATS
-    if (!status->tourn && !(players[pl].p_flags & PFROBOT))
-	return;
-#else
-    if (!status->tourn)		/* if not in t-mode */
-	return;			/* don't punish them */
-#endif
+    if (!status->tourn &&
+        (configvals->robot_stats && !(players[pl].p_flags & PFROBOT)))
+      return;
 
     dude = &players[pl];	/* get pointer to player's structure */
     if (dude->p_ship.s_type == STARBASE) {	/* if ship was a SB */
@@ -1029,13 +997,9 @@ killerstats(int pl, struct player *victim)
 {
     struct player *dude;	/* to point to killer's player struct */
 
-#ifdef ROBOTSTATS
-    if (!status->tourn && !(players[pl].p_flags & PFROBOT))
+    if (!status->tourn && 
+        (configvals->robot_stats && !(players[pl].p_flags & PFROBOT)))
 	return;
-#else
-    if (!status->tourn)		/* if not in t-mode */
-	return;			/* don't reward them */
-#endif
 
     dude = &players[pl];	/* get killer's player struct */
     if (dude->p_ship.s_type == STARBASE) {	/* if player in SB then */
@@ -1054,20 +1018,17 @@ killerstats(int pl, struct player *victim)
     dude->p_dooshes += victim->p_armies;
     status->dooshes += victim->p_armies;	/* add to global dooshes */
     dude->p_stats.st_di += 0.02 * 5.0 * (float) victim->p_armies;
-#ifndef AEDILE
     if (victim->p_ship.s_type == STARBASE)
 	dude->p_stats.st_di += 3.0;
     if (victim->p_ship.s_type == WARBASE)
 	dude->p_stats.st_di += 1.5;
-#endif
     if (victim->p_ship.s_type == PATROL)
 	dude->p_stats.st_di += 0.03;
     else
 	dude->p_stats.st_di += 0.04;
-#ifdef ROBOTSTATS
-    if (dude->p_flags & PFROBOT)/* give robots additional DI for kills, since */
-	dude->p_stats.st_di += 0.05;	/* it's all they ever do :) */
-#endif
+    /* give robots additional DI for kills, since it's all they ever do ;)*/
+    if (dude->p_flags & PFROBOT && configvals->robot_stats)
+	dude->p_stats.st_di += 0.05;
 }
 
 
@@ -1083,14 +1044,9 @@ checkmaxkills(int pl)		/* # of player to check */
     struct stats *stats;	/* to point to player's struct */
     struct player *dude;	/* to point to his stats struct */
 
-#ifdef ROBOTSTATS
-    if (!status->tourn && !(players[pl].p_flags & PFROBOT))
+    if (!status->tourn && 
+        (configvals->robotstats && !(players[pl].p_flags & PFROBOT)))
 	return;
-#else
-    if (!status->tourn)		/* to prevent cheating; i.e., bringing in
-				   hosers */
-	return;
-#endif
     dude = &(players[pl]);	/* get player's player struct */
     stats = &(dude->p_stats);	/* get player's stat struct */
     if (dude->p_ship.s_type == STARBASE) {	/* if in starbase then */
@@ -1281,8 +1237,7 @@ udplayers(void)
 		    status->timeprod++;	/* and global t-mode ticks */
 		    break;
 		}
-#ifdef ROBOTSTATS
-	    else if (j->p_flags & PFROBOT)
+	    else if (j->p_flags & PFROBOT && configvals->robot_stats)
 		switch (j->p_ship.s_type) {
 		case STARBASE:
 		    j->p_stats.st_sbticks++;	/* inc SB ticks */
@@ -1297,7 +1252,6 @@ udplayers(void)
 		    j->p_stats.st_tticks++;	/* inc t-mode ticks */
 		    break;
 		}
-#endif
 
 	    if (j->p_jsdock > 0)/* inc js dock time */
 		j->p_jsdock = (++j->p_jsdock < 1200) ? j->p_jsdock : 0;
@@ -1368,7 +1322,6 @@ udplayers(void)
     else			/* else stop daemon die timer */
 	dietime = -1;
 
-#ifdef LEAGUE_SUPPORT
     if (status2->league && status->tourn) {
 	int     leaguecount[2];	/* used to bench excess players */
 
@@ -1430,7 +1383,6 @@ udplayers(void)
 	/* check for refits and unexpected deaths */
 	scan_for_unexpected_tourny_events();
     }
-#endif
 }
 
 /*------------------------------------------------------------------------*/

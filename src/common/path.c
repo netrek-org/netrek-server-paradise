@@ -21,16 +21,15 @@ suitability of this software for any purpose.  This software is provided
 /* This is the default path, you don't have to change this as long as
  * you set the NETREKDIR env
  */
-char    netrekpath[256] = "/local/lib/paradise";
-
-
-static char buf[512];
-static int initted = 0;
+static char netrekpath[256] = "/usr/local/paradise";
 
 char *
 build_path(char *suffix)
 {
+    static char buf[512];
+    static int initted = 0;
     int     len;
+
     if (!initted) {
 	char   *ptr;
 	initted = 1;

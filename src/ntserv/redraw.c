@@ -16,8 +16,6 @@ suitability of this software for any purpose.  This software is provided
                                                     Brandon Gillespie
 --------------------------------------------------------------------------*/
 
-#define NEED_TIME 
-
 #include "config.h"
 #include <signal.h>
 #include <setjmp.h>		/* change 4/14/91 TC */
@@ -43,13 +41,11 @@ check_authentication(void)
     if (testtime == -1) {
 	struct reserved_spacket sp;
 
-#ifdef RSA_EXEMPTION_FILE
 	if (site_rsa_exempt()) {
 	    printf("site exempt from RSA authentication\n");
 	    strcpy(RSA_client_type, "site/player is RSA exempt");
 	    testtime = 0;
 	} else
-#endif /* RSA_EXEMPTION_FILE */
         {
             /*
               Give reasonable period of time to respond to query (and
@@ -417,20 +413,6 @@ operate_transporters(void)
     }
 }
 
-#if 0
-static void 
-reduce_speed()
-{
-    if (me->p_desspeed > myship->s_imp.maxspeed) {
-	/* drop out of warp */
-	me->p_desspeed = myship->s_imp.maxspeed + 1;
-	me->p_flags &= ~(PFWARP | PFAFTER);
-	warning("Approaching planet, dropping out of warp");
-    }
-    set_speed(me->p_desspeed - 1, 0);
-}
-#endif
-
 static void 
 decelerate_at_range(int dist)
 {
@@ -582,9 +564,7 @@ auto_features(void)
 
 #if defined(CLUECHECK1) || defined(CLUECHECK2)
     if (
-#ifdef LEAGUE_SUPPORT
 	!status2->league && 
-#endif
 	configvals->cluecheck)
 	countdown_clue();
 #endif

@@ -55,7 +55,6 @@ extern char RSA_client_type[256];	/* LAB 4/1/93 */
 extern int testtime;
 extern char *galaxyValid;
 
-#ifdef FEATURE			/* plus defaults, to protect client */
 extern int F_feature_packets; 	/* allow feature packets */
 extern int F_allowViewBox;	/* allow view box */
 extern int F_allowShowAllTractorPressor;	/* allow all tracts/presses */
@@ -74,7 +73,6 @@ extern unsigned char F_terrain_minor;	/* Minor terrain version client can handle
 extern int F_gz_motd;		/* Client can't handle GZipped MOTD packets */
 extern unsigned char F_gz_motd_major;	/* Major gzipped format client can handle */
 extern unsigned char F_gz_motd_minor;	/* Minor gzipped format client can handle */
-#endif
 
 /*extern char *serverName; not needed 8/1/92 TC */
 
@@ -94,8 +92,15 @@ extern double Sin[], Cos[];
 extern char pseudo[PSEUDOSIZE];
 extern char login[PSEUDOSIZE];
 
+#ifdef STATIC_RANKS
 extern struct rank ranks[NUMRANKS];
 extern struct royalty royal[NUMROYALRANKS];
+#else
+extern struct rank *ranks;
+extern struct royalty *royal;
+extern int NUMRANKS;
+extern int NUMROYALRANKS;
+#endif
 
 extern int ping;
 extern long packets_sent;

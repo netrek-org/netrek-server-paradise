@@ -27,7 +27,6 @@ suitability of this software for any purpose.  This software is provided
 #include "daemonII.h"
 #include "misc.h"
 #include "shmem.h"
-#include "path.h"
 #include "game.h"
 
 
@@ -256,14 +255,9 @@ conquerMessage(int winners, int losers, int pno)
 	perror("");
 	fprintf(stderr, "failed to open file %s\n", paths);
     }
-#ifdef LEAGUE_SUPPORT
 #define OUT pmessage(buf, 0, MALL | MGENO, " "); \
 	if (conqfile) fprintf(conqfile, "  %s\n", buf); \
 	tlog_conquerline(buf);
-#else
-#define OUT pmessage(buf, 0, MALL | MGENO, " "); \
-	if (conqfile) fprintf(conqfile, "  %s\n", buf);
-#endif
 
     time(&curtime);		/* get current time */
     strcpy(buf, "\nConquer! ");	/* this is a genocide */
@@ -283,30 +277,22 @@ conquerMessage(int winners, int losers, int pno)
     OUT;
 
     sprintf(buf,
-#ifdef LEAGUE_SUPPORT
 	    status2->league ? "The %s(%s):" :
-#endif
 	    "The %s:",
 	    teams[winners].name
-#ifdef LEAGUE_SUPPORT
 	    , ((winners == (1 << status2->home.index)) ?
 	     (&status2->home) :
 	     (&status2->away))->name
-#endif
 	    );
     OUT;
     displayBest(conqfile, winners);	/* go display team 1 */
     sprintf(buf,
-#ifdef LEAGUE_SUPPORT
 	    status2->league ? "The %s(%s):" :
-#endif
 	    "The %s:",
 	    teams[losers].name
-#ifdef LEAGUE_SUPPORT
 	    ,((losers == (1 << status2->home.index)) ?
 	     (&status2->home) :
 	     (&status2->away))->name
-#endif
 	    );
     OUT;
     displayBest(conqfile, losers);	/* go display team 2 */
@@ -411,25 +397,17 @@ checkwin(int pno)
 
     stoptimer();
 
-#ifdef LEAGUE_SUPPORT
     if (status2->league) {
 	endtourn();		/* calls endgame_effects */
     }
     else
-#endif
 	endgame_effects(t1, t2, pno);
-#if 0
-    gen_planets();		/* generate new galaxy */
-
-    longjmp(env, 0);		/* restart */
-#else
     status->gameup = 0;		/* exit the daemon */
     status->count = 0;
     save_planets();
     sleep(2);
     blast_shmem();
     exit(0);
-#endif
 }
 
 

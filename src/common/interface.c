@@ -149,10 +149,6 @@ set_speed(int speed, int type)
 	    speed;
 	me->p_desspeed = speed;	/* set the speed */
     }
-#if 0
-    if (me->p_flags & PFORBIT)	/* if we were orbiting */
-	planets[me->p_planet].pl_torbit &= ~me->p_team;
-#endif
     me->p_flags &= ~(PFREPAIR | PFBOMB | PFORBIT | PFDOCK | PFBEAMUP | PFBEAMDOWN);
     me->p_lastman = 0;
 }
@@ -178,10 +174,6 @@ set_course(unsigned char dir)
 	    undock_player(me);
 
     }
-#if 0
-    if (me->p_flags & PFORBIT)	/* if in orbit then take */
-	planets[me->p_planet].pl_torbit &= ~me->p_team;	/* team out of orbit */
-#endif
     me->p_flags &= ~(PFBOMB | PFORBIT | PFDOCK | PFBEAMUP | PFBEAMDOWN);
     me->p_lastman = 0;		/* not beamin all armies up */
 }
@@ -269,11 +261,7 @@ bomb_planet(void)
     if (status->tourn)		/* reset the bombs out of t-mode */
 	bombsOutOfTmode = 0;	/* variable */
     me->p_flags |= PFBOMB;	/* set the bomb flag */
-#if 1
     planets[me->p_planet].pl_hostile |= me->p_team;
-#else
-    planets[me->p_planet].pl_torbit |= (me->p_team) << 4;
-#endif
     me->p_flags &= ~(PFSHIELD | PFREPAIR | PFBEAMUP | PFBEAMDOWN);
 }
 
@@ -403,12 +391,16 @@ repair while in warp.  */
 void 
 repair(void)
 {
-#if !defined(AEDILE) || !defined(REPAIR_IN_WARP)
-    if (me->p_flags & PFWARP) {	/* no repairing in warp */
+    if (me->p_flags & PFWARP && !configvals->repair_during_warp) 
+    {	/* no repairing in warp */
 	warning("You cannot repair while in warp!");
 	return;
     }
-#endif
+    if (me->p_flags & PFWARPPREP && !configvals->repair_during_warp_prep)
+    {   /* no repairing in warp prep */
+        warning("You cannot repair while in warp prep!");
+	return;
+    }
     me->p_desspeed = 0;		/* speed goes to zero */
     me->p_warptime = 0;		/* turn off warp prep */
     me->p_flags |= PFREPAIR;	/* reair flag goes up */
@@ -518,10 +510,6 @@ lock_planet(int planet)		/* planet locking onto */
     }
 
     me->p_flags |= PFPLLOCK;	/* turn on the lock */
-#if 0
-    if (me->p_flags & PFORBIT)	/* if orbiting then leave torbit var */
-	planets[me->p_planet].pl_torbit &= ~me->p_team;
-#endif
     me->p_flags &= ~(PFPLOCK | PFORBIT | PFBEAMUP | PFBEAMDOWN | PFBOMB);
     me->p_lastman = 0;
     me->p_planet = planet;	/* set planet locked onto */
@@ -555,10 +543,6 @@ lock_player(int player)		/* player locking onto */
     }
 
     me->p_flags |= PFPLOCK;	/* set player lock flag */
-#if 0
-    if (me->p_flags & PFORBIT)	/* if in orbit take team out */
-	planets[me->p_planet].pl_torbit &= ~me->p_team;	/* of torbit */
-#endif
     me->p_flags &= ~(PFPLLOCK | PFORBIT | PFBEAMUP | PFBEAMDOWN | PFBOMB);
     me->p_lastman = 0;		/* turn off taking all armies */
     me->p_playerl = player;	/* set player loked oto */
@@ -605,19 +589,6 @@ tractor_player(int player)
 	    warning("It's unsafe to tractor while docked and base is moving more then warp 4.");
 	    return;
 	}
-#if 0
-	undock_player(victim);	/* harmless if not docked, handles js */
-	undock_player(me);
-
-#if 0
-	if (me->p_flags & PFORBIT)	/* are we orbiting */
-	    planets[me->p_planet].pl_torbit &= ~me->p_team;
-	if (victim->p_flags & PFORBIT)	/* is victim orbiting */
-	    planets[victim->p_planet].pl_torbit &= ~victim->p_team;
-	victim->p_flags &= ~(PFORBIT | PFDOCK);	/* clear DOCK/ORBIT flags */
-#endif
-	me->p_flags &= ~(PFORBIT | PFDOCK);
-#endif
 	me->p_tractor = player;	/* set victim number */
 	me->p_flags |= PFTRACT;	/* set tractor flag */
     }
@@ -660,19 +631,6 @@ pressor_player(int player)	/* the player to pressor */
 	    warning("It's unsafe to pressor while docked and base is moving more then warp 4.");
 	    return;
 	}
-#if 0
-	undock_player(victim);
-	undock_player(me);
-
-#if 0
-	if (me->p_flags & PFORBIT)	/* are we orbiting */
-	    planets[me->p_planet].pl_torbit &= ~me->p_team;
-	if (victim->p_flags & PFORBIT)	/* is victim orbiting */
-	    planets[victim->p_planet].pl_torbit &= ~victim->p_team;
-#endif
-	victim->p_flags &= ~(PFORBIT | PFDOCK);	/* clear orbit and dock flags */
-	me->p_flags &= ~(PFORBIT | PFDOCK);
-#endif
 	me->p_tractor = target;	/* set the target */
 	me->p_flags |= (PFTRACT | PFPRESS);	/* set the tract and press */
     }
@@ -826,12 +784,6 @@ do_refit(int type)		/* type of ship to refit to */
 	    warning("You can change ships at a planet with a shipyard on it.");
 	    return;
 	}
-#if 0
-	if (planets[me->p_planet].pl_owner != me->p_team) {
-	    warning("You can only refit on planets that your team owns.");
-	    return;
-	}
-#endif
     }
     else if (me->p_flags & PFDOCK) {	/* if docked then */
 	if (allows_docking(shipvals[type])) {	/* cannot refit to a starbase */
@@ -927,12 +879,10 @@ allowed_ship(int team, int rank, int royal, int type)
     }
     tempship = &shipvals[type];
 
-#ifdef LEAGUE_SUPPORT
     if (status2->league == 1)
 	return 1;
 
     if (!status2->league) {
-#endif
 	if(configvals->baserankstyle) {
 	    for(i = 0; i < MAXPLAYER; i++)
 		if ((players[i].p_status == PALIVE ||
@@ -950,9 +900,7 @@ allowed_ship(int team, int rank, int royal, int type)
 	    warning(buf);
 	    return 0;
 	}
-#ifdef LEAGUE_SUPPORT
     }
-#endif
     used_teamstr = used_planstr = 0;
     shipcount = 0;		/* How many ships of that type */
     /* are on our team already? */

@@ -19,8 +19,6 @@ express or implied warranty.
     Comprehensive credits are available in the file "CREDITS"
 --------------------------------------------------------------------------*/
 
-#define NEED_TIME 
-
 #include "config.h"
 #include <math.h>
 #include <sys/types.h>

@@ -434,19 +434,13 @@ placeraces()
 	planets[p].pl_tinfo[1 << i].flags = planets[p].pl_flags;
 	for (j = 0; j < NUMPLANETS; j++) {
 	    if ((planets[j].pl_system == i + 1) && (PL_TYPE(planets[j]) != PLSTAR)) {
-#ifdef LEAGUE_SUPPORT
 		for (k = (status2->league ? 0 : i);
 		     k < (status2->league ? 4 : i + 1);
 		     k++)
-#else
-		  k=i;
-#endif
 		  {
 		    planets[j].pl_owner = 1 << i;
 		    planets[j].pl_hinfo =
-#ifdef LEAGUE_SUPPORT
 		      status2->league ? (1 << 4) - 1 :
-#endif
 			(1 << i);
 		    planets[j].pl_tinfo[1 << k].owner = 1 << i;
 		    planets[j].pl_tinfo[1 << k].armies = planets[j].pl_armies;

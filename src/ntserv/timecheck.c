@@ -16,13 +16,7 @@ suitability of this software for any purpose.  This software is provided
                                                     Brandon Gillespie
 --------------------------------------------------------------------------*/
 
-#define NEED_TIME 
-
 #include "config.h"
-
-#include "path.h"
-#include "config.h"
-
 
 
 /*--------------------------------DESCRIPTION-------------------------------

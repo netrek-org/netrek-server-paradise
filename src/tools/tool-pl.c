@@ -54,6 +54,7 @@ main(int argc, char **argv)
     int     i, count;
     struct  player *j;
     int     usage = 0;
+    char    *rf;
 
     argv0 = argv[0];
 
@@ -102,6 +103,9 @@ main(int argc, char **argv)
 
         exit(1);
     }
+
+    rf = build_path(RANKS_FILE);
+    init_data(rf);
 
     openmem(0);
 

@@ -117,6 +117,8 @@ struct configuration {
     /* NYI */
     char    facilitygrowth;	/* if 0, then you can't bomb or grow
 				   facilities.  if 1, then you can. */
+    char    repair_during_warp_prep;
+    char    repair_during_warp;	/* can you repair during warp (prep)? */
     char    fireduringwarpprep;	/* can you fire during warp prep? */
     char    fireduringwarp;	/* can you fire while warping? */
     char    firewhiledocked;	/* can you fire while docked? */
@@ -150,13 +152,11 @@ struct configuration {
     int     improved_tracking[SHIPS_SYSTEMS];	/* which weapons use IT */
     int     shipsallowed[NUM_TYPES];	/* which ships are allowed */
     int     weaponsallowed[WP_MAX];	/* which special weapons are allowed */
-#ifdef LEAGUE_SUPPORT
     /* league configuration stuff */
     int     timeouts;		/* timeouts per team in league play */
     int     regulation_minutes;	/* minutes in regulation play */
     int     overtime_minutes;	/* minutes in overtime play */
     int     playersperteam;	/* maximum number of players per team */
-#endif
     /* ping stuff */
     int     ping_period;	/* ping period in seconds */
     int     ping_iloss_interval;/* in terms of ping_period */
@@ -189,6 +189,14 @@ struct configuration {
 	int     fuel, agri, repair, shipyard;
     }       plgrow;
     int     helpfulplanets;	/* planets help fuel/etmep */
+
+    char    wb_bombing_credit;	/* double stats for WB bombing? */
+    char    js_assist_credit;	/* JS gets real stats for assists? */
+    char    butttorp_penalty;	/* penalty for butt torpers? */
+    char    slow_bomb;		/* slow bombing? */
+    char    robot_stats;	/* robots accumulate statistics? */
+
+    float   losing_advantage;	/* give losing team an army advantage? */
 };
 
 extern struct player *players;
@@ -232,8 +240,5 @@ extern int *improved_tracking;	/* smarter tracking algorithm */
 extern char *galaxyValid;	/* does galaxy go invalid?  0 if so */
 #define CLUEPHRASE_SIZE	1024
 extern char *cluephrase_storage;
-void    openmem( /* 0=or die, 1=fork daemon, 2=are daemon */ );
-void    blast_shmem();
-void startdaemon(int, int);
 
 #endif

@@ -17,8 +17,6 @@ suitability of this software for any purpose.  This software is provided
 --------------------------------------------------------------------------*/
 
 #include "config.h"
-#ifdef LEAGUE_SUPPORT
-
 #include "defs.h"
 #include "struct.h"
 #include "shmem.h"
@@ -28,7 +26,6 @@ suitability of this software for any purpose.  This software is provided
 #define MAXTIME 120
 
 FILE   *tlog = NULL;
-/*int tournymode = 0;*/
 
 #define TOURNEYMODE	(status2->league > 2)
 
@@ -532,4 +529,3 @@ endtourn(void)
 
     /* we should shut the game off here (status->gameup=0) */
 }
-#endif

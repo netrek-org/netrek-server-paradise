@@ -49,9 +49,6 @@ generate_terrain(void)
   double dist, val;   /* for distance calculations */
   int num_seeds = 0;
   int seed_xy[MAXSTARS][2];
-#if 0
-  int qx[4] = {-1,1,-1,1}, qy[4] = {1,1,-1,-1}; /* quadrant multipliers */
-#endif
 
 /* place seeds -- this would be easy to change if you just had a number
    of seeds you wanted to place, instead of basing it on stars.  I won't

@@ -16,8 +16,6 @@ suitability of this software for any purpose.  This software is provided
                                                     Brandon Gillespie
 --------------------------------------------------------------------------*/
 
-#define NEED_TIME 
-
 #include "config.h"
 #include <sys/types.h>
 #include <sys/ipc.h>
@@ -361,9 +359,8 @@ enter(int tno, int disp, int pno, int s_type, int startplanet)
 		pmessage2(buf2, 0, MALL, addrbuf, me->p_no);
 	    }
 	}
-#ifdef LEAGUE_SUPPORT
+
 	if (!status2->league)	/* no peanut messages in a league game */
-#endif
 	    peanut_gallery();	/* check for important people */
 
 	if (me->p_stats.st_royal == 0)

@@ -16,8 +16,6 @@ suitability of this software for any purpose.  This software is provided
                                                     Brandon Gillespie
 --------------------------------------------------------------------------*/
 
-#define NEED_TIME 
-
 #include "config.h"
 
 #include <math.h>
@@ -267,11 +265,9 @@ mode.  */
 int 
 tournamentMode(void)
 {
-#ifdef LEAGUE_SUPPORT
     if (status2->league) {
 	return status2->league > 2;
     } else
-#endif
       {
 	static int wt = -1;	/* warning time due to team unbalance */
 	static int lct = -1;	/* last check time (ie last pmessage) */
@@ -306,24 +302,6 @@ tournamentMode(void)
 		break;
 	    }
 	}
-
-#if 0
-	/*
-	   If there hasnt been tmode recently (5 mins) clear all kills, and
-	   place any carried armies on the most valuble planet not yet
-	   finished.
-	*/
-	if ((tourntimestamp - ticks) > 300) {
-	    int	x;
-	    for (x = 0; x < MAXPLAYER; x++) {
-		if (players[x].p_status == PALIVE) {
-		    if (players[x].p_armies > 0)
-			PlaceLostArmies(players[x]);
-		    players[x].p_kills = 0.00;
-		}
-	    }
-	}
-#endif
 
 	i = 0;			/* zero count of # teams with tournplayers */
 	if (t[FED] >= configvals->tournplayers)
@@ -494,47 +472,7 @@ parse_godmessages(void)
             else
                 log_message("??", "??", s);
         }
-#if 0
-	    sprintf(buf, "%s says: %s\n",
-	       (cur->m_from >= 0) ? players[cur->m_from].p_name : "who", s);
-	}
-	else {			/* or labeled to god */
-	    if (strncmp(s, "GOD:", 4) != 0)	/* check for 'GOD' keyword */
-		continue;	/* not there, then next message */
-	    sprintf(buf, "GOD: %s\n", s + 4);
-            s += 4;
-	}
-	log_message(buf);	/* go record message */
-#endif
     }
 }
-
-/*------------------------------------------------------------------------*/
-#if 0
-/*--------------------------[ PLACE LOST ARMIES ]--------------------------*/
-/* If for some reason or another the player looses armies they may be carrying
-   (ghost busts, etc), this function is called, to place the armies safely on
-   a planet. */
-
-void 
-PlaceLostArmies(victim)
-    struct player *victim;
-{
-    char    buf[80];
-    int     i, startplanet;
-
-    ((startplanet = find_start_planet(me->p_team, PLSHIPYARD)) != -1
-     || (startplanet = find_start_planet(me->p_team, PLREPAIR)) != -1
-     || (startplanet = find_start_planet(me->p_team, PLAGRI)) != -1
-     || (startplanet = find_start_planet(me->p_team, PLFUEL)) != -1
-     || (startplanet = find_start_planet(me->p_team, PLHOME)) != -1
-     || (startplanet = find_start_planet(me->p_team, 0)) != -1);
-    planets[startplanet].pl_armies += victim->p_armies;
-    (void) sprintf(buf, "%s's %d armies placed on %s",
-	    victim->p_name, victim->p_armies, planets[startplanet].pl_name);
-    pmessage(buf, 0, MALL | MGHOST, MSERVA);
-}
-#endif
-/*------------------------------------------------------------------------*/
 
 /*----------END OF FILE--------*/

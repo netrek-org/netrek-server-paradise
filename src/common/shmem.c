@@ -24,7 +24,6 @@ suitability of this software for any purpose.  This software is provided
 #include <signal.h>
 
 #include "shmem.h"
-#include "path.h"
 #include "data.h"
 
 /*---------------------------SHARED MEMORY STRUCTURE----------------------*/

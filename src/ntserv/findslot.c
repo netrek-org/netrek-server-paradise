@@ -39,12 +39,6 @@ findslot(int overload, enum HomeAway homeaway)
     players[i].p_pos = -1;
     memset(&players[i].p_stats, 0, sizeof(struct stats));
     players[i].p_stats.st_tticks = 1;
-#if 0
-    for (j = 0; j < 95; j++) {
-	players[i].p_stats.st_keymap[j] = j + 32;
-    }
-    players[i].p_stats.st_keymap[95] = 0;
-#endif
     players[i].p_stats.st_flags = ST_INITIAL;
     return (i);
 }
@@ -66,7 +60,6 @@ static int allocate_slot(homeaway, overload, allocate)
 	    }
 	}
     } else {
-#ifdef LEAGUE_SUPPORT
 	if (status2->league) {
 	    /* for league play, make sure one team doesn't crowd out
                the other. */
@@ -80,7 +73,6 @@ static int allocate_slot(homeaway, overload, allocate)
 	    if (count*2 >= MAXPLAYER-configvals->ntesters)
 		return -1;		/* our team is full */
 	}
-#endif
 	for (i=0; i< MAXPLAYER - configvals->ntesters; i++) {
 	    if (players[i].p_status==PFREE) {
 		if (allocate) {
@@ -93,24 +85,7 @@ static int allocate_slot(homeaway, overload, allocate)
     }
     return -1;
 }
-#if 0
-static int ImAllowed( slotnum, homeaway)
-     int	slotnum;
-     enum HomeAway	homeaway;
-{
-#ifdef LEAGUE_SUPPORT
-  int	half;
-  if (!status2->league)
-    return 1;
 
-  half = (MAXPLAYER-configvals->ntesters)/2;
-  return (homeaway==AWAY) ? (slotnum < half) :
-    (slotnum >= half);
-#else
-  return 1;
-#endif
-}
-#endif
 /*
  * The following code for grabslot() is really bizarre, and needs an
  *   explaination.
@@ -214,29 +189,9 @@ grabslot(int overload, enum HomeAway homeaway)
     }
     else {
 	/* Get in game if posible */
-#if 1
 	i = allocate_slot(homeaway, overload, 1);
 	if (i>=0)
 	    return i;
-#else
-	if (overload)
-	    for (i = MAXPLAYER - 1; i >= 0; i--) {
-		if (players[i].p_status == PFREE) {   /* We have a free slot */
-		    players[i].p_status = POUTFIT;     /* possible race code */
-		    players[i].p_team = NOBODY;
-		    return (i);
-		}
-	    }
-	else
-      for (i = 0; i < MAXPLAYER - configvals->ntesters; i++) {
-	if (ImAllowed(i, homeaway)
-	    && players[i].p_status == PFREE) {	/* We have a free slot */
-		    players[i].p_status = POUTFIT;     /* possible race code */
-		    players[i].p_team = NOBODY;
-		    return (i);
-		}
-	    }
-#endif
 	/* Game full.  We will wait. */
 	count = status->count++;
     }
@@ -339,7 +294,6 @@ grabslot(int overload, enum HomeAway homeaway)
 	    /* Give people a chance to correct me */
 	    sleep(2);
 	}
-#if 1
 	if (idie)
 	    continue;
 	if (count==status->wait) {
@@ -371,46 +325,6 @@ grabslot(int overload, enum HomeAway homeaway)
 	    }
 	    
 	}
-#else
-	for (i = 0; i < MAXPLAYER - configvals->ntesters; i++) {
-	    /* If we want to die anyway, we have no right looking for */
-	    /* a free slot */
-	    if (idie)
-		break;
-	    if (ImAllowed(i, homeaway) && players[i].p_status == PFREE) {
-		/* If I am next in line... */
-		if (count == status->wait) {
-		    players[i].p_status = POUTFIT;
-		    players[i].p_team = NOBODY;
-		    /* Increase count for next player */
-		    status->wait++;
-		    /* I should check idie, but maybe he wants in, eh? */
-		    wearein = i;
-		    idie = 1;
-		    break;
-		}
-		else {
-		    if (oldwait == status->wait) {
-			waits++;
-		    }
-		    else {
-			oldwait = status->wait;
-			waits = 1;
-		    }
-		    /* If this is our fifth wait (5 sec), then something is */
-		    /* wrong.  We assume someone died, and fix this problem */
-		    if (waits == 5 && !idie) {
-			/* I want to be next in line, so I say so. */
-			status->wait = count;
-			/* And I allow someone to correct me if I'm wrong */
-			sleep(2);
-			waits = 0;
-		    }
-		    break;
-		}
-	    }
-	}
-#endif
 	/* this location is skipped if we didn't find a slot */
     }
 }

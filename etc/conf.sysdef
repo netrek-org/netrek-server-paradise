@@ -27,6 +27,20 @@ SUN_EFFECT=PHOTON,PLASMA,MISSILE,FIGHTER
 NOPREGAMEBEAMUP=1
 GAMESTARTNUKE=1
 NOTTIMEOUT=10
+#
+# new parameters or parameters moved from servconf.h.
+# defaults from src/daemon/sysdefaults.c are listed.
+#
+# RPRDURINGWARPPREP=1
+# RPRDURINGWARP=1
+# WBBOMBINGCREDIT=1		# bonus for WB bombing
+# JSPLANETCREDIT=1		# bonus for JS assists taking planets
+# BUTTTORP_PENALTY=0		# penalize butt torpers?  Modify
+#                               # penalty with ship.wtemp_*
+# SLOWBOMB=1			# slow bombing?
+# ROBOTSTATS=1			# robots accumulate stats.
+# LOSING_ADVANTAGE=0.0		# give losing team an advantage?  If so,
+#                               # set this >= 1.0.  Typical value is 2.0.
 
 ## bronco style
 #WARPDRIVE=0

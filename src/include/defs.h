@@ -68,12 +68,15 @@ suitability of this software for any purpose.  This software is provided
 #define PSEUDOSIZE 16
 #define CLOAK_PHASES 7		/* number of drawing phases in a cloak
 				   engage/disengage */
+#ifdef STATIC_RANKS
 #define NUMRANKS	18
 #ifdef CASSIUS_ROYALTY
 #define NUMROYALRANKS	10
 #else
 #define NUMROYALRANKS	5
 #endif
+#endif
+
 #define GODLIKE		(NUMROYALRANKS-2)
 
 /* These are configuration definitions */
@@ -165,17 +168,15 @@ suitability of this software for any purpose.  This software is provided
 
 /* Data files to make the game play across daemon restarts. */
 
-#ifdef LEAGUE_SUPPORT
 #define PLAYERFILE	(status2->league ? "/tmp/tourney.players":"etc/db.players")
-#else
-#define PLAYERFILE	"etc/db.players"
-#endif
 #define GLOBAL		"etc/db.global"
 #define PLFILE		"etc/planets"
 #define MOTD		"etc/motd"
 #define WCMOTD		"etc/motd.wc"	  /* wrong client message */
 #define CLOSEDMOTD	"etc/motd.closed" /* if doesn't exist, MOTD is used. */
 #define PICS		"etc/conf.pics"
+#define RANKS_FILE	"etc/ranks.conf"
+#define RSA_EXEMPTION_FILE "etc/rsa-exemption"
 #define NTSERV          "bin/ntserv"
 #define DAEMON		"bin/daemonII"
 #define ROBOT		"bin/robotII"

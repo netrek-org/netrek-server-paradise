@@ -20,8 +20,6 @@ suitability of this software for any purpose.  This software is provided
 #define PLANETS 1
 #define GRID 0			/* for space grid */
 
-#define NEED_TIME 
-
 #include "config.h"
 #include <math.h>
 #include <setjmp.h>
@@ -39,10 +37,6 @@ suitability of this software for any purpose.  This software is provided
 #include "terrain.h"
 #include "imath.h"
 #include "plutil.h"
-
-
-/*define this if you want the experimental dragging-into-star-counts mod */
-#define GIVESTARKILLS
 
 #define	friendly(fred, bart) \
 	(!(fred->p_team & (bart->p_swar|bart->p_hostile)) && \
@@ -214,25 +208,8 @@ float   popcap[4][8] = {
 
 /*-------------------------------------------------------------------------*/
 
-
-
-
-
-
-
-
-#ifndef LEAGUE_SUPPORT
-#define tlog_res(a,b)
-#define tlog_bomb(a,b,c)
-#define tlog_bres(a,b,c)
-#define tlog_plankill(a,b,c)
-#define tlog_revolt(a)
-#define tlog_pop(a,b)
-#endif
-
 /*------------------------------INTERNAL FUNCTIONS-------------------------*/
 
-#ifndef NO_QSORT
 /* used by the qsort() in sortnames() below */
 static int
 comp_pl_name(a, b)
@@ -241,7 +218,6 @@ comp_pl_name(a, b)
     return strcasecmp(((struct planet *)a)->pl_name,
 			((struct planet *)b)->pl_name);
 }
-#endif
 
 /*--------------------------------SORTNAMES---------------------------------*/
 /*  This function sorts the planet into a alphabeticly increasing list.  It
@@ -254,34 +230,11 @@ if available (HK) */
 void 
 sortnames(void)
 {
-#ifdef NO_QSORT
-    struct planet ptemp;	/* temporary space to hold planet */
-    int     exchange;		/* flag for exchange made in pass */
-    int     i;			/* looping var */
-    int     t;			/* temp var */
-
-    exchange = 1;		/* no exchanges done yet */
-    while (exchange) {		/* do until no exchanges */
-	exchange = 0;		/* no exchanges for this pass yet */
-	for (i = 0; i < NUMPLANETS - 1; i++) {	/* go through list */
-	    if (strcmp(planets[i].pl_name, planets[i + 1].pl_name) > 0) {
-		t = planets[i].pl_no;	/* exchange planet numbers */
-		planets[i].pl_no = planets[i + 1].pl_no;
-		planets[i + 1].pl_no = t;
-		memcpy(&ptemp, &(planets[i]), sizeof(struct planet));
-		memcpy(&(planets[i]), &(planets[i + 1]), sizeof(struct planet));
-		memcpy(&(planets[i + 1]), &ptemp, sizeof(struct planet));
-		exchange++;	/* we made an exchange this pass */
-	    }
-	}
-    }
-#else
     int     i;
 
     qsort(planets, NUMPLANETS, sizeof(struct planet), comp_pl_name);
     for (i = 0; i < NUMPLANETS; i++)	        /* go through the planets */
 	planets[i].pl_no = i;			/* and fix their pl_no value */
-#endif
 }
 
 
@@ -311,11 +264,7 @@ initplanets(void)
 	nused[j] = 1;		/* mark name as used */
 	strcpy(planets[i].pl_name, pnames[j]);	/* copy into planet struct */
 	planets[i].pl_namelen = strlen(pnames[j]);	/* set name's length */
-#if 1
 	planets[i].pl_hostile = 0;	/* planet doesn't hate anyone yet */
-#else
-	planets[i].pl_torbit = 0;	/* no teams orbiting */
-#endif
 	planets[i].pl_tshiprepair = 0;	/* zero the repair growth timer */
 	planets[i].pl_tagri = 0;/* zero the agri growth timer */
 	planets[i].pl_tfuel = 0;/* zero the fuel growth timer */
@@ -553,31 +502,34 @@ pbomb(void)
 		(!configvals->resource_bombing))	/* no bombing resources
 							   if armies */
 		continue;	/* on planet or in bronco-mode */
-#if defined(AEDILE) || defined(SLOW_BOMB)
-	    l->pl_tfuel -= rnd * 5;	/* knock fuel timer down */
-#else
+
+	    if(configvals->slow_bomb)
+	      l->pl_tfuel -= rnd * 5;	/* knock fuel timer down */
+	    else
 	    l->pl_tfuel -= rnd * 8;	/* knock fuel timer down */
-#endif
+
 	    l->pl_tfuel = (l->pl_tfuel < 0) ? 0 : l->pl_tfuel;
 	    if ((l->pl_tfuel == 0) && (l->pl_flags & PLFUEL)) {
 		blast_resource(p, l, PLFUEL, 0.10);
 		tlog_bres(l, p, "FUEL");
 	    }
-#if defined(AEDILE) || defined(SLOW_BOMB)
-	    l->pl_tagri -= rnd * 4;	/* attack the agri timer */
-#else
-	    l->pl_tagri -= rnd * 6;	/* attack the agri timer */
-#endif
+
+	    if(configvals->slow_bomb)
+	      l->pl_tagri -= rnd * 4;	/* attack the agri timer */
+	    else
+	      l->pl_tagri -= rnd * 6;	/* attack the agri timer */
+
 	    l->pl_tagri = (l->pl_tagri < 0) ? 0 : l->pl_tagri;
 	    if ((l->pl_tagri == 0) && (l->pl_flags & PLAGRI)) {
 		blast_resource(p, l, PLAGRI, 0.25);
 		tlog_bres(l, p, "AGRI");
 	    }
-#if defined(AEDILE) || defined(SLOW_BOMB)
-	    l->pl_tshiprepair -= rnd * 5;	/* knock ship/repr down */
-#else
-	    l->pl_tshiprepair -= rnd * 8;	/* knock ship/repr down */
-#endif
+
+	    if(configvals->slow_bomb)
+	      l->pl_tshiprepair -= rnd * 5;	/* knock ship/repr down */
+	    else
+	      l->pl_tshiprepair -= rnd * 8;	/* knock ship/repr down */
+
 	    l->pl_tshiprepair = (l->pl_tshiprepair < 0) ? 0 :
 		l->pl_tshiprepair;
 	    if ((l->pl_tshiprepair < PLGREPAIR) && (l->pl_flags & PLSHIPYARD)) {
@@ -638,14 +590,6 @@ pfire(void)
 
 	    if (dist <= p->p_ship.s_scanrange) {	/* check for scanners */
 		scout_planet(p->p_no, l->pl_no);
-#if 0
-		handled in scout_planet now.
-		        l->pl_hinfo |= p->p_team;
-		l->pl_tinfo[p->p_team].armies = l->pl_armies;
-		l->pl_tinfo[p->p_team].flags = l->pl_flags;
-		l->pl_tinfo[p->p_team].owner = l->pl_owner;
-		l->pl_tinfo[p->p_team].timestamp = status->clock;
-#endif
 	    }
 
 	    if (dist > PLVISDIST)
@@ -659,11 +603,7 @@ pfire(void)
 		continue;	/* go on to next playert */
 	    if (((p->p_swar | p->p_hostile) & l->pl_owner)
 		|| ((l->pl_owner == NOBODY)
-#if 1
 		    && (l->pl_hostile & p->p_team)
-#else
-		    && (l->pl_torbit & (p->p_team << 4))
-#endif
 		    && (l->pl_armies != 0))
 		|| (PL_TYPE(*l) == PLWHOLE) || (PL_TYPE(*l) == PLSTAR)) {
 		dam = l->pl_armies / 7 + 2;	/* calc the damage */
@@ -694,7 +634,6 @@ pfire(void)
 		    struct player *killer = 0;
 		    p->p_whydead = KPLANET;	/* set killed by a planet */
 		    if (PL_TYPE(*l) == PLSTAR) {	/* killed by star? */
-#ifdef GIVESTARKILLS
 			int     pln;
 			for (pln = 0, killer = &players[0];
 			     pln < MAXPLAYER;
@@ -712,7 +651,6 @@ pfire(void)
 			}
 			if (pln >= MAXPLAYER)
 			    killer = 0;
-#endif
 		    }
 		    killmess(p, killer);
 		    tlog_plankill(p, l, killer);
@@ -1010,11 +948,7 @@ pop_one_planet1(struct planet *l)
     a = l->pl_flags & PLATMASK;	/* get atmosphere bits */
     a = a >> PLATSHIFT;		/* shift to lower two bits of int */
 
-#ifdef UFL
-    t = status2->league ? popchance[a][r] : 8;
-#else
     t = popchance[a][r];	/* get pop chance */
-#endif
     if (t < lrand48() % 100)	/* if planet misses chance */
 	return;			/* then on to next planet */
     ft = popmult[a][r];		/* get pop multiplier */
@@ -1027,11 +961,7 @@ pop_one_planet1(struct planet *l)
 	if (l->pl_armies < 4)	/* chance of going over four */
 	    l->pl_flags |= PLREDRAW;	/* slate planet for redraw */
 	if (configvals->new_army_growth)
-#ifdef AEDILE
-	    incr = 0.5 + ft * 2.0 * (float)(lrand48() % 6 + 3);
-#else
 	    incr = 1 + 0.5 + ft * (float) (l->pl_armies);
-#endif
 	else
 	    /* what about agri? */
 	    incr = 1 + lrand48() % 3;	/* bronco is always 1-3 armies/pop */
@@ -1133,11 +1063,6 @@ pop_one_planet2(struct planet *l)
 void 
 pop_one_planet(struct planet *l)
 {
-#if 0
-    printf("popping planet #%d  %x\n", l->pl_no, l->pl_owner);
-    fflush(stdout);
-#endif
-
     switch (configvals->popscheme) {
     case 1:
 	pop_one_planet2(l);
@@ -1216,19 +1141,10 @@ popplanets(void)
 		    (PL_TYPE(*l) == PLSTAR) ||
 		    (PL_TYPE(*l) == PLWHOLE))  /* if no armies to pop */
 		    continue;	/* go to next planet */
-#if 0
-		if (l->pl_owner != NOBODY)	/* only team planets can
-						   revolt */
-		    revolt(l);	/* check for revolt */
-#endif
 		pop_one_planet(l);
 	    }
 	} break;
     case 1:{
-#if 0
-	    static int indplanets[MAXPLANETS];
-	    static int indcount = 0;
-#endif
 	    static int Aplanets[MAXPLANETS];
 	    static int Acount = 0, Amask = 0;
 	    static int Bplanets[MAXPLANETS];
@@ -1239,10 +1155,6 @@ popplanets(void)
 	    float   f;
 
 	    /* make sure there's planets in the lists */
-#if 0
-	    if (indcount < 1)
-		fill_planets(indplanets, &indcount, NOBODY);
-#endif
 	    if (Acount < 1) {
 		Amask = find_other_team(Bmask);
 		fill_planets(Aplanets, &Acount, Amask);
@@ -1265,21 +1177,17 @@ popplanets(void)
 		    INDchance += 1.0;
 	    }
 
-#ifdef LOOSING_ADVANTAGE
+	    if(configvals->losing_advantage >= 1.0)
 	    {
-		double	la = LOOSING_ADVANTAGE;
+		double	la = configvals->losing_advantage;
 		if (Achance < Bchance)
 		    Achance *= (la - (la-1)*Achance / Bchance);
 		else
 		    Bchance *= (la - (la-1)*Bchance / Achance);
 	    }
-#endif
 
 	    f = drand48() * (INDchance + Achance + Bchance);
 	    if (f < INDchance) {
-#if 0				/* 3rd-race planets and INDs don't pop */
-		pop_one_planet(&planets[indplanets[--indcount]]);
-#endif
 	    }
 	    else if (f - INDchance < Achance) {
 		pop_one_planet(&planets[Aplanets[--Acount]]);

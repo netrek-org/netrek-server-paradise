@@ -132,185 +132,7 @@ enum token_names_e {
     ERRORTOK = 255
 };
 
-#ifdef GOD_CONTROLS
 static int god_silent = 0;
-#endif
-
-/* static char *con_shipnos = "0123456789abcdefghijklmnopqrstuvwxyz";*/
-
-#if 0
-static enum token_names_e tokstring[128];	/* list of tokens */
-static char *thestrings[128];	/* list of corresponding strings */
-static char *therest[128];	/* list of pointers to the original text
-				   starting with token i */
-static int sizetokstring;
-
-struct token {
-    char    string[32];
-    int     token;
-};
-
-
-
-struct token tstrings[] = {
-    {"0", 0}, {"1", 1}, {"2", 2}, {"3", 3},
-    {"4", 4}, {"5", 5}, {"6", 6}, {"7", 7},
-    {"8", 8}, {"9", 9}, {"a", 10}, {"b", 11},
-    {"c", 12}, {"d", 13}, {"e", 14}, {"f", 15},
-    {"g", 16}, {"h", 17}, {"i", 18}, {"j", 19},
-    {"k", 20}, {"l", 21}, {"m", 22}, {"n", 23},
-    {"o", 24}, {"p", 25}, {"q", 26}, {"r", 27},
-    {"s", 28}, {"t", 29}, {"u", 30}, {"v", 31},
-    {"w", 32}, {"x", 33}, {"y", 34}, {"z", 35},
-    {"help", HELPTOK},
-    {"control", CONTROLTOK},
-    {"con", CONTROLTOK},	/* popular abbrev */
-    {"version", VERSIONTOK},
-    {"tq", QUEUETOK},		/* popular abbrev */
-    {"queue", QUEUETOK},
-    {"league", LEAGUETOK},
-    {"params", PARAMTOK},
-    {"observe", OBSERVETOK},
-    {"info", INFOTOK},
-    {"cluecheck", CLUECHECKTOK},
-
-    {"shiptimers", SHIPTIMERTOK},
-
-    {"refit", REFITTOK},
-    {"player", PLAYERTOK},
-    {"pl", PLAYERTOK},		/* popular abbrev */
-    {"planet", PLANETTOK},
-    {"eject", EJECTTOK},
-    {"die", DIETOK},
-    {"rank", RANKTOK},
-    {"royalty", ROYALTOK},
-    {"move", MOVETOK},
-    {"armies", ARMIESTOK},
-    {"plasma", PLASMATOK},
-    {"missile", MISSILETOK},
-    {"team", TEAMTOK},
-    {"ship", SHIPTOK},
-    {"quiet", QUIETTOK},
-    {"kills", KILLSTOK},
-    {"hose", HOSETOK},
-    {"super", SUPERTOK},
-    {"allow", ALLOWTOK},
-    {"+", PLUSTOK},
-    {"-", MINUSTOK},
-
-    {"robot", ROBOTTOK},
-    {"nukegame", NUKEGAMETOK},
-    {"freeslot", FREESLOTTOK},
-    {"tourn", TOURNTOK},
-    {"galaxy", NEWGALAXY},
-
-    /* player commands */
-    {"password", PASSWDTOK},
-    {"ratings", RATINGSTOK},
-
-    /* league commands */
-    {"time", TIMETOK},
-    {"captain", CAPTAINTOK},
-    {"restart", RESTARTTOK},
-    {"start", STARTTOK},
-    {"pass", PASSTOK},
-    {"timeout", TIMEOUTTOK},
-    {"teamname", TEAMNAMETOK},
-    {"away", AWAYTOK},
-    {"home", HOMETOK},
-    {"pause", PAUSETOK},
-    {"continue", CONTINUETOK},
-    {"maxplayers", MAXPLAYERTOK},
-
-    {"independent", INDTOK},
-    {"federation", FEDTOK}, {"romulan", ROMTOK},
-    {"klingon", KLITOK}, {"orion", ORITOK},
-
-    {"sc", SCOUTTOK}, {"dd", DESTROYERTOK},
-    {"ca", CRUISERTOK}, {"bb", BATTLESHIPTOK},
-    {"as", ASSAULTTOK}, {"sb", STARBASETOK},
-    {"at", ATTTOK}, {"js", JUMPSHIPTOK},
-    {"fr", FRIGATETOK}, {"wb", WARBASETOK},
-    {"cl", LIGHTCRUISERTOK}, {"cv", CARRIERTOK},
-    {"ut", UTILITYTOK}, {"pt", PATROLTOK},
-
-    {"", ERRORTOK}		/* I'm last. Keep it that way. */
-};
-
-static void 
-dotokenize(input)
-    char   *input;
-{
-    char   *temp0, *temp1;
-    int     done = 0;
-    static char internal[120];
-
-    sizetokstring = 0;
-
-    /* Convert string to lowercase. */
-
-    temp0 = strcpy(internal, input);
-    while (*temp0 != '\0') {
-	if (isupper(*temp0))
-	    *temp0 = tolower(*temp0);
-	temp0++;
-    }
-
-
-    temp0 = internal;
-
-    while (done == 0) {
-	struct token *tptr;
-	int     wordlen;
-	int     potentialtok, ambiguous;
-
-	/* Eat leading spaces. */
-
-	while (*temp0 == ' ')
-	    temp0++;
-
-	/* Find the next word and chop the rest of the string away. */
-
-	temp1 = temp0;
-	therest[sizetokstring] = input + (temp1 - internal);
-	while (*temp1 != '\0' && *temp1 != ' ')
-	    temp1++;
-	if (*temp1 != '\0')
-	    *temp1++ = '\0';
-	wordlen = strlen(temp0);
-
-	/* Go find out what they've typed. */
-
-	tptr = tstrings;
-	potentialtok = ERRORTOK;
-	ambiguous = 0;
-	while (tptr->token != ERRORTOK) {
-	    if (0 == strncmp(temp0, tptr->string, wordlen)) {
-		if (strlen(tptr->string) == wordlen) {
-		    ambiguous = 0;
-		    potentialtok = tptr->token;
-		    break;	/* exact match */
-		}
-		if (potentialtok != ERRORTOK) {
-		    ambiguous = 1;	/* this isn't the only match */
-		}
-		potentialtok = tptr->token;
-	    }
-	    tptr++;
-	}
-
-	thestrings[sizetokstring] = temp0;
-	tokstring[sizetokstring++] = ambiguous ? ERRORTOK : potentialtok;
-	temp0 = temp1;
-
-	/* If *temp0 == 0 then we're done. */
-
-	if (*temp0 == '\0')
-	    done = 1;
-    }
-    thestrings[sizetokstring]=0;
-}
-#endif
 
 /**********************************************************************/
 
@@ -636,8 +458,6 @@ respond(char *msg, int type)
 	pmessage2(msg, me->p_no, MINDIV, MCONTROL, 255);
 }
 
-#ifdef GOD_CONTROLS
-
 /*
  * Here we handle the controls on players.
  * If you add something, make sure you place it in the help.
@@ -813,20 +633,6 @@ parse_control_player(char *cmd)
 		respond("available ships: SC DD CA AS BB SB AT JS FR WB CL CV SUPER", 0);
 		return 0;
 	    }
-#if 0
-	    if (tokstring[4] == SUPERTOK) {
-		victim->p_ship.s_maxshield = 750;
-		victim->p_shield = 750;
-		victim->p_ship.s_maxdamage = 750;
-		victim->p_ship.s_maxegntemp = 5000;
-		sprintf(buf, "%s (%2s) has been supercharged by %s (%2s).",
-			victim->p_name, twoletters(victim),
-			me->p_name, twoletters(me));
-		if (!god_silent)
-		    pmessage(buf, 0, MALL, MCONTROL);
-		return 1;
-	    }
-#endif
 	    /* If others are docked, then kick them off */
 	    if (allows_docking(victim->p_ship)) {
 		int     i;
@@ -966,14 +772,7 @@ parse_control_player(char *cmd)
 
     case HELPTOK:		/* fall through */
     default:
-#if 1
 	respond_with_help_string(available_cmds);
-#else
-	respond("player controls: die, eject, armies [%d], plasma [%d],", 0);
-	respond("player controls: missile [%d], team [team], ship [ship],", 0);
-	respond("player controls: rank [%d]+-, royal [%d]+-, kills [%d]+-", 0);
-	respond("player controls: hose, move %d %d", 0);
-#endif
 	return 0;
     }
 }
@@ -1002,9 +801,6 @@ parse_control(char *str)
     char   *nexttoken;
 
     if (godliness <= 0) {
-#if 0
-	respond("Those commands are only available to server gods");
-#endif
 	return 0;		/* "fail" silently.  Don't advertise divine
 				   powers to peasants. */
     }
@@ -1127,13 +923,7 @@ parse_control(char *str)
 	return 1;
     case RESTARTTOK:
 	warning("Attempting daemon restart.");
-	startdaemon(
-#ifdef LEAGUE_SUPPORT
-		    status2->league
-#else
-		    0
-#endif
-		    , 1);
+	startdaemon(status2->league, 1);
 	return 1;
     case NEWGALAXY:
 	explode_everyone(KPROVIDENCE, 0);
@@ -1184,16 +974,10 @@ parse_control(char *str)
 	return 1;
     case HELPTOK:		/* fall through */
     default:
-#if 1
 	respond_with_help_string(available_cmds);
-#else
-	respond("Available controls: player, quiet, nukegame, freeslot,", 0);
-	respond("  galaxy, restart, shiptimer", 0);
-#endif
 	return 0;
     }
 }
-#endif
 
 /*
  *
@@ -1217,10 +1001,6 @@ parse_info(char *cmd)
 	    int     race = 0;
 	    int     i, j;
 	    int	    anydead=0;
-#if 0
-	    if (me->p_stats.st_royal < 2)
-		race = me->p_team;
-#endif
 	    for (i = 0; i < NUMTEAM; i++) {
 		int     teammask = idx_to_mask(i);
 		if (race && !(race & (1 << i)))
@@ -1365,8 +1145,6 @@ parse_player(char *cmd)
  *
  */
 
-#ifdef LEAGUE_SUPPORT
-
 static void 
 umpire_speak(char *msg)
 {
@@ -1504,14 +1282,6 @@ parse_league(char *subcommand)
 #endif
 	{"teamname", TEAMNAMETOK, "teamname %s"},
 	{"information", INFOTOK, "information"},
-#if 0
-/* damn, these should be initialized from the current race list */
-	{"federation", FEDTOK, "fed"},
-	{"romulan", ROMTOK, "rom"},
-	{"klingon", KLITOK, "kli"},
-	{"orion", ORITOK, "ori"},
-#endif
-
 	{"away", AWAYTOK, "away [%d]"},
 	{"home", HOMETOK, "home [%d]"},
 	{"newgalaxy", NEWGALAXY, "newgalaxy [%d]"},
@@ -1586,13 +1356,8 @@ parse_league(char *subcommand)
 	    return 1;
 	}
 	if (i < 0) {
-#if 0
-	    sprintf(buf, "The %s team no longer wishes the %s for their empire.",
-		    teamtype, teams[idx_to_mask(myteam->index)].name);
-#else
 	    respond("You can't change your mind without a reset.  Ask for one", 1);
 	    return 1;
-#endif
 	}
 	else
 	    sprintf(buf, "The %s team has chosen the %s for their empire.",
@@ -2074,7 +1839,6 @@ parse_league(char *subcommand)
 	return 1;
     }
 }
-#endif
 /*
  *
  */
@@ -2109,41 +1873,22 @@ parse_command_mess(char *str, unsigned char who)
     if (godlike < 0)
 	godlike = 0;
 
-
-
-#if 0
-    /* so we won't damage the original string */
-    strcpy(buf, str);
-
-    dotokenize(buf);
-
-    if (sizetokstring == 0)	/* nothing?  ok, then let them send it :) */
-	return 0;
-#endif
-
     switch (next_token(str, available_cmds, &nexttoken)) {
     case HELPTOK:
 	sprintf(buf, "Available commands: %s%s%s",
 		godlike ? "control ..., " : "",
-#ifdef LEAGUE_SUPPORT
 		status2->league ? "league ..., " :
-#endif
 		"",
 		"version, player ..., queue,");
 	respond(buf, 0);
 	respond("   information ..., observe [%d], parameters, cluecheck [%s], help", 0);
 	return 1;
     case CONTROLTOK:
-#ifdef GOD_CONTROLS
 	if (status2->league) {
 		respond("God controls are disabled during league play.", 1);
 	} else {
 		return parse_control(nexttoken);
 	}
-#else
-	respond("This ntserv is not compiled with god controls.", 1);
-	return 1;
-#endif
 
     case VERSIONTOK:
 	sprintf(buf, "NetrekII (Paradise), %s", PARAVERS);
@@ -2161,10 +1906,8 @@ parse_command_mess(char *str, unsigned char who)
 	    respond("Dude, what are you waiting for!?  It's T-mode.  GO FIGHT!", 1);
 	else if (!(me->p_flags & PFGREEN))
 	    respond("Can not enter the tourney queue while at alert", 1);
-#ifndef AEDILE
 	else if (me->p_damage != 0 || me->p_shield < me->p_ship.s_maxshield)
 	    respond("Can not enter the tourney queue while damaged", 1);
-#endif
 	else if (me->p_armies > 0)
 	    respond("Can not take armies into the tourney queue", 1);
 	else {
@@ -2183,7 +1926,6 @@ parse_command_mess(char *str, unsigned char who)
 	return 1;
 
     case LEAGUETOK:
-#ifdef LEAGUE_SUPPORT
 	if (status2->league) {
 	    return parse_league(nexttoken);
 	}
@@ -2191,11 +1933,6 @@ parse_command_mess(char *str, unsigned char who)
 	    respond("League commands are disabled during non-league play.", 1);
 	    return 1;
 	}
-#else
-	respond("Server is not compiled with league support.", 1);
-	respond("Edit config.h, recompile, install, and nuke the game.", 1);
-	return 1;
-#endif
 
     case INFOTOK:
 	return parse_info(nexttoken);
@@ -2226,15 +1963,8 @@ parse_command_mess(char *str, unsigned char who)
 	    else {
 		if (me->p_observer && me->p_status == POBSERVE) {
 		    me->p_observer = 0;
-#if 1
-#ifdef LEAGUE_SUPPORT
 		    if (!(status2->league && status->tourn))
-#endif
 			evaporate(me);
-#else
-		    respond("You may now self-destruct and reenter the game as a player", 0);
-		    respond("(assuming there's room for you).", 0);
-#endif
 		}
 	    }
 	}

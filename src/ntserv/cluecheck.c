@@ -349,11 +349,6 @@ remind_cluecheck(void)
 	sprintf(buf, "If you don't answer within %d seconds, you will be kicked out of", me->p_cluecountdown/10);
     BERATE(buf);
     BERATE("the game and publicly humiliated.");
-#if 0
-    BERATE("If you are a complete newbie, then");
-    BERATE("you probably don't even realize that you can read the MOTD while");
-    BERATE("playing (shift-M).");
-#endif
 }
 
 /* if other methods of getting clue words fail, then we've always got
@@ -720,12 +715,6 @@ countdown_clue(void)
             sprintf(buf, "%s (%s) was ejected for failing a cluecheck.",
                     me->p_name, twoletters(me));
             pmessage(buf, SERVNAME, MALL, " ** CLUECHECK **");
-
-#ifdef MAIL_CLUELETTER
-            sprintf(buf, "%s %s %s", build_path(MAILCLUECHECK),
-                    me->p_login, me->p_full_hostname);
-            system(buf);
-#endif
         } else {
             /* they aren't -1, they are greater than 1, so they havn't
                been checked yet */

@@ -19,17 +19,13 @@ char binary[] = "@(#)daemonII";
 
 #define DAEMONII 1		/* to tell daemonII.h we are in this file */
 
-#define NEED_TIME 
-
 #include "config.h"
 #include <signal.h>
 #include <sys/file.h>
 #include <setjmp.h>
 #include <sys/ioctl.h>
 #include <sys/wait.h>
-#ifndef ULTRIX
-#include <sys/fcntl.h>
-#endif
+#include <fcntl.h>
 
 #include <sys/types.h>
 #include <sys/ipc.h>
@@ -49,7 +45,6 @@ char binary[] = "@(#)daemonII";
 #include "player.h"
 #include "misc.h"
 #include "shmem.h"
-#include "path.h"
 #include "sysdef.h"
 #include "plutil.h"
 
@@ -59,8 +54,6 @@ char binary[] = "@(#)daemonII";
                          fprintf(stderr, "!  %s: %s\n", argv0, buf); \
                        }
 /*--------------------------FUNCTION PROTOTYPES---------------------------*/
-
-typedef void sig_ret_t;	/* replace by RETSIGTYPE from config.h.in */
 
 /*------------------------------------------------------------------------*/
 
@@ -126,9 +119,7 @@ main(int argc, char **argv)
     char   *ptr;		/* get get path env var */
 
     int     x = 0;		/* for delay in debugging messages */
-#ifdef LEAGUE_SUPPORT
     int     configleague = 0;	/* if nonzero, set configvals->league to 1 */
-#endif
     int     attach = 0;
     int     nogo = 0;		/* for the usage flag/case */
 
@@ -141,13 +132,7 @@ main(int argc, char **argv)
 	    while (*ptr) {
 		switch (*ptr) {
 		case 'l':
-#ifdef LEAGUE_SUPPORT
 		    configleague = 1;
-#else
-                    TellERR("daemon not compiled with league support.");
-                    TellERR("Edit config.h and reinstall.");
-                    TellERR("Continuing anyway.");
-#endif
 		    break;
 		case 'd':
 		    debug = 1;
@@ -173,13 +158,6 @@ main(int argc, char **argv)
 		ptr++;
 	    }
 	}
-#if 0 /* this is goofy, just use -d */
-	else {
-	    TelLERR("Backward compatibility: activating debugging mode.");
-	    debug = 1;
-	    break;
-	}
-#endif
         else {
             TellERRf("Invalid option format '%s'.", argv[i]);
             nogo++;
@@ -215,7 +193,6 @@ main(int argc, char **argv)
 	r_signal(SIGCONT, SIG_DFL);	/* accept SIGCONT? 3/6/92 TC */
     }
 
-#ifdef LEAGUE_SUPPORT
     if (configleague && !attach) {
 	status2->league = 1;	/* configure for league play */
 	/* .sysdef will be ignored */
@@ -249,12 +226,10 @@ main(int argc, char **argv)
 	status2->home.desired.restart = status2->away.desired.restart
 	    = 0;
     }
-#endif
 
     if (!attach)
 	readsysdefaults();	/* go get sysdefaults */
 
-#ifdef LEAGUE_SUPPORT
     if (configleague && !attach) {
 	status2->home.timeouts_left = status2->away.timeouts_left =
 	    configvals->timeouts;
@@ -266,7 +241,6 @@ main(int argc, char **argv)
 	status2->home.desired.maxplayers = status2->away.desired.maxplayers
 	    = configvals->playersperteam;
     }
-#endif
 
 
     if (!attach) {
@@ -282,22 +256,8 @@ main(int argc, char **argv)
     paths = build_path(PLFILE);
     plfd = open(paths, O_RDWR, 0744);	/* open planets file */
     if (!attach) {
-#if 1
 	gen_planets();		/* generate a new galaxy every time */
 	status->time = 0;
-#else
-	if (plfd < 0) {		/* oopen failed? */
-	    fprintf(stderr, "No planet file.  Restarting galaxy\n");
-	    gen_planets();	/* yup, go to it */
-	}
-	else {			/* try to read in planets */
-	    if (read(plfd, (char *) planets, sizeof(struct planet) * MAXPLANETS) !=
-		sizeof(struct planet) * MAXPLANETS) {	/* if wrong size */
-		fprintf(stderr, "Planet file wrong size.  Restarting galaxy\n");
-		gen_planets();	/* then regenerate galaxy */
-	    }
-	}
-#endif
     }				/* !attach */
     paths = build_path(GLOBAL);
 
@@ -413,8 +373,8 @@ printdaemonIIUsage(char *myname)
 /*--------------------------[ printdaemonIIUsage ]--------------------------*/
 
 /* signal handler for SIGALRM */
-sig_ret_t
-setflag(void)
+RETSIGTYPE
+setflag(int unused)
 {
     doMove = 1;
 }
@@ -443,7 +403,6 @@ stoptimer(void)
     setitimer(ITIMER_REAL, &udt, (struct itimerval *) 0);
 }
 
-#ifdef LEAGUE_SUPPORT
 static void 
 handle_pause_goop(void)
 {
@@ -492,7 +451,6 @@ handle_pause_goop(void)
 	}
     }
 }
-#endif
 
 /*---------------------------------MOVE-----------------------------------*/
 /*  This is the main loop for the program.  It is called every 1/10th of
@@ -574,23 +532,12 @@ move(void)
 	}
     }
 
-#if 0
-    if (status->nukegame) {	/* if daemon should die then */
-	freemem(0);		/* nuke shared memory */
-	exit(0);		/* kill daemon */
-    }
-#endif
-
     parse_godmessages();	/* log any messages to god */
 
-#ifdef LEAGUE_SUPPORT
     handle_pause_goop();	/* print any messages related to pausing the
 				   game */
-#endif
 
-#ifdef LEAGUE_SUPPORT
     if (!status2->paused)
-#endif
       {
 	if (FUSE(PLAYERFUSE))	/* time to update players? */
 	    udplayers();
@@ -625,12 +572,8 @@ move(void)
 
 
 	if (FUSE(topgun ? HOSEFUSE2 : HOSEFUSE)
-#if !defined(AEDILE) || !defined(IGGY_IN_T)
 	    && status->tourn != 1	/* no Iggy during T-mode */
-#endif
-#ifdef LEAGUE_SUPPORT
 	    && status2->league == 0
-#endif
 	    )	/* no Iggy during league games */
 	    rescue(HUNTERKILLER, 0, -1);	/* send in iggy-- no team, no
 						   target */
@@ -665,9 +608,7 @@ move(void)
 
 	    shipbuild_timers();
 
-#ifdef LEAGUE_SUPPORT
 	    if (!status2->league)
-#endif
 		udsurrend();	/* update surrender every minute unless
 				   playing league */
 
@@ -675,9 +616,7 @@ move(void)
 
 	}
 	/* update the tournament clock, maybe print messages */
-#ifdef LEAGUE_SUPPORT
 	udtourny();
-#endif
     }				/* end if !paused */
 
     if (FUSE(MINUTEFUSE)) {
@@ -710,30 +649,8 @@ move(void)
 		fclose(logfile);
 	    }
 	}
-#else
-#ifdef UFL
-	{
-	    char   *paths;
-	    FILE   *logfile;
-	    paths = build_path(LOGFILENAME);
-	    logfile = fopen(paths, "a");
-	    if (logfile) {
-		fprintf(logfile, "Count: %d players\n", c);
-		fclose(logfile);
-	    }
-	}
-#endif
 #endif
     }
-
-#if 0
-    /* well, this may cause blocked pipes if too many */
-    /* processes, the file said before I hacked it. */
-    /* So this is disabled.  */
-    if (FUSE(CHECKLOADFUSE))	/* time to check load? */
-	check_load();
-#endif
-
 
     if (status2->newgalaxy) {
 
@@ -753,7 +670,7 @@ move(void)
 }
 
 
-sig_ret_t
+RETSIGTYPE
 freemem(int sig)
 {
     register int i;
@@ -786,21 +703,13 @@ freemem(int sig)
 void
 check_load(void)
 {
-#ifndef sys_hpux	/* breaks under hpux... it's fixable, though */
-    FILE   *fp, *popen();
+#ifdef HAVE_UPTIME
+    FILE   *fp;
     char    buf[100];
     char   *s;
     float   load;
 
-#if defined(SYSV) || defined(sys_linux) || defined(sys_freebsd)
- #if defined(sys_sgi)
-    fp = popen("/usr/bsd/uptime", "r");	/* sigh. */
- #else
-    fp = popen("/usr/bin/uptime", "r");
- #endif
-#else
-    fp = popen("/usr/ucb/uptime", "r");
-#endif
+    fp = popen(UPTIME_PATH, "r");
     if (fp == NULL) {
 /*	status->gameup=0;*/
 	return;
@@ -852,7 +761,6 @@ ghostmess(struct player *victim)
 	    victim->p_name, twoletters(victim),
 	    ghostkills);
     pmessage(buf, 0, MALL, MSERVA);
-#if 1
     if (victim->p_armies > 0) {
 	k = 10 * (remap[victim->p_team] - 1);
 	if (k >= 0 && k <= 30)
@@ -866,10 +774,6 @@ ghostmess(struct player *victim)
 		}
 	    }
     }
-#else
-    if (victim->p_armies > 0)
-	PlaceLostArmies(victim);/* not working yet */
-#endif
 }
 
 void
@@ -882,10 +786,8 @@ saveplayer(struct player *victim)
 	return;
     if (victim->p_stats.st_lastlogin == 0)
 	return;
-#ifndef ROBOTSTATS
-    if (victim->p_flags & PFROBOT)
+    if (victim->p_flags & PFROBOT && !configvals->robot_stats)
 	return;
-#endif
 
     paths = build_path(PLAYERFILE);
     fd = open(paths, O_WRONLY, 0644);
@@ -910,10 +812,8 @@ rescue(int team, int target, int planet)
     int     pid;
     char   *paths;		/* added 1/18/93 KAO */
 
-#ifdef LEAGUE_SUPPORT
     if (status2->league)
 	return;			/* no robots during league play */
-#endif
 
     sprintf(argp, "-S%d", planet);
 
@@ -992,8 +892,8 @@ rescue(int team, int target, int planet)
 
 /* Don't fear the ... */
 
-sig_ret_t
-reaper()
+RETSIGTYPE
+reaper(int unused)
 {
     static int status;
     static int pid;
@@ -1039,6 +939,3 @@ shipbuild_timers(void)
 	    if (teams[i].s_turns[t] > 0)	/* and if need be, then dec */
 		teams[i].s_turns[t]--;	/* the construction timer */
 }
-
-
-#undef D

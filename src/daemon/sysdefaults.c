@@ -29,7 +29,6 @@ suitability of this software for any purpose.  This software is provided
 #include "data.h"
 #include "getship.h"
 #include "shmem.h"
-#include "path.h"
 #include "structdesc.h"
 #include "game.h"
 #include "cutil.h"
@@ -331,6 +330,8 @@ static struct field_desc config_fields[] = {
     {"AFFECTSHIPTIMERSOUTSIDET", FT_BYTE, OFFSET_OF(affect_shiptimers_outside_T)},
     {"DURABLESCOUTING", FT_BYTE, OFFSET_OF(durablescouting)},
     {"FACILITYGROWTH", FT_BYTE, OFFSET_OF(facilitygrowth)},
+    {"RPRDURINGWARPPREP", FT_BYTE, OFFSET_OF(repair_during_warp_prep)},
+    {"RPRDURINGWARP", FT_BYTE, OFFSET_OF(repair_during_warp)},
     {"FIREDURINGWARPPREP", FT_BYTE, OFFSET_OF(fireduringwarpprep)},
     {"FIREDURINGWARP", FT_BYTE, OFFSET_OF(fireduringwarp)},
     {"FIREWHILEDOCKED", FT_BYTE, OFFSET_OF(firewhiledocked)},
@@ -344,11 +345,9 @@ static struct field_desc config_fields[] = {
     {"PLANETSINPLAY", FT_INT, OFFSET_OF(planetsinplay)},
     {"PLANETLIMITTYPE", FT_INT, OFFSET_OF(planetlimittype)},
     {"BEAMLASTARMIES", FT_BYTE, OFFSET_OF(beamlastarmies)},
-#ifdef LEAGUE_SUPPORT
     {"TIMEOUTS", FT_INT, OFFSET_OF(timeouts)},
     {"REGULATIONMINUTES", FT_INT, OFFSET_OF(regulation_minutes)},
     {"OVERTIMEMINUTES", FT_INT, OFFSET_OF(overtime_minutes)},
-#endif
     {"PING_PERIOD", FT_INT, OFFSET_OF(ping_period)},
     {"PING_ILOSS_INTERVAL", FT_INT, OFFSET_OF(ping_iloss_interval)},
     {"PING_GHOSTBUST", FT_INT, OFFSET_OF(ping_allow_ghostbust)},
@@ -364,6 +363,12 @@ static struct field_desc config_fields[] = {
     {"NOTTIMEOUT", FT_INT, OFFSET_OF(nottimeout)},
     {"WARPZONE", FT_INT, OFFSET_OF(warpzone)},
     {"HELPFULPLANETS", FT_INT, OFFSET_OF(helpfulplanets)},
+    {"WBBOMBINGCREDIT", FT_BYTE, OFFSET_OF(wb_bombing_credit)},
+    {"JSPLANETCREDIT", FT_BYTE, OFFSET_OF(js_assist_credit)},
+    {"BUTTTORP_PENALTY", FT_BYTE, OFFSET_OF(butttorp_penalty)},
+    {"SLOWBOMB", FT_BYTE, OFFSET_OF(slow_bomb)},
+    {"ROBOTSTATS", FT_BYTE, OFFSET_OF(robot_stats)},
+    {"LOSING_ADVANTAGE", FT_FLOAT, OFFSET_OF(losing_advantage)},
     {0}
 };
 
@@ -395,9 +400,7 @@ readsysdefaults(void)
     */
     configvals->tournplayers = 5;
     configvals->ntesters =
-#ifdef LEAGUE_SUPPORT
       status2->league ? 2 :
-#endif
 	12;
 
     configvals->binconfirm = 0;
@@ -415,26 +418,6 @@ readsysdefaults(void)
     configvals->planupdspd = 0;
     configvals->justify_galaxy = 1; /* changed 5-Nov-94 by PLC */
 
-#ifdef BRONCO
-    configvals->galaxygenerator = 4;	/* Bronco emulator */
-    configvals->resource_bombing = 0;
-    configvals->revolts = 0;
-    configvals->afterburners = 0;
-    configvals->warpdrive = 0;
-    configvals->fuel_explosions = 0;
-    configvals->bronco_shipvals = 1;
-    configvals->evacuation = 0;	/* evacuation is allowed in paradise */
-    configvals->newcloak = 0;   /* old formula is not based on speed */
-    configvals->new_army_growth = 0;	/* WAY faster than bronco in many
-					   cases */
-    configvals->warpdecel = 0;
-    configvals->affect_shiptimers_outside_T = 0;
-
-    configvals->durablescouting = 1;
-    configvals->facilitygrowth = 0;
-    configvals->orbitdirprob = 1.0;
-    configvals->planetsinplay = 40;
-#else
     configvals->galaxygenerator = 3;	/* Heath's galaxy generator */
                                         /* changed 5-Nov-94 by PLC */
     configvals->num_wormpairs = 0;
@@ -460,7 +443,9 @@ readsysdefaults(void)
     configvals->popscheme = 1;
     configvals->popchoice = 1;
     configvals->popspeed = 14; /* was 9, changed 5-Nov-94 by PLC */
-#endif
+
+    configvals->repair_during_warp_prep = 1;
+    configvals->repair_during_warp = 1;
     configvals->fireduringwarpprep = 0;
     configvals->fireduringwarp = 0;
     configvals->firewhiledocked = 0;
@@ -531,17 +516,13 @@ readsysdefaults(void)
     for (i = 0; i < WP_MAX; i++)
 	configvals->weaponsallowed[i] = (i == WP_PLASMA ||
 					 i == WP_TRACTOR ||
-#ifndef BRONCO
 					 i == WP_MISSILE ||
-#endif
 					 0);
 
-#ifdef LEAGUE_SUPPORT
     configvals->timeouts = 0;	/* NYI */
     configvals->regulation_minutes = 60;
     configvals->overtime_minutes = 0;	/* NYI */
     configvals->playersperteam = 8;
-#endif
 
     configvals->nopregamebeamup = 0;
     configvals->gamestartnuke = 0;
@@ -568,16 +549,24 @@ readsysdefaults(void)
     configvals->plgrow.repair = 150;
     configvals->plgrow.shipyard = 400;
 
+    configvals->helpfulplanets = 0;
+
+    configvals->wb_bombing_credit = 1;
+    configvals->js_assist_credit = 1;
+    configvals->butttorp_penalty = 0;
+    configvals->slow_bomb = 1;
+    configvals->robot_stats = 1;
+
+    configvals->losing_advantage = 0.0;
+
     getshipdefaults();
     initteamvals();
 
     /* set server defaults */
     testtime = -1;		/* not in testing mode */
 
-#ifdef LEAGUE_SUPPORT
     if (status2->league)
 	return;			/* don't read .sysdef during league game */
-#endif
     paths = build_path(SYSDEF_FILE);	/* cat on sysdef filename */
     f = fopen(paths, "r");	/* attempt to open file */
     if (f == NULL) {		/* if failure to open file */
@@ -627,20 +616,6 @@ readsysdefaults(void)
 	    for (i = 0; i < SHIPS_SYSTEMS; i++)
 		improved_tracking[i] = 0;
 	    readstrings("IMPROVED_TRACKING", s, systemtypes, improved_tracking, SHIPS_SYSTEMS);
-#if 0
-	}
-	else if (strcmp(buf, "PING_FREQ") == 0) {
-	    ping_freq = atoi(s);
-	}
-	else if (strcmp(buf, "PING_ILOSS_INTERVAL") == 0) {
-	    ping_iloss_interval = atoi(s);
-	}
-	else if (strcmp(buf, "PING_GHOSTBUST") == 0) {
-	    ping_allow_ghostbust = atoi(s);
-	}
-	else if (strcmp(buf, "PING_GHOSTBUST_INTERVAL") == 0) {
-	    ping_ghostbust_interval = atoi(s);
-#endif
 	}
 	else if (strcmp(buf, "SHIP") == 0) {	/* if ship being entered */
 	    shipdefs(atoi(s), f);
@@ -726,10 +701,8 @@ update_sys_defaults(void)
     struct stat newstat;
     static char   *paths = NULL;		/* to hold full pathname */
 
-#ifdef LEAGUE_SUPPORT
     if (status2->league)
 	return 0;		/* don't read .sysdef during league game */
-#endif
 
     if (!paths)		/* just do the build_path once */
 	paths = strdup(build_path(SYSDEF_FILE));

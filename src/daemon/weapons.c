@@ -186,43 +186,6 @@ weap_near_object(struct basetorp *torp, int type, int dist)
     return 0;			/* return that it should continue */
 }
 
-
-#if 0				/* I think this is now unused */
-/*----------------------------------NEAR----------------------------------*/
-/*  This function checks to see if a player is close enough to a torp for
-the torp to explode on.  This function returns a 1 if the torp should
-explode and a zero if not.  */
-
-int 
-near(torp)
-    struct torp *torp;		/* the torp to check for */
-{
-#if 1
-    return near_player(&torp->t_base, EXPDIST);
-#else
-    register int i;		/* looping var */
-    int     dx, dy;		/* to calc torp-player distance */
-    register struct player *j;	/* to point to players */
-
-    for (i = 0, j = &players[i]; i < MAXPLAYER; i++, j++) {
-	if (j->p_status != PALIVE)
-	    continue;		/* don't check players not alive */
-	if (j->p_no == torp->t_owner)
-	    continue;		/* no exploding on self */
-	if (!hostile_to(torp->t_war, torp->t_team, j))
-	    continue;		/* disregard if both teams not at war */
-	dx = torp->t_x - j->p_x;/* calc delta coords */
-	dy = torp->t_y - j->p_y;
-	if (ABS(dx) > EXPDIST || ABS(dy) > EXPDIST)
-	    continue;		/* disregard if obviously too far */
-	if (dx * dx + dy * dy < EXPDIST * EXPDIST)
-	    return 1;		/* if close enough to explode then return 1 */
-    }
-    return 0;			/* return that torp should continue */
-#endif
-}
-#endif
-
 int 
 near_player(struct basetorp *torp, int dist)
 {
@@ -280,32 +243,7 @@ spac.  */
 int 
 pnear(struct plasmatorp *plasmatorp)	/* the plasma torp to check for */
 {
-#if 1
     return near_player(&plasmatorp->pt_base, EXPDIST);
-#else
-    register int i;		/* looping var */
-    int     dx, dy;		/* to calc distances with */
-    register struct player *j;	/* to point to players */
-    /* fprintf(stderr, "ENTERING PNEAR\n"); */
-    for (i = 0, j = &players[i]; i < MAXPLAYER; i++, j++) {
-	if (!(j->p_status == PALIVE))
-	    continue;		/* don't check players not alive */
-	if (plasmatorp->pt_owner == j->p_no)
-	    continue;		/* no exploding on self */
-	if (!hostile_to(plasmatorp->pt_war, plasmatorp->pt_team, j))
-	    continue;		/* disregard if both teams not at war */
-	dx = plasmatorp->pt_x - j->p_x;	/* calc delta coords */
-	dy = plasmatorp->pt_y - j->p_y;
-	/* fprintf(stderr, "ENTERING UDORPS #1\n"); */
-	if (ABS(dx) > EXPDIST || ABS(dy) > EXPDIST)
-	    continue;		/* disregard if obviously too far */
-	/* fprintf(stderr, "ENTERING UDORPS #2\n"); */
-	if (dx * dx + dy * dy < EXPDIST * EXPDIST)
-	    return 1;		/* if close enough to explode then return 1 */
-	/* fprintf(stderr, "ENTERING UDORPS #3\n"); */
-    }
-    return 0;			/* return that plasma torp should continue */
-#endif
 }
 
 
@@ -357,15 +295,6 @@ udtorps(void)
 	    }
 	    j->t_x += (double) j->t_speed * Cos[j->t_dir] * WARP1;
 	    j->t_y += (double) j->t_speed * Sin[j->t_dir] * WARP1;
-
-#if 0
-	    if (outofbounds(j->t_x, j->t_y)) {	/* hit top wall? */
-		j->t_status = TEXPLODE;	/* so you cannot wall kill */
-		j->t_whodet = j->t_owner;
-		/* explode(&j->t_base);	eliminate self wallkills */
-		break;		/* done with this torp */
-	    }
-#endif
 
 	    move_torp(i, j->t_x, j->t_y, 1);
 
@@ -443,52 +372,6 @@ udmissiles(void)
 	    mis->ms_status = TFREE;
 	    j->p_nthingys--;
 	    break;
-#if 0
-	case TRETURN:
-	    j = &players[mis->ms_owner];
-	    if (!(j->p_ship.s_nflags & SFNHASFIGHTERS)) {
-		mis->ms_type = MISSILETHINGY;	/* If the player no longer
-						   has em, */
-		mis->ms_status = TMOVE;	/* make his fighters kamikazes */
-		mis->fi_hasfired = 0;
-		break;
-	    }
-
-
-	    if (mis->ms_fuse-- <= 0) {
-		mis->ms_status = TFREE;
-		move_missile(i, -1, -1, 1);
-		break;
-	    }
-
-	    if (((sun_effect[SS_MISSILE] && mis->ms_type == MISSILETHINGY
-		 || sun_effect[SS_FIGHTER] && mis->ms_type == FIGHTERTHINGY)
-		&& weap_near_object(&mis->ms_base, PLSTAR, ORBDIST)) ||
-		((wh_effect[SS_MISSILE] && mis->ms_type == MISSILETHINGY
-		  || wh_effect[SS_FIGHTER] && mis->ms_type == FIGHTERTHINGY)
-		&& weap_near_object(&mis->ms_base, PLWHOLE, ORBDIST))) {
-		/* did it hit a star or wormhole? */
-		explode(&mis->ms_base);
-		break;
-	    }
-	    if (mis->ms_turns > 0) {
-		turn = fighter_track_target(&mis->ms_base, mis->ms_turns);
-		mis->ms_dir = (unsigned char) (mis->ms_dir + turn * mis->ms_turns);
-	    }
-	    x = mis->ms_x + mis->ms_speed * Cos[mis->ms_dir] * WARP1;
-	    y = mis->ms_y + mis->ms_speed * Sin[mis->ms_dir] * WARP1;
-	    move_missile(i, x, y, 1);
-
-	    if (mis->ms_fuse-- <= 0) {
-		mis->ms_status = TFREE;
-		move_missile(i, -1, -1, 1);
-	    }
-	    else if (f_land(mis)) {
-		mis->ms_status = TLAND;
-		move_missile(i, -1, -1, 1);
-	    }
-	    break;
-#endif
 	case TRETURN:
 	case TMOVE:
 	case TSTRAIGHT:
@@ -558,13 +441,6 @@ udmissiles(void)
 	    x = mis->ms_x + mis->ms_speed * Cos[mis->ms_dir] * WARP1;
 	    y = mis->ms_y + mis->ms_speed * Sin[mis->ms_dir] * WARP1;
 
-#if 0
-	    if (outofbounds(x, y)) {
-		explode(&mis->ms_base);
-		break;
-	    }
-#endif
-
 	    move_missile(i, x, y, 1);
 
 	    if (mis->ms_status != TSTRAIGHT)
@@ -621,11 +497,10 @@ anticipate_impact(int w, int dx, int dy, int s, int dir)
     float	tdx, tdy;
     float	theta;
 
-#if 1				/* mathematically, these affect t, but
+				/* mathematically, these affect t, but
 				   not the return value */
     s *= WARP1 * TICKSPERSEC;
     w *= WARP1 * TICKSPERSEC;
-#endif
 
     sdx = s*Cos[dir];
     sdy = s*Sin[dir];
@@ -784,31 +659,7 @@ udplasmatorps(void)
 	    }
 	    j->pt_x += (double) j->pt_speed * Cos[j->pt_dir] * WARP1;
 
-#if 0
-	    if (j->pt_x < 0) {	/* if torp at left edge */
-		j->pt_x = 0;	/* set x to left edge */
-		pexplode(j);	/* make torp explode */
-		break;		/* go to next torp */
-	    }
-	    else if (j->pt_x > GWIDTH) {	/* if torp is at right edge */
-		j->pt_x = GWIDTH;	/* set x to right edge */
-		pexplode(j);	/* make torp explode */
-		break;		/* on to next torp */
-	    }
-#endif
 	    j->pt_y += (double) j->pt_speed * Sin[j->pt_dir] * WARP1;
-#if 0
-	    if (j->pt_y < 0) {	/* if torp at top */
-		j->pt_y = 0;	/* set torp to top edge */
-		pexplode(j);	/* make torp explode */
-		break;		/* on to next torp */
-	    }
-	    else if (j->pt_y > GWIDTH) {	/* if torp is at bottom */
-		j->pt_y = GWIDTH;	/* set y to bottom */
-		pexplode(j);	/* make torp explode */
-		break;		/* on to next torp */
-	    }
-#endif
 
 	    if (j->pt_fuse-- <= 0) {	/* dec the torp fuse. if torp done */
 		j->pt_status = PTFREE;	/* free it up */

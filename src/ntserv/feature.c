@@ -17,11 +17,8 @@ suitability of this software for any purpose.  This software is provided
 --------------------------------------------------------------------------*/
 
 #include "config.h"
-#ifdef FEATURE
-#ifdef HPUX
 #include <sys/types.h>
 #include <netinet/in.h>
-#endif
 #include "defs.h"
 #include "data.h"
 #include "struct.h"
@@ -82,11 +79,9 @@ struct feature {
     {"WHY_DEAD", &F_why_dead, 'S', 1, 0, 0},
     {"CLOAK_MAXWARP", &F_cloakerMaxWarp, 'S', 1, 0, 0},
 /*{"DEAD_WARP", &F_dead_warp, 'S', 1, 0, 0},*/
-#ifdef RC_DISTRESS
     {"RC_DISTRESS", &F_gen_distress, 'S', 1, 0, 0},
 #ifdef BEEPLITE
     {"BEEPLITE", &F_allow_beeplite, 'C', 1, (char*)&F_beeplite_flags, 0},
-#endif
 #endif
 /* terrain features */
     {"TERRAIN", &F_terrain, 'S', 1, (char*)&F_terrain_major, (char*)&F_terrain_minor},
@@ -102,18 +97,8 @@ void handleFeature(struct feature_cpacket *packet)
   int value = ntohl( packet->value );
 */
 
-#ifdef FEATURE_DIAG
-  pmessage( "Whoohoo!  Getting a feature packet.", 0, MALL, MSERVA );
-#endif
   while( features[feature].name ){
     if( !strcmp( features[feature].name, packet->name ) ){
-#ifdef FEATURE_DIAG
-      {
-        char buf[80]; 
-        sprintf( buf, "BEANS!  Matched feature %s", packet->name );
-        pmessage( buf, 0, MALL, MSERVA );
-      }
-#endif
       /* A match was found. */
       if( features[feature].var )
         *features[feature].var = packet->value;
@@ -127,9 +112,6 @@ void handleFeature(struct feature_cpacket *packet)
        * server features.
        */
       if( features[feature].feature_type == 'S' )	{
-#ifdef FEATURE_DIAG
-        pmessage( "Sending FEATURE_PACKETS right back at ya!", 0, MALL, MSERVA);
-#endif
         sendFeature( features[feature].name,
 		     features[feature].feature_type,
                      features[feature].value,
@@ -149,12 +131,6 @@ sendFeature(char *name, int feature_type, int value, int arg1, int arg2)
     int     arg1, arg2;
 {
     struct feature_cpacket packet;
-#ifdef FEATURE_DIAG
-    char buf[80];
-  
-    sprintf( buf, "Sending packet %d, name %s", SP_FEATURE, name );
-    pmessage( buf, 0, MALL, MSERVA );
-#endif
 
     strncpy(packet.name, name, sizeof(packet.name));
     packet.type = SP_FEATURE;
@@ -165,4 +141,3 @@ sendFeature(char *name, int feature_type, int value, int arg1, int arg2)
     packet.arg2 = arg2;
     sendClientPacket((struct player_spacket *) & packet);
 }
-#endif

@@ -16,8 +16,6 @@ suitability of this software for any purpose.  This software is provided
                                                     Brandon Gillespie
 --------------------------------------------------------------------------*/
 
-#define NEED_TIME 
-
 #include "config.h"
 #include "defs.h"
 #include "struct.h"
@@ -82,22 +80,10 @@ detothers(void)
 	    if ((j->t_status == TMOVE) || (j->t_status == TSTRAIGHT)) {
 		dx = j->t_x - me->p_x;	/* if torp moving */
 		dy = j->t_y - me->p_y;	/* get delta cords */
-#ifdef SHIPDET 
 		if (ABS(dx) > myship->s_detdist || ABS(dy) > myship->s_detdist)
 		    continue;	/* obviously too far away */
-		if (dx * dx + dy * dy < myship->s_detdist * myship->s_detdist ) { /* close enough? */
-#elif LARGEDET
-		if (ABS(dx) > NEWDETDIST || ABS(dy) > NEWDETDIST)
-		    continue;	/* obviously too far away */
-		if (dx * dx + dy * dy < NEWDETDIST * NEWDETDIST) { /* close enough? */
-#else
-/* DETDIST is normally set to 1700 unless SHIPDET is set. If SHIPDET is set */
-/* then DETDIST is set as myship->s_detdist in defs.h which will make the   */
-/* det distances settable by ship type 				            */ 
-if (ABS(dx) > DETDIST || ABS(dy) > DETDIST)
-     continue;	/* obviously too far away */
-		if (dx * dx + dy * dy < DETDIST * DETDIST) {	/* close enough? */
-#endif
+		if (dx * dx + dy * dy < myship->s_detdist * myship->s_detdist)
+		{ /* close enough? */
 		    j->t_whodet = me->p_no;	/* set who detted it */
 		    j->t_status = TDET;	/* change status to det */
 		}
@@ -115,22 +101,12 @@ if (ABS(dx) > DETDIST || ABS(dy) > DETDIST)
 	    dx = drn->ms_x - me->p_x;	/* if torp moving */
 	    dy = drn->ms_y - me->p_y;	/* get delta cords */
 
-#ifdef SHIPDET 
-		if (ABS(dx) > myship->s_detdist || ABS(dy) > myship->s_detdist)
-		    continue;	/* obviously too far away */
-		if (dx * dx + dy * dy < myship->s_detdist * myship->s_detdist ) { /* close enough? */
-#elif LARGEDET
-		if (ABS(dx) > NEWDETDIST || ABS(dy) > NEWDETDIST)
-	    if (ABS(dx) > NEWDETDIST || ABS(dy) > NEWDETDIST)
-		continue;	/* obviously too far away */
-	    if (dx * dx + dy * dy < NEWDETDIST * NEWDETDIST) {	/* close enough? */
-#else
-	    if (ABS(dx) > DETDIST || ABS(dy) > DETDIST)
-		continue;	/* obviously too far away */
-	    if (dx * dx + dy * dy < DETDIST * DETDIST) {	/* close enough? */
-#endif
-		drn->ms_whodet = me->p_no;	/* set who detted it */
-		drn->ms_status = TDET;	/* change status to det */
+     	    if (ABS(dx) > myship->s_detdist || ABS(dy) > myship->s_detdist)
+	       continue;	/* obviously too far away */
+	    if (dx * dx + dy * dy < myship->s_detdist * myship->s_detdist) 
+	    { /* close enough? */
+	       drn->ms_whodet = me->p_no;	/* set who detted it */
+	       drn->ms_status = TDET;	/* change status to det */
 	    }
 	}
     }

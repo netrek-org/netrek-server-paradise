@@ -165,8 +165,7 @@ scout_planet(int p_no, int pl_no)
 
     if ((mars->pl_owner != fred->p_team) &&
 	(oldness > 2)) {
-#define LOG2OFe 1.442695
-	double  scoutdi = log((double) oldness) * LOG2OFe / 100;
+	double  scoutdi = log((double) oldness) * M_LOG2E / 100;
 	if (scoutdi > 0.1)
 	    scoutdi = 0.1;
 	fred->p_stats.st_di += scoutdi;

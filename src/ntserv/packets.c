@@ -71,19 +71,11 @@ size_t	client_packet_sizes[] = {
   0,
   0,
   sizeof(struct ping_cpacket),
-#ifdef SHORT_PACKETS
   sizeof(struct shortreq_cpacket),
   sizeof(struct threshold_cpacket),
   0,				/* CP_S_MESSAGE */
   0,				/* CP_S_RESERVED */
   0,				/* CP_S_DUMMY */
-#else
-  0,
-  0,
-  0,
-  0,
-  0,
-#endif
   0,
   0,
   /* 50 v */
@@ -98,11 +90,7 @@ size_t	client_packet_sizes[] = {
   0,
   0,
   /* 60 v */
-#ifdef FEATURE
   sizeof( struct feature_cpacket )	/* CP_FEATURE */
-#else
-  0
-#endif
 };
 
 #define num_cpacket_sizes	sizeof(client_packet_sizes)/sizeof(*client_packet_sizes)
@@ -120,22 +108,12 @@ size_of_cpacket(void *pkt)
       return client_packet_sizes[type];
 
     switch (type) {
-#ifdef CP_FIRE_WEAPON
-    case CP_FIRE_WEAPON:
-	{
-	    struct fire_weapon_cpacket	*fwp = pkt;
-	    return  (fwp->mech==TM_POSITION) ? 12 : 4;
-	}
-#endif
-
-#ifdef SHORT_PACKETS
     case CP_S_MESSAGE:
 	return ((unsigned char*)pkt)[3];
     case CP_S_RESERVED:
     case CP_S_DUMMY:
 	/* hmm? good question */
 	return 0;
-#endif /* SHORT_PACKETS */
 
     default:
 	return 0;
@@ -188,21 +166,12 @@ int     server_packet_sizes[] = {
     sizeof(struct thingy_info_spacket),	/* SP_THINGY_INFO */
     sizeof(struct ship_cap_spacket),	/* SP_SHIP_CAP */
     /* 40 v */
-#ifdef SHORT_PACKETS
     sizeof(struct shortreply_spacket),	/* SP_S_REPLY */
     -1,					/* SP_S_MESSAGE */
     -1,					/* SP_S_WARNING */
     sizeof(struct youshort_spacket),	/* SP_S_YOU */
     sizeof(struct youss_spacket),	/* SP_S_YOU_SS */
     -1,					/* SP_S_PLAYER */
-#else
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-#endif
     sizeof(struct ping_spacket),	/* SP_PING */
     -1,					/* SP_S_TORP */
     -1,					/* SP_S_TORP_INFO */
@@ -219,11 +188,7 @@ int     server_packet_sizes[] = {
     -1,
     -1,
     /* 60 v */
-#ifdef FEATURE
-    sizeof( struct feature_spacket ), 	/* SP_FEATURE */
-#else
-    -1,
-#endif
+    sizeof(struct feature_spacket), 	/* SP_FEATURE */
     -1				/* The fools!  I'm pretty sure there is an */
                                 /* off-by-one in the test in the last fnc */
                                 /* but I'm not sure and this WILL fix it. */
@@ -231,7 +196,6 @@ int     server_packet_sizes[] = {
 
 #define num_spacket_sizes (sizeof(server_packet_sizes) / sizeof(server_packet_sizes[0]) - 1)
 
-#ifdef SHORT_PACKETS
 unsigned char numofbits[256] =
 {0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, 1,
  2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 1,
@@ -260,9 +224,7 @@ static int
 padto4(int sz)
 {
     return (sz%4) ? (sz/4+1)*4 : sz;
-
 }
-#endif
 
 int 
 size_of_spacket(unsigned char *pkt)
@@ -289,7 +251,6 @@ size_of_spacket(unsigned char *pkt)
 	default:
 	    return 0;
 	}
-#ifdef SHORT_PACKETS
     case SP_S_MESSAGE:
 	return padto4(pkt[4]); /* IMPORTANT  Changed */
     case SP_S_WARNING:
@@ -312,7 +273,6 @@ size_of_spacket(unsigned char *pkt)
 	return padto4((vtisize[numofbits[pkt[1]]] + numofbits[pkt[3]]));
     case SP_S_PLANET:
 	return padto4((pkt[1] * VPLANET_SIZE) + 2);
-#endif
     case SP_PARADISE_EXT1:
 	switch (pkt[1]) {
 	case SP_PE1_MISSING_BITMAP:
@@ -323,19 +283,7 @@ size_of_spacket(unsigned char *pkt)
 	    return 0;
 	}
     default:
-#ifdef FEATURE_DIAG
-        if( *pkt >= num_spacket_sizes ){
-          fprintf( stderr, "Packet type %d out of range (%d)\n", (*pkt), num_spacket_sizes );
-          return( 0 );
-        }
-        if( server_packet_sizes[*pkt] < 0 ){
-          fprintf( stderr, "Packet type %d has no size\n", (*pkt) );
-          return( 0 );
-        }
-        return( server_packet_sizes[*pkt] );
-#else
 	return (*pkt< num_spacket_sizes && server_packet_sizes[*pkt] >= 0)
 	    ? server_packet_sizes[*pkt] : 0;
-#endif
     }
 }

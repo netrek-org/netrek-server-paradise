@@ -3,6 +3,16 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+/* define if you have sysconf */
+#undef HAVE_SYSCONF
+
+/* define if your setsid() doesn't release controlling terminal */
+#undef SETSID_DOESNT_DETACH_TERMINAL
+
+/* Define if the external program "uptime" exists */
+#undef HAVE_UPTIME
+#undef UPTIME_PATH
+
 /* Define to empty if the keyword does not work.  */
 #undef const
 

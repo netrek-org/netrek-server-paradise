@@ -46,6 +46,7 @@ updateGPrank(void)
 	pkt.millibattle = htonl(COMPUTE_STATS( 1000, ranks[i].battle));
 	pkt.millistrat = htonl(COMPUTE_STATS(1000, ranks[i].strategy));
 	pkt.millispec = htonl(COMPUTE_STATS(1000, ranks[i].specship));
+#undef COMPUTE_STATS
 	strcpy((char *) pkt.name, (char *) ranks[i].name);
 
 	sendClientPacket((struct player_spacket *) & pkt);
@@ -129,7 +130,6 @@ updateGPteamlogos(void)
 
     for (i = 0; i < NUMTEAM; i++) {
 	sprintf(buf, "artwork/%d/logo", i);
-#ifdef LEAGUE_SUPPORT
 	if (status2->league == 1) {
 	    if (i == 0)
 		sprintf(buf, "artwork/%s/logo", status2->home.name);
@@ -142,7 +142,6 @@ updateGPteamlogos(void)
 	    else if (i == status2->away.index)
 		sprintf(buf, "artwork/%s/logo", status2->away.name);
 	}
-#endif
 	{
 	    FILE   *fp;
 	    fp = fopen(build_path(buf), "r");
@@ -212,7 +211,6 @@ updateGPplanetbitmaps(void)
 	pkt.teamn = i;
 
 	sprintf(buf, "artwork/%d/tplanet", i);
-#ifdef LEAGUE_SUPPORT
 	if (status2->league == 1) {
 	    if (i == 0)
 		sprintf(buf, "artwork/%s/tplanet", status2->home.name);
@@ -225,7 +223,6 @@ updateGPplanetbitmaps(void)
 	    else if (i == status2->away.index)
 		sprintf(buf, "artwork/%s/tplanet", status2->away.name);
 	}
-#endif
 	{
 	    FILE   *fp;
 	    fp = fopen(build_path(buf), "r");
@@ -242,7 +239,6 @@ updateGPplanetbitmaps(void)
 	free(data);
 
 	sprintf(buf, "artwork/%d/gplanet", i);
-#ifdef LEAGUE_SUPPORT
 	if (status2->league == 1) {
 	    if (i == 0)
 		sprintf(buf, "artwork/%s/gplanet", status2->home.name);
@@ -255,7 +251,6 @@ updateGPplanetbitmaps(void)
 	    else if (i == status2->away.index)
 		sprintf(buf, "artwork/%s/gplanet", status2->away.name);
 	}
-#endif
 	{
 	    FILE   *fp;
 	    fp = fopen(build_path(buf), "r");

@@ -74,6 +74,7 @@ main(int argc, char **argv)
     int     i;
     int     threshold;
     struct statentry currplayer;
+    char *rf;
 
     if (argc != 4) {
 	int x;
@@ -89,6 +90,9 @@ main(int argc, char **argv)
 
 	exit(1);
     }
+
+    rf = build_path(RANKS_FILE);
+    init_data(rf);
 
     threshold = atoi(argv[1]);
 

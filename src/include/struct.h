@@ -313,7 +313,6 @@ struct league_team {
 };
 
 struct status2 {
-#ifdef LEAGUE_SUPPORT
     int     league;		/* are we playing league? 0 means no. 1 means
 				   we're prepping (captains choose sides). 2
 				   means we're almost there. 3 means we're in
@@ -331,7 +330,6 @@ struct status2 {
 				   return to normal play if already paused */
     int     pausemsgfuse;	/* a fuse that prints out a reminder every
 				   few seconds */
-#endif
     int     starttourn;
     int     newgalaxy;
     int     nontteamlock;
@@ -536,9 +534,7 @@ struct player {
     int     p_ntspid;		/* proc ID of ntserv in control of this slot */
     int     p_zone;		/* total warp zone bonus/penalty [BDyess] */
 
-#ifdef	RC_DISTRESS
     int     gen_distress;	/* generate generic distress messages for client */
-#endif
 };
 
  /* These are defines that used for the player struct's p_flags field */
@@ -981,7 +977,6 @@ struct rsa_key {
 /*
  * RCD stuff, from bronco server 2.7pl13.
  */
-#ifdef RC_DISTRESS
 struct	distress	{
 	unsigned char	sender;
 	unsigned char	dam, shld, arms, wtmp, etmp, fuelp, sts;
@@ -1069,8 +1064,6 @@ implemented that way yet.
    byte15++: the text to pre or append .. depending on termination above.
              text is null terminated and the last thing in this distress
 */
-
-#endif /* RCD */
 
 struct command_handler {
     char *command;

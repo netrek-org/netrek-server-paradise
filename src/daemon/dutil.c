@@ -36,10 +36,6 @@ suitability of this software for any purpose.  This software is provided
 now adds the way of death onto the end of the kill message.  */
 
 
-#ifndef LEAGUE_SUPPORT
-#define tlog_plkill(a,b,c) 
-#endif
-
 void 
 killmess(struct player *victim, struct player *killer)
 {

@@ -266,6 +266,14 @@ FACILITYGROWTH=%hhd
 
   If non-zero then facilities grow from surface properties.
 
+RPRDURINGWARPPREP=%hhd
+
+  If non-zero then you are allowed to repair during the warp prep period.
+
+RPRDURINGWARP=%hhd
+
+  If non-zero then you are allowed to repair while warp drive is engaged.
+
 FIREDURINGWARPPREP=%hhd
 
   If non-zero then you are allowed to fire during the warp preparation
@@ -345,3 +353,28 @@ NUMWORMPAIRS=%d
 
   Number of wormhole pairs placed in the galaxy
 
+WBBOMBINGCREDIT=%hhd
+
+  If non-zero then warbases get bonus credit for bombing enemy planets added
+to their statistics.
+
+JSPLANETCREDIT=%hhd
+
+  If non-zero then jumpships get credit for assisting planet takers.
+
+BUTTTORP_PENALTY=%hhd
+
+  If non-zero then butt torpers get massive increases in their weapon temps.
+
+SLOWBOMB=%hhd
+
+  If non-zero then the slow resource bombing code is in effect.
+
+ROBOTSTATS=%hhd
+
+  If non-zero then robots accumulate statistics.
+
+LOSING_ADVANTAGE=%f
+
+  If this is >= 1.0 then the losing team gets an army pop advantage.  Makes
+for long games.  If enabled, a good value is around 2.0.

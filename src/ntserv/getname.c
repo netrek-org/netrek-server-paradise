@@ -16,17 +16,13 @@ suitability of this software for any purpose.  This software is provided
                                                     Brandon Gillespie
 --------------------------------------------------------------------------*/
 
-#define NEED_TIME 
-
 #include "config.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/file.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
-#ifndef ULTRIX
-#include <sys/fcntl.h>
-#endif
+#include <fcntl.h>
 #include <errno.h>
 #include <pwd.h>
 #include <ctype.h>
@@ -34,7 +30,6 @@ suitability of this software for any purpose.  This software is provided
 #include "struct.h"
 #include "data.h"
 #include "packets.h"
-#include "path.h"
 #include "shmem.h"
 #include "crypt.h"
 
@@ -83,10 +78,8 @@ handleLogin(void)
 	socketPause();
 	readFromClient();
     }
-#ifdef REMOVE_CTL				/* untested */
     /* Change those annoying control characters to spaces */
     remove_ctl(namePick);
-#endif
     if ((strcmp(namePick, "Guest") == 0 || strcmp(namePick, "guest") == 0) &&
 	!lockout()) {
 	hourratio = 5;
@@ -127,13 +120,11 @@ handleLogin(void)
 	    position = 0;
 	    while (read(plfd, (char *) &player, sizeof(struct statentry)) ==
 		   sizeof(struct statentry)) {
-#ifdef REMOVE_CTL			/* untested */
 		/*
 		   this is a temporary thing to remove control chars from
 		   existing entries in the player db
 		*/
 		remove_ctl(player.name);
-#endif
 		if (strcmp(namePick, player.name) == 0) {
 		    close(plfd);
 		    break;

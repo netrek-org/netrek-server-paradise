@@ -1330,9 +1330,9 @@ exitRobot(void)
 	    messAll(buf);*/
 	}
     }
-#ifdef ROBOTSTATS
-    save_robot();
-#endif
+
+    if(configvals->robot_stats)
+      save_robot();
 
     strcpy(buf, me->p_name);
     /* something about Terminators hangs up the slot when a human */

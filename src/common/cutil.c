@@ -31,7 +31,7 @@ suitability of this software for any purpose.  This software is provided
    the System-V signal() function provides the older, unreliable signal
    semantics.  So, this is an implementation of signal using sigaction. */
 
-void    (*r_signal(int sig, void (*func)() )) ()
+void (*r_signal(int sig, void (*func)() )) ()
 {
     struct sigaction act, oact;
 
@@ -40,8 +40,8 @@ void    (*r_signal(int sig, void (*func)() )) ()
     sigemptyset(&act.sa_mask);
     act.sa_flags = 0;
 
-  if( sig != SIGALRM )
-    act.sa_flags |= SA_RESTART;
+    if( sig != SIGALRM )
+        act.sa_flags |= SA_RESTART;
 
     if (sigaction(sig, &act, &oact) < 0)
 	return (SIG_ERR);
@@ -76,42 +76,4 @@ strdup(char *str)
     strcpy(s, str);
     return s;
 }
-#endif
-
-
-/* dunno if any other systems have anyting like this */
-#ifdef sys_hpux
-
-int 
-matherr(struct exception *x)
-{
-    char   *t;
-
-    switch (x->type) {
-    case DOMAIN:
-	t = "domain";
-	break;
-    case SING:
-	t = "singularity";
-	break;
-    case OVERFLOW:
-	t = "overflow";
-	break;
-    case UNDERFLOW:
-	t = "underflow";
-	break;
-    case TLOSS:
-	t = "tloss";
-	break;
-    case PLOSS:
-	t = "ploss";
-	break;
-    default:
-	t = "buh??";
-	break;
-    }
-    fprintf(stderr, "%s: %s error: %s(%f [, %f]) = %f\n",
-	    argv0, t, x->name, x->arg1, x->arg2, x->retval);
-}
-
 #endif

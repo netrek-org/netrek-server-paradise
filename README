@@ -1,8 +1,5 @@
-I'm in the process if cleaning up this distribution.
+Major cleanups in progress.  It is doubtful that anything works just yet.
+Should be organized much better when it is done.  Adding some trivial
+features along the way.
 
-For now, use 'configure' in the source directory, then 'make install'
-
-I may have broken a lot of the other OS compiles.  For now I know it
-compiles with strict ANSI rules in FreeBSD and Digital Unix.
-
--- Brandon Gillespie/29-Dec-1998/brandon at roguetrader.com
+-Bob

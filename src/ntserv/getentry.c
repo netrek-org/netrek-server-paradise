@@ -128,22 +128,18 @@ getEntry(int *team, int *stype)
 		teamPick = -1;
 		continue;
 	    }
-#if 1
 	    if (!(tournamentMask(me->p_team) & (1 << teamPick))) {
 		warning("I cannot allow that.  Pick another team");
 		sendPickokPacket(0);
 		teamPick = -1;
 		continue;
 	    }
-#endif
 
 	    if (((1 << teamPick) != me->p_team) &&
 		(me->p_team != ALLTEAM))	/* switching teams 7/27/91 TC */
 		if ((switching != teamPick)
 		    && (me->p_whydead != KGENOCIDE)
-#ifdef LEAGUE_SUPPORT
 		    && !status2->league
-#endif
 		    ) {
 		    switching = teamPick;
 		    warning("Please confirm change of teams.  Select the new team again.");
@@ -171,14 +167,12 @@ getEntry(int *team, int *stype)
 	    }
 	    break;
 	}
-#if 1
 	if (me->p_status == PTQUEUE) {
 	    if (status->tourn)
 		detourneyqueue();
 	    /* You don't time out on the tourney queue */
 	    me->p_ghostbuster = 0;
 	}
-#endif
     }
     *team = teamPick;
     if ((shipvals[tmpPick].s_nflags & SFNMASSPRODUCED) &&
@@ -205,11 +199,9 @@ teams that the player can join.  */
 int 
 leaguemask(int ishome, int idx)
 {
-#ifdef LEAGUE_SUPPORT
     if (status2->league == 1)
 	return idx_to_mask(ishome);
     else
-#endif
 	return idx_to_mask(idx);
 }
 
@@ -231,7 +223,6 @@ tournamentMask(int team)
     if (!time_access())		/* if server closed then can join */
 	return (0);		/* no team */
 
-#ifdef LEAGUE_SUPPORT
     /* league stuff */
     if (status2->league) {
 	if (me->p_homeaway == AWAY)
@@ -246,7 +237,6 @@ tournamentMask(int team)
 	}
 	/* NOTREACHED */
     }
-#endif
     if (me->p_homeaway != NEITHER) {
 	warning("You have connected to a non-league server with a league ntserv.");
 	me->p_homeaway = NEITHER;

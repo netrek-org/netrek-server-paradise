@@ -24,8 +24,6 @@ Note that descriptor 2 is duped to descriptor 1, so that stdout and
 stderr go to the same file.
 --------------------------------------------------------------------------*/
 
-#define NEED_TIME 
-
 #include "config.h"
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -46,20 +44,14 @@ stderr go to the same file.
 #include <stdlib.h>
 #include <signal.h>
 #include <string.h>
-#ifdef SYSV
 #include <fcntl.h>
-#endif
-#ifdef hpux
-#include <sys/ptyio.h>
-#endif
 #include "defs.h"
-#include "path.h"
 #include "data.h"
 
 /* #define DEF_PORT	2592*/	/* port to listen on */
 /* #define NTSERV		"bin/ntserv"
 
-#define METASERVER	"metaserver.ecst.csuchico.edu"
+#define METASERVER	"metaserver.netrek.org"
 */
 /*
  * Since the metaserver address is a nameserver alias, we can't just
@@ -110,11 +102,6 @@ main(argc, argv)
     time_t  stamp, now;
 
     metaserverflag = 0;
-#ifndef apollo
-    nice(-20);
-    nice(-20);
-    nice(-20);
-#endif
 
     for (i=1; i < argc; i++) {
         if (*argv[i] == '-') {
@@ -182,7 +169,6 @@ main(argc, argv)
  * Detach process in various ways.
  */
 
-/* maybe do a setsid() here instead?? */
 void 
 detach(void)
 {
@@ -190,7 +176,6 @@ detach(void)
     char   *fname;
 
     mode = S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR;
-/*    fname = build_path("startup.log"); */
     fname = build_path("logs/startup.log");
     if ((fd = open(fname, O_WRONLY | O_CREAT | O_APPEND, mode)) == -1)
 	syserr(1, "detach", "couldn't open log file. [%s]", dateTime());
@@ -206,7 +191,11 @@ detach(void)
 	syserr(1, "detach", "couldn't fork. [%s]", dateTime());
 
     /* now detach from the controlling terminal */
-
+    /* NOTE -- newer versions of setsid() automatically release the
+       controlling terminal of the process.  If for some reason yours
+       doesn't, define SETSID_DOESNT_DETACH_TERMINAL and add or modify
+       the code below.  At this point you're on your own. */
+#ifdef SETSID_DOESNT_DETACH_TERMINAL
 #ifdef _SEQUENT_
     if ((fd = open("/dev/tty", O_RDWR | O_NOCTTY, 0)) >= 0) {
 	(void) close(fd);
@@ -227,6 +216,7 @@ detach(void)
 #endif
     close(fd);
 #endif				/* _SEQUENT_ */
+#endif
 
     setsid();			/* make us a new process group/session */
 }
@@ -380,7 +370,7 @@ terminate()
     int     s;
 
     fatlerr(1, "terminate", "killed. [%s]", dateTime());
-#ifdef SYSV
+#ifdef HAVE_SYSCONF
     s = sysconf(_SC_OPEN_MAX);
     if (s < 0)			/* value for OPEN_MAX is indeterminate, */
 	s = 32;			/* so make a guess */
@@ -428,7 +418,7 @@ multClose(va_alist) va_dcl
 	    fds[nfds] = fd;
     }
 
-#ifdef SYSV
+#ifdef HAVE_SYSCONF
     ts = sysconf(_SC_OPEN_MAX);
     if (ts < 0)			/* value for OPEN_MAX is indeterminate, */
 	ts = 32;		/* so make a guess */
@@ -452,14 +442,6 @@ multClose(va_alist) va_dcl
 /***********************************************************************
  * Error reporting functions taken from my library.
  */
-
-#if 0
-#ifndef sys_freebsd
-extern int sys_nerr;
-extern char *sys_errlist[];
-#endif
-extern int errno;
-#endif
 
 void 
 syserr(va_alist) va_dcl
@@ -529,7 +511,8 @@ lasterr(void)
 
 /*---------------------[ prints the usage of listen ]---------------------*/
 
-void printlistenUsage(char *name)
+void
+printlistenUsage(char *name)
 {
     int x;
     char message[][255] = {
@@ -555,7 +538,8 @@ void printlistenUsage(char *name)
 /*--------------------------[ printlistenUsage ]--------------------------*/
 
 /* set the pid logfile (BG) */
-void print_pid()
+void
+print_pid(void)
 {
 	char *fname;
 	FILE *fptr;

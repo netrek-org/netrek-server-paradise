@@ -44,13 +44,8 @@ FAT_NODE fat_thingy_info[TOTALTHINGIES];
 FAT_NODE fat_phaser[MAXPLAYER];
 FAT_NODE fat_plasma_info[MAXPLAYER * MAXPLASMA];
 FAT_NODE fat_you;
-#if 0
-FAT_NODE fat_status;
-FAT_NODE fat_planet[MAXPLANETS];
-#else
 FAT_NODE fat_status2;
 FAT_NODE fat_planet2[MAXPLANETS];
-#endif
 FAT_NODE fat_flags[MAXPLAYER];
 FAT_NODE fat_hostile[MAXPLAYER];
 
@@ -231,17 +226,6 @@ updateFat(struct player_spacket *packet)
 	/* yp = (struct you_spacket *) packet; */
 	fatp = &fat_you;
 	break;
-#if 0
-    case SP_STATUS:
-	/* sp = (struct status_spacket *) packet; */
-	fatp = &fat_status;
-	break;
-    case SP_PLANET:
-	plp = (struct planet_spacket *) packet;
-	idx = plp->pnum;
-	fatp = &fat_planet[idx];
-	break;
-#else
     case SP_STATUS2:
 	/* sp = (struct status_spacket *) packet; */
 	fatp = &fat_status2;
@@ -251,7 +235,6 @@ updateFat(struct player_spacket *packet)
 	idx = plp2->pnum;
 	fatp = &fat_planet2[idx];
 	break;
-#endif
     case SP_FLAGS:
 	fp = (struct flags_spacket *) packet;
 	idx = (int) fp->pnum;

@@ -26,7 +26,6 @@ suitability of this software for any purpose.  This software is provided
 #include "data.h"
 #include "struct.h"
 #include "shmem.h"
-#include "path.h"
 
 #ifdef sparc
 extern char *sys_errlist[];
@@ -119,6 +118,10 @@ main(int argc, char *argv[])
 
     if (!(topn = atoi(argv[1])))
 	printUsage(argv[0]);
+
+    /* initialize ranks/royals variables first */
+    fn = build_path(RANKS_FILE);
+    init_data(fn);
 
     fn = build_path(PLAYERFILE);
 

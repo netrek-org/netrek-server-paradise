@@ -525,35 +525,11 @@ doeyes(void)
     fl->pt_x = eyet->t_x + (double) (ew) * Cos[(unsigned char) (c - EYEANGLE)];
     fl->pt_y = eyet->t_y + (double) (ew) * Sin[(unsigned char) (c - EYEANGLE)];
 
-#if 0
-    if (fl->pt_x < 0)
-	fl->pt_x = 0;
-    else if (fl->pt_x > GWIDTH)
-	fl->pt_x = GWIDTH;
-
-    if (fl->pt_y < 0)
-	fl->pt_y = 0;
-    else if (fl->pt_y > GWIDTH)
-	fl->pt_y = GWIDTH;
-#endif
-
     if (fr->pt_war)
 	ew += 15;
 
     fr->pt_x = eyet->t_x + (double) (ew) * Cos[(unsigned char) (c + EYEANGLE)];
     fr->pt_y = eyet->t_y + (double) (ew) * Sin[(unsigned char) (c + EYEANGLE)];
-
-#if 0
-    if (fr->pt_x < 0)
-	fr->pt_x = 0;
-    else if (fl->pt_x > GWIDTH)
-	fr->pt_x = GWIDTH;
-
-    if (fr->pt_y < 0)
-	fr->pt_y = 0;
-    else if (fl->pt_y > GWIDTH)
-	fr->pt_y = GWIDTH;
-#endif
 
     /* toggle war */
     if ((s_clock % 6) == 0) {
@@ -575,7 +551,7 @@ doeyes(void)
     }
 }
 
-void
+RETSIGTYPE
 exitSnake(int sig)
 {
     register int i;
@@ -710,28 +686,6 @@ rrnd(int range)
     return lrand48() % (2 * range) - range;
 }
 
-#if 0
-/* NOTUSED */
-contrast(t)
-    int     t;
-{
-    return ROM;			/* experiment */
-    switch (t) {
-    case FED:
-	return ORI;
-    case ORI:
-	return FED;
-    case KLI:
-	return ROM;
-    case ROM:
-	return KLI;
-    default:
-	return FED;
-    }
-}
-
-#endif
-
 void
 snake_torp(struct torp *t, int n, struct player *p)
 {
@@ -864,15 +818,6 @@ bombcheck(int team1, int team2)
 		if (defenders[p->pl_owner] >= configvals->tournplayers)
 		    continue;
 
-#if 0
-		/* ignore planets that aren't within team boundaries */
-		if (p->pl_x > boundaries[p->pl_owner].rx ||
-		    p->pl_x < boundaries[p->pl_owner].lx ||
-		    p->pl_y > boundaries[p->pl_owner].by ||
-		    p->pl_y < boundaries[p->pl_owner].ty)
-		    continue;
-#endif
-
 		if (!team1 && !team2) {
 		    /* any planet */
 		    printf("snake found bomber: targeting %c%c\n",
@@ -948,11 +893,6 @@ sp_area(int x, int y)
 {
     register i,  px, py;
 
-#if 0
-    /* check for proximity to a shipyard? */
-    return 0;
-#else
-
     for (i = 0; i < NUMPLANETS; i++) {
 	struct planet *pl = &planets[i];
 	if (!(pl->pl_flags & (PLSHIPYARD | PLHOME)))
@@ -963,21 +903,6 @@ sp_area(int x, int y)
 
 	if (!(x < px - 5300 || x > px + 5300 ||
 	      y < py - 5300 || y > py + 5300)) {
-#if 0
-	    if (target != -1) {
-		struct player *p = &players[target];
-		/*
-		   if target is also in same home area, he should at least be
-		   able to phaser the snake since the torps are already
-		   deadly
-		*/
-		if (!(p->p_x < px - 5300 || p->p_x > px + 5300 ||
-		      p->p_y < py - 5300 || p->p_y > py + 5300))
-		    return 0;
-		else
-		    return 1;
-	    }
-#endif
 	    return 1;
 	}
     }

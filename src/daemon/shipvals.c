@@ -93,11 +93,7 @@ getshipdefaults(void)
     shipvals[SCOUT].s_torp.damage = 25;
     shipvals[SCOUT].s_torp.speed = 16;
     shipvals[SCOUT].s_torp.cost = 175;
-#ifndef OLDSHIPVALS
-	shipvals[SCOUT].s_torp.fuse = 16;
-#else
-	shipvals[SCOUT].s_torp.fuse = 15;
-#endif
+    shipvals[SCOUT].s_torp.fuse = 16;
     shipvals[SCOUT].s_torp.wtemp = 7;
     shipvals[SCOUT].s_torp.wtemp_halfarc = 32;
     shipvals[SCOUT].s_torp.wtemp_factor = 9;
@@ -106,11 +102,7 @@ getshipdefaults(void)
     shipvals[SCOUT].s_phaser.speed = 4500;
     shipvals[SCOUT].s_phaser.cost = 525;
     shipvals[SCOUT].s_phaser.fuse = 10;
-#ifndef OLDSHIPVALS
     shipvals[SCOUT].s_phaser.wtemp = 52;
-#else
-    shipvals[SCOUT].s_phaser.wtemp = 50;
-#endif
     shipvals[SCOUT].s_missile.damage = 0;
     shipvals[SCOUT].s_missile.speed = 0;
     shipvals[SCOUT].s_missile.cost = 0;
@@ -162,11 +154,7 @@ getshipdefaults(void)
     }
     else {
 	shipvals[SCOUT].s_cloakcost = 50;
-#ifdef LONG_SCANRANGE
-	shipvals[SCOUT].s_scanrange = 8000;
-#else
 	shipvals[SCOUT].s_scanrange = 5000;
-#endif
     }
     shipvals[SCOUT].s_numports = 0;
     shipvals[SCOUT].s_letter = 's';
@@ -272,11 +260,7 @@ getshipdefaults(void)
 	shipvals[DESTROYER].s_fueldam = 0;
     }
     shipvals[DESTROYER].s_armyperkill = 2;
-#ifndef OLDSHIPVALS
     shipvals[DESTROYER].s_maxarmies = 4;
-#else
-    shipvals[DESTROYER].s_maxarmies = 5;
-#endif
     if (configvals->bronco_shipvals)
 	shipvals[DESTROYER].s_bomb = 10;
     else
@@ -360,11 +344,7 @@ getshipdefaults(void)
     shipvals[CRUISER].s_torp.wtemp_factor = 9;
     shipvals[CRUISER].s_torp.aux = 0;
     shipvals[CRUISER].s_phaser.damage = 100;
-#ifndef OLDSHIPVALS
-	shipvals[CRUISER].s_phaser.speed = 6000;
-#else
-	shipvals[CRUISER].s_phaser.speed = 5500;
-#endif
+    shipvals[CRUISER].s_phaser.speed = 6000;
     shipvals[CRUISER].s_phaser.cost = 700;
     shipvals[CRUISER].s_phaser.fuse = 10;
     shipvals[CRUISER].s_phaser.wtemp = 70;
@@ -402,11 +382,7 @@ getshipdefaults(void)
 	shipvals[CRUISER].s_fueldam = 0;
     }
     shipvals[CRUISER].s_armyperkill = 2;
-#ifndef OLDSHIPVALS
     shipvals[CRUISER].s_maxarmies = 6;
-#else
-    shipvals[CRUISER].s_maxarmies = 10;
-#endif
     shipvals[CRUISER].s_bomb = 10;
     shipvals[CRUISER].s_repair = 110;
     shipvals[CRUISER].s_maxdamage = 100;
@@ -418,11 +394,7 @@ getshipdefaults(void)
 	shipvals[CRUISER].s_cloakcost = 130;
     else
 	shipvals[CRUISER].s_cloakcost = 100;
-#ifdef LONG_SCANRANGE
-    shipvals[CRUISER].s_scanrange = 1000;
-#else
     shipvals[CRUISER].s_scanrange = -1;
-#endif
     shipvals[CRUISER].s_numports = 0;
     shipvals[CRUISER].s_letter = 'c';
     shipvals[CRUISER].s_desig1 = 'C';
@@ -488,13 +460,8 @@ getshipdefaults(void)
     shipvals[BATTLESHIP].s_torp.wtemp_factor = 9;
     shipvals[BATTLESHIP].s_torp.aux = 0;
     shipvals[BATTLESHIP].s_phaser.damage = 105;
-#ifndef OLDSHIPVALS
-	shipvals[BATTLESHIP].s_phaser.speed = 6300;
-	shipvals[BATTLESHIP].s_phaser.cost = 945;
-#else
-	shipvals[BATTLESHIP].s_phaser.speed = 6000;
-	shipvals[BATTLESHIP].s_phaser.cost = 900;
-#endif
+    shipvals[BATTLESHIP].s_phaser.speed = 6300;
+    shipvals[BATTLESHIP].s_phaser.cost = 945;
     shipvals[BATTLESHIP].s_phaser.fuse = 10;
     shipvals[BATTLESHIP].s_phaser.wtemp = 94;
     shipvals[BATTLESHIP].s_missile.damage = 30;
@@ -540,11 +507,7 @@ getshipdefaults(void)
     shipvals[BATTLESHIP].s_detcost = 100;
     shipvals[BATTLESHIP].s_detdist = 1750;
     shipvals[BATTLESHIP].s_cloakcost = 150;
-#ifdef LONG_SCANRANGE
-    shipvals[BATTLESHIP].s_scanrange = 1000;
-#else
     shipvals[BATTLESHIP].s_scanrange = -1;
-#endif
     shipvals[BATTLESHIP].s_numports = 0;
     shipvals[BATTLESHIP].s_letter = 'b';
     shipvals[BATTLESHIP].s_desig1 = 'B';
@@ -666,11 +629,7 @@ getshipdefaults(void)
 	shipvals[ASSAULT].s_cloakcost = 85;
     else
 	shipvals[ASSAULT].s_cloakcost = 80;
-#ifdef LONG_SCANRANGE
-    shipvals[ASSAULT].s_scanrange = 1000;
-#else
     shipvals[ASSAULT].s_scanrange = -1;
-#endif
     shipvals[ASSAULT].s_numports = 0;
     shipvals[ASSAULT].s_letter = 'a';
     shipvals[ASSAULT].s_desig1 = 'A';
@@ -698,11 +657,7 @@ getshipdefaults(void)
 	shipvals[STARBASE].s_imp.cost = 10;
     else
 	shipvals[STARBASE].s_imp.cost = 4;
-#ifdef BEEFY_BASES
     shipvals[STARBASE].s_imp.maxspeed = 3;
-#else
-    shipvals[STARBASE].s_imp.maxspeed = 2;
-#endif
     shipvals[STARBASE].s_imp.etemp = 1000;
     shipvals[STARBASE].s_after.acc = 100;
     shipvals[STARBASE].s_after.dec = 100;
@@ -746,13 +701,8 @@ getshipdefaults(void)
     shipvals[STARBASE].s_torp.wtemp_factor = 0;
     shipvals[STARBASE].s_torp.aux = 0;
     shipvals[STARBASE].s_phaser.damage = 120;
-#ifndef OLDSHIPVALS
-	shipvals[STARBASE].s_phaser.speed = 7200;
-	shipvals[STARBASE].s_phaser.wtemp = 96;
-#else
-	shipvals[STARBASE].s_phaser.speed = 6500;
-	shipvals[STARBASE].s_phaser.wtemp = 66;
-#endif
+    shipvals[STARBASE].s_phaser.speed = 7200;
+    shipvals[STARBASE].s_phaser.wtemp = 96;
     shipvals[STARBASE].s_phaser.cost = 960;
     shipvals[STARBASE].s_phaser.fuse = 4;
     shipvals[STARBASE].s_missile.damage = 40;
@@ -773,22 +723,14 @@ getshipdefaults(void)
     shipvals[STARBASE].s_plasma.wtemp = 367;
     shipvals[STARBASE].s_plasma.aux = 1;
     shipvals[STARBASE].s_maxwpntemp = 1300;
-#ifdef BEEFY_BASES
     shipvals[STARBASE].s_wpncoolrate = 7;
-#else
-    shipvals[STARBASE].s_wpncoolrate = 4;
-#endif
     if (configvals->bronco_shipvals)
 	shipvals[STARBASE].s_maxegntemp = 1000;
     else
 	shipvals[STARBASE].s_maxegntemp = 1300;
     shipvals[STARBASE].s_egncoolrate = 10;
     shipvals[STARBASE].s_maxfuel = 60000;
-#ifdef BEEFY_BASES
     shipvals[STARBASE].s_recharge = 90;
-#else
-    shipvals[STARBASE].s_recharge = 70;
-#endif
     shipvals[STARBASE].s_mingivefuel = 10000;
     shipvals[STARBASE].s_takeonfuel = 150;
     if (configvals->fuel_explosions) {
@@ -815,11 +757,7 @@ getshipdefaults(void)
     }
     else {
 	shipvals[STARBASE].s_cloakcost = 750;
-#ifdef LONG_SCANRANGE
-	shipvals[STARBASE].s_scanrange = 10000;
-#else
 	shipvals[STARBASE].s_scanrange = 5000;
-#endif
 	shipvals[STARBASE].s_numports = 6;
     }
     shipvals[STARBASE].s_letter = 'o';
@@ -946,17 +884,10 @@ getshipdefaults(void)
     shipvals[JUMPSHIP].s_imp.etemp = 1000;
     shipvals[JUMPSHIP].s_after.acc = 2000;
     shipvals[JUMPSHIP].s_after.dec = 2000;
-#ifndef OLDSHIPVALS
-	shipvals[JUMPSHIP].s_after.maxspeed = 30;
+    shipvals[JUMPSHIP].s_after.maxspeed = 30;
     shipvals[JUMPSHIP].s_after.etemp = 200000;
     shipvals[JUMPSHIP].s_after.cost = 1000;
     shipvals[JUMPSHIP].s_warp.cost = 200;
-#else
-	shipvals[JUMPSHIP].s_after.maxspeed = 60;
-    shipvals[JUMPSHIP].s_after.etemp = 90000;
-    shipvals[JUMPSHIP].s_after.cost = 15;
-    shipvals[JUMPSHIP].s_warp.cost = 2;
-#endif
     shipvals[JUMPSHIP].s_warp.acc = 2000;
     shipvals[JUMPSHIP].s_warp.dec = 3000;
     if (configvals->bronco_shipvals)
@@ -970,11 +901,7 @@ getshipdefaults(void)
     shipvals[JUMPSHIP].s_mass = 10000;
     shipvals[JUMPSHIP].s_tractstr = 5000;
     shipvals[JUMPSHIP].s_tractrng = 1.5;
-#ifndef OLDSHIPVALS
     shipvals[JUMPSHIP].s_tractcost = 8;
-#else
-    shipvals[JUMPSHIP].s_tractcost = 3;
-#endif
     shipvals[JUMPSHIP].s_tractetemp = 5000;
     shipvals[JUMPSHIP].s_torp.damage = 5;
     shipvals[JUMPSHIP].s_torp.speed = 18;
@@ -1089,15 +1016,9 @@ getshipdefaults(void)
     shipvals[FRIGATE].s_torp.wtemp_halfarc = 32;
     shipvals[FRIGATE].s_torp.wtemp_factor = 9;
     shipvals[FRIGATE].s_torp.aux = 0;
-#ifndef OLDSHIPVALS
     shipvals[FRIGATE].s_phaser.damage = 102;
     shipvals[FRIGATE].s_phaser.speed = 6150;
     shipvals[FRIGATE].s_phaser.cost = 816;
-#else
-    shipvals[FRIGATE].s_phaser.damage = 100;
-	shipvals[FRIGATE].s_phaser.speed = 5750;
-    shipvals[FRIGATE].s_phaser.cost = 800;
-#endif
     shipvals[FRIGATE].s_phaser.fuse = 10;
     shipvals[FRIGATE].s_phaser.wtemp = 80;
     shipvals[FRIGATE].s_missile.damage = 23;
@@ -1131,11 +1052,7 @@ getshipdefaults(void)
 	shipvals[FRIGATE].s_fueldam = 0;
     }
     shipvals[FRIGATE].s_armyperkill = 2;
-#ifndef OLDSHIPVALS
     shipvals[FRIGATE].s_maxarmies = 6;
-#else
-    shipvals[FRIGATE].s_maxarmies = 8;
-#endif
     shipvals[FRIGATE].s_bomb = 15;
     shipvals[FRIGATE].s_repair = 118;
     shipvals[FRIGATE].s_maxdamage = 115;
@@ -1147,11 +1064,7 @@ getshipdefaults(void)
 	shipvals[FRIGATE].s_cloakcost = 140;
     else
 	shipvals[FRIGATE].s_cloakcost = 125;
-#ifdef LONG_SCANRANGE
-    shipvals[FRIGATE].s_scanrange = 1000;
-#else
     shipvals[FRIGATE].s_scanrange = -1;
-#endif
     shipvals[FRIGATE].s_numports = 0;
     shipvals[FRIGATE].s_letter = 'f';
     shipvals[FRIGATE].s_desig1 = 'F';
@@ -1176,11 +1089,7 @@ getshipdefaults(void)
     shipvals[WARBASE].s_imp.acc = 100;
     shipvals[WARBASE].s_imp.dec = 200;
     shipvals[WARBASE].s_imp.cost = 4;
-#ifdef BEEFY_BASES
     shipvals[WARBASE].s_imp.maxspeed = 3;
-#else
-    shipvals[WARBASE].s_imp.maxspeed = 2;
-#endif
     shipvals[WARBASE].s_imp.etemp = 1000;
     shipvals[WARBASE].s_after.acc = 250;
     shipvals[WARBASE].s_after.dec = 100;
@@ -1209,24 +1118,14 @@ getshipdefaults(void)
     shipvals[WARBASE].s_torp.damage = 45;
     shipvals[WARBASE].s_torp.speed = 15;
     shipvals[WARBASE].s_torp.cost = 450;
-#ifndef OLDSHIPVALS
-	shipvals[WARBASE].s_torp.fuse = 20;
-#else
-	shipvals[WARBASE].s_torp.fuse = 18;
-#endif
+    shipvals[WARBASE].s_torp.fuse = 20;
     shipvals[WARBASE].s_torp.wtemp = 35;
     shipvals[WARBASE].s_torp.wtemp_halfarc = 32;
     shipvals[WARBASE].s_torp.wtemp_factor = 9;
     shipvals[WARBASE].s_torp.aux = 0;
-#ifndef OLDSHIPVALS
     shipvals[WARBASE].s_phaser.damage = 125;
-	shipvals[WARBASE].s_phaser.speed = 7500;
+    shipvals[WARBASE].s_phaser.speed = 7500;
     shipvals[WARBASE].s_phaser.cost = 1000;
-#else
-    shipvals[WARBASE].s_phaser.damage = 135;
-	shipvals[WARBASE].s_phaser.speed = 6000;
-    shipvals[WARBASE].s_phaser.cost = 1150;
-#endif
     shipvals[WARBASE].s_phaser.fuse = 5;
     shipvals[WARBASE].s_phaser.wtemp = 90;
     shipvals[WARBASE].s_missile.damage = 40;
@@ -1319,24 +1218,15 @@ getshipdefaults(void)
     shipvals[LIGHTCRUISER].s_tractetemp = 1000;
     shipvals[LIGHTCRUISER].s_torp.damage = 35;
     shipvals[LIGHTCRUISER].s_torp.speed = 13;
-#ifndef OLDSHIPVALS
     shipvals[LIGHTCRUISER].s_torp.cost = 245;
-#else
-    shipvals[LIGHTCRUISER].s_torp.cost = 240;
-#endif
     shipvals[LIGHTCRUISER].s_torp.fuse = 35;
     shipvals[LIGHTCRUISER].s_torp.wtemp = 16;
     shipvals[LIGHTCRUISER].s_torp.wtemp_halfarc = 32;
     shipvals[LIGHTCRUISER].s_torp.wtemp_factor = 9;
     shipvals[LIGHTCRUISER].s_torp.aux = 0;
     shipvals[LIGHTCRUISER].s_phaser.damage = 90;
-#ifndef OLDSHIPVALS
     shipvals[LIGHTCRUISER].s_phaser.speed = 5400;
     shipvals[LIGHTCRUISER].s_phaser.cost = 630;
-#else
-    shipvals[LIGHTCRUISER].s_phaser.speed = 5000;
-    shipvals[LIGHTCRUISER].s_phaser.cost = 600;
-#endif
     shipvals[LIGHTCRUISER].s_phaser.fuse = 10;
     shipvals[LIGHTCRUISER].s_phaser.wtemp = 60;
     shipvals[LIGHTCRUISER].s_missile.damage = 22;
@@ -1382,11 +1272,7 @@ getshipdefaults(void)
 	shipvals[LIGHTCRUISER].s_cloakcost = 115;
     else
 	shipvals[LIGHTCRUISER].s_cloakcost = 75;
-#ifdef LONG_SCANRANGE
-    shipvals[LIGHTCRUISER].s_scanrange = 1000;
-#else
     shipvals[LIGHTCRUISER].s_scanrange = 500;
-#endif
     shipvals[LIGHTCRUISER].s_numports = 0;
     shipvals[LIGHTCRUISER].s_letter = 'l';
     shipvals[LIGHTCRUISER].s_desig1 = 'C';
@@ -1499,11 +1385,7 @@ getshipdefaults(void)
 	shipvals[CARRIER].s_cloakcost = 135;
     else
 	shipvals[CARRIER].s_cloakcost = 100;
-#ifdef LONG_SCANRANGE
-    shipvals[CARRIER].s_scanrange = 1000;
-#else
     shipvals[CARRIER].s_scanrange = -1;
-#endif
     shipvals[CARRIER].s_numports = 0;
     shipvals[CARRIER].s_letter = 'v';
     shipvals[CARRIER].s_desig1 = 'C';

@@ -88,15 +88,16 @@ int     closefast;		/* approach speed (soft turn) */
 char   *rnames[6] = {"M5", "Colossus", "Guardian", "HAL", "DreadPirate Bob",
 "TERMINATOR"};
 
-#ifdef ROBOTSTATS
 void 
 do_robot_login(void)
 {
-    int     plfd, position, entries;
-    char   *path;
-    struct statentry player;
-    struct stat buf;
+  int     plfd, position, entries;
+  char   *path;
+  struct statentry player;
+  struct stat buf;
 
+  if(configvals->robot_stats)
+  {
     path = build_path(PLAYERFILE);
     plfd = open(path, O_RDONLY, 0);
     if (plfd < 0) {
@@ -140,14 +141,17 @@ do_robot_login(void)
 	me->p_pos = entries;
 	memcpy(&(me->p_stats), &player.stats, sizeof(struct stats));
     }
+  }
 }
 
 void 
 save_robot(void)
 {
-    int     fd;
-    char   *path;
+  int     fd;
+  char   *path;
 
+  if(configvals->robot_stats)
+  {
     if (me->p_pos < 0)
 	return;
     path = build_path(PLAYERFILE);
@@ -158,8 +162,8 @@ save_robot(void)
 	write(fd, (char *) &me->p_stats, sizeof(struct stats));
 	close(fd);
     }
+  }
 }
-#endif
 
 int main(int argc, char **argv)
 {
@@ -337,11 +341,10 @@ int main(int argc, char **argv)
     else
 	startplanet = enter(team, 0, pno, class, startplanet);
 
-#ifdef ROBOTSTATS
-    do_robot_login();
-#else
-    me->p_pos = -1;		/* So robot stats don't get saved */
-#endif
+    if(configvals->robot_stats)
+      do_robot_login();
+    else
+      me->p_pos = -1;		/* So robot stats don't get saved */
 
     me->p_flags |= PFROBOT;	/* Mark as a robot */
     if ((berserk) || (team == 4))	/* indeps are hostile */
@@ -375,10 +378,12 @@ int main(int argc, char **argv)
 	move_player(me->p_no, -1, -1, 1);
 	exit(1);
     }
-    /* allows robots to be forked by the daemon -- Evil ultrix bullshit */
-#ifndef SVR4
-    sigsetmask(0);
-#endif				/* SVR4 */
+    /* allows robots to be forked by the daemon on some systems */
+    {
+      sigset_t unblock_everything;
+      sigfillset(&unblock_everything);
+      sigprocmask(SIG_UNBLOCK, &unblock_everything, NULL);
+    }
 
     if (team == 4) {
 	int     count = 0;
@@ -418,11 +423,7 @@ findrslot(void)
 {
     register int i;
 
-#if 0
-    for (i = 0; i < MAXPLAYER; i++)
-#else
     for (i = MAXPLAYER - 1; i >= 0; i--)
-#endif
     {
 	/* reverse entry..let's be trendy 4/6/92 TC */
 	if (players[i].p_status == PFREE) {	/* We have a free slot */

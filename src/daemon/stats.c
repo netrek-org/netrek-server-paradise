@@ -37,19 +37,18 @@ credit_armiesbombed(struct player *plyr, int armies, struct planet *plan)
     factor = (plan->pl_owner == NOBODY) ? 0.5 : 1.0;
 
     plyr->p_stats.st_di += 0.02 * armies * factor;	/* inc players DI */
-#ifdef WB_BOMBING_CREDIT
-    if( plyr->p_ship.s_type == WARBASE )
+
+    if(plyr->p_ship.s_type == WARBASE && configvals->wb_bombing_credit)
       plyr->p_stats.st_di += 0.02 * armies * factor;
-#endif
     plyr->p_kills += 0.02 * armies * factor;	/* increase players kills */
 
     armies = random_round(factor * armies);
 
     status->armsbomb += armies;
     plyr->p_stats.st_tarmsbomb += armies;	/* increase player stats */
-#ifdef WB_BOMBING_CREDIT
-    if( plyr->p_ship.s_type == WARBASE )
+
+    if(plyr->p_ship.s_type == WARBASE && configvals->wb_bombing_credit)
       plyr->p_stats.st_tarmsbomb += armies;
-#endif
+
     checkmaxkills(plyr->p_no);	/* check if over max kills */
 }

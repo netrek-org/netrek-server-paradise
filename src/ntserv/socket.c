@@ -35,7 +35,6 @@ suitability of this software for any purpose.  This software is provided
 #include "data.h"
 #include "packets.h"
 #include "shmem.h"
-#include "path.h"
 #include "gppackets.h"
 #include "imath.h"
 #include "plutil.h"
@@ -51,30 +50,28 @@ suitability of this software for any purpose.  This software is provided
 /* combine with BROKEN; drops 90% of packets */
 #undef HOSED
 
-void    handleTorpReq(), handlePhasReq(), handleSpeedReq();
-void    handleDirReq(), handleShieldReq(), handleRepairReq(), handleOrbitReq();
-void    handlePractrReq(), handleBombReq(), handleBeamReq(), handleCloakReq();
-void    handleDetTReq(), handleCopilotReq();
-void    handleOutfit(), handleLoginReq();
-void    handlePlasmaReq(), handleWarReq(), handlePlanlockReq();
-void    handlePlaylockReq(), handleDetMReq();
-void    handleTractorReq(), handleRepressReq();
-void    handleCoupReq(), handleRefitReq(), handleMessageReq();
-void    handleQuitReq(), handleOptionsPacket();
-void    handleSocketReq(), handleByeReq();
-void    handleDockingReq(), handleReset();
-void    handleUpdatesReq(), handleReserved();
-void    handleScan();
-void    handleUdpReq(), handleSequence();
-void    handleAskMOTD();
-void    handleRSAKey();
-void    handlePingResponse();
-#ifdef SHORT_PACKETS
-void	handleShortReq(), handleThresh(), handleSMessageReq();
-#endif
-#ifdef FEATURE
-void    handleFeature(), sendFeature(); /* in feature.c */
-#endif
+static void    handleTorpReq(), handlePhasReq(), handleSpeedReq();
+static void    handleDirReq(), handleShieldReq(), handleRepairReq();
+static void    handleOrbitReq();
+static void    handlePractrReq(), handleBombReq(), handleBeamReq();
+static void    handleCloakReq();
+static void    handleDetTReq(), handleCopilotReq();
+static void    handleOutfit(), handleLoginReq();
+static void    handlePlasmaReq(), handleWarReq(), handlePlanlockReq();
+static void    handlePlaylockReq(), handleDetMReq();
+static void    handleTractorReq(), handleRepressReq();
+static void    handleCoupReq(), handleRefitReq(), handleMessageReq();
+static void    handleQuitReq(), handleOptionsPacket();
+static void    handleSocketReq(), handleByeReq();
+static void    handleDockingReq(), handleReset();
+static void    handleUpdatesReq(), handleReserved();
+static void    handleScan();
+static void    handleUdpReq(), handleSequence();
+static void    handleAskMOTD();
+static void    handleRSAKey();
+static void    handlePingResponse();
+static void	handleShortReq(), handleThresh(), handleSMessageReq();
+static void    handleFeature(), sendFeature(); /* in feature.c */
 int bouncePingStats();
 
 static int remoteaddr = -1;	/* inet address in net format */
@@ -124,19 +121,11 @@ struct packet_handler handlers[] = {
     {0},
     {0},
     {handlePingResponse},	/* CP_PING_RESPONSE */
-#ifdef SHORT_PACKETS
     {handleShortReq},		/* CP_S_REQ */
     {handleThresh},		/* CP_S_THRS */
     {handleSMessageReq},	/* CP_S_MESSAGE */
     {0},			/* CP_S_RESERVED */
     {0},			/* CP_S_DUMMY */
-#else
-    {0},
-    {0},
-    {0},
-    {0},
-    {0},
-#endif
     {0},			/* 48 */
     {0},			/* 49 */
     {0},			/* 50 */
@@ -182,13 +171,8 @@ extern FAT_NODE fat_thingy_info[TOTALTHINGIES];
 extern FAT_NODE fat_phaser[MAXPLAYER];
 extern FAT_NODE fat_plasma_info[MAXPLAYER * MAXPLASMA];
 extern FAT_NODE fat_you;
-#if 0
-extern FAT_NODE fat_status;
-extern FAT_NODE fat_planet[MAXPLANETS];
-#else
 extern FAT_NODE fat_status2;
 extern FAT_NODE fat_planet2[MAXPLANETS];
-#endif
 extern FAT_NODE fat_flags[MAXPLAYER];
 extern FAT_NODE fat_hostile[MAXPLAYER];
 
@@ -209,10 +193,6 @@ int     clientThingyStatus[TOTALTHINGIES];
 struct phaser_spacket clientPhasers[MAXPLAYER];
 struct you_spacket clientSelf;
 struct pe1_num_missiles_spacket clientMissiles;
-#if 0
-struct status_spacket clientStatus;
-struct planet_spacket clientPlanets[MAXPLANETS];
-#endif
 struct planet_loc_spacket clientPlanetLocs[MAXPLANETS];
 struct plasma_info_spacket clientPlasmasInfo[MAXPLAYER * MAXPLASMA];
 struct plasma_spacket clientPlasmas[MAXPLAYER * MAXPLASMA];
@@ -221,41 +201,14 @@ struct status_spacket2 clientStatus2;	/* new stats packets */
 struct stats_spacket2 clientStats2[MAXPLAYER];
 struct planet_spacket2 clientPlanets2[MAXPLANETS];
 
-#ifdef SHORT_PACKETS
-
 struct youss_spacket	clientSelfShip;
 struct youshort_spacket	clientSelfShort;
-
-/* HW */
-#if 0
-static unsigned char clientVPlanets[MAXPLANETS * sizeof(struct planet_s_spacket) +2 +6];
-static int		clientVPlanetCount;
-static int vtsize[9] ={ 4,8,8,12,12,16,20,20,24 }; /* How big is the SP_S_TORP packet */
-static int vtdata[9] ={0,3,5,7,9,12,14,16,18 }; /* How big is Torpdata */
-static int mustsend;	/* Flag to remind me that i must send SP_S_TORP */
-
-static unsigned char clientVTorps[40];
-
-static unsigned char clientVTorpsInfo[16];
-
-static unsigned char 	clientVPlayers[MAXPLAYER*VPLAYER_SIZE + 16];
-#if MAXPLAYER > 32
-static unsigned char 	clientVXPlayers[33*4];
-#endif
-static int		clientVPlayerCount;
-static int		clientVXPlayerCount;
-static int big,small;
-#endif
 
 static int		send_threshold	= 0;	/* infinity */
 static int		send_short	= 0;
 static int		send_mesg 	= 1;
 static int		send_kmesg	= 1;
 static int		send_warn	= 1;
-#ifdef SHORT_THRESHOLD
-static int		numupdates 	= 5;	/* For threshold */
-static int		actual_threshold	= 0; /* == send_threshold / numupdates */
-#endif
 static int		spk_update_sall = 0; /* Small Update: Only weapons, Kills and Planets */
 static int		spk_update_all = 0; /* Full Update minus SP_STATS */
 
@@ -270,76 +223,6 @@ static int		spk_update_all = 0; /* Full Update minus SP_STATS */
 #define		SPK_M_NOWARN	 8
 #define	SPK_SALL 9		/* only planets,kills and weapons */
 #define 	SPK_ALL 10	/* Full Update - SP_STATS */
-
-#endif
-
-
-extern long unsigned int inet_addr( /* ??? */ );
-void     initClientData();
-void     updateTorpInfos();
-void     short_updateTorps(), updateTorps();
-void     updateMissiles();
-void    updateThingies();
-void     updatePlasmas();
-void     updateStatus();
-void     updateSelf();
-void     updatePhasers();
-void     updateShips();
-void     updatePlanets();
-void	 updateTerrain();
-void     updateMessages();
-void     sendMissileNum();
-extern void updateWarnings();	/* warning.c */
-void     sendClientSizedPacket();
-void     sendClientPacket();
-void     flushSockBuf();
-void     updateMOTD();
-int     parseQuery();
-void    bounce();
-int     gwrite();
-void     printUdpInfo();
-int     closeUdpConn();
-void    updateFat();
-int     fatten();
-void    fatMerge();
-int     doRead();
-extern void perror();
-void     logmessage();
-extern int ntorp();
-extern int phaser();
-extern int set_speed();
-extern int set_course();
-extern int shield_up();
-extern int shield_down();
-extern int repair();
-extern int orbit();
-extern pid_t fork();
-/*extern int execl(); */
-extern int bomb_planet();
-extern void reset_fat_list(); /* fatudp.c */
-extern int beam_up();
-extern int beam_down();
-extern int cloak_on();
-extern int cloak_off();
-extern void detothers();
-extern void fire_missile_dir();
-extern int nplasmatorp();
-extern int lock_planet();
-extern int lock_player();
-extern int do_refit();
-extern int pmessage2();
-extern int parse_command_mess();
-extern int setitimer();
-extern int gethostname();
-extern int decryptRSAPacket();
-extern int makeRSAPacket();
-extern int encryptReservedPacket();
-void    forceUpdate();
-int     connUdpConn();
-extern int sendMotd();
-void    dequeue();
-void    enqueue();
-extern int pmessage();
 
 int
 connectToClient(char *machine, int port)
@@ -374,11 +257,7 @@ connectToClient(char *machine, int port)
 	    exit(1);
 	}
 	else {
-#if 1
 	    memcpy((char*)&addr.sin_addr, hp->h_addr, hp->h_length);
-#else
-	    addr.sin_addr.s_addr = *(long *) hp->h_addr;
-#endif
 	}
     }
     remoteaddr = addr.sin_addr.s_addr;
@@ -472,15 +351,9 @@ initClientData(void)
 	clientPlanets2[i].armies = htonl(-1);
 	clientPlanetLocs[i].x = htonl(-1);
 
-#if 0
-	fat_planet[i].packet = (PTR) & clientPlanets[i];
-	fat_planet[i].pkt_size = sizeof(struct planet_spacket);
-	fat_planet[i].prev = fat_planet[i].next = (FAT_NODE *) NULL;
-#else
 	fat_planet2[i].packet = (PTR) & clientPlanets2[i];
 	fat_planet2[i].pkt_size = sizeof(struct planet_spacket2);
 	fat_planet2[i].prev = fat_planet2[i].next = (FAT_NODE *) 0;
-#endif
     }
     msgCurrent = (mctl->mc_current + 1) % MAXMESSAGE;
     clientSelf.pnum = -1;
@@ -488,15 +361,9 @@ initClientData(void)
     fat_you.packet = (PTR) & clientSelf;
     fat_you.pkt_size = sizeof(struct you_spacket);
     fat_you.prev = fat_you.next = (FAT_NODE *) NULL;
-#if 0
-    fat_status.packet = (PTR) & clientStatus;
-    fat_status.pkt_size = sizeof(struct status_spacket);
-    fat_status.prev = fat_status.next = (FAT_NODE *) NULL;
-#else
     fat_status2.packet = (PTR) & clientStatus2;
     fat_status2.pkt_size = sizeof(struct status_spacket2);
     fat_status2.prev = fat_status2.next = (FAT_NODE *) 0;
-#endif
 
     reset_fat_list();
 }
@@ -516,11 +383,9 @@ updateClient(void)
 	mustUpdate[i] = 0;
     }
     updateShips();
-#ifdef SHORT_PACKETS
     if (send_short)	{
       short_updateTorps();
     }else
-#endif
 	{
 	    updateTorps();
 	    updateTorpInfos();
@@ -699,15 +564,9 @@ updateShips(void)
     register struct pstatus_spacket *pstatus;
     register struct plyr_login_spacket *login;
     register struct hostile_spacket *hostile;
-#if 0
-    struct stats_spacket ms_stats;
-#endif
     register struct stats_spacket2 *stats;
     int     update;
     int     x, y;
-/*#define FLAGMASK (PFSHIELD|PFBOMB|PFORBIT|PFCLOAK|PFROBOT|PFBEAMUP|PFBEAMDOWN|PFPRACTR|PFDOCK|PFTRACT|PFPRESS|PFDOCKOK) atm mask */
-
-/* #define FLAGMASK (PFSHIELD|PFBOMB|PFORBIT|PFCLOAK|PFROBOT|PFBEAMUP|PFBEAMDOWN|PFPRACTR|PFDOCK|PFTRACT|PFPRESS|PFDOCKOK) aieee, too much.  7/27/91 TC */
 
 #define FLAGMASK (PFSHIELD|PFBOMB|PFORBIT|PFCLOAK|PFROBOT|PFPRACTR|PFDOCK|PFTRACT|PFPRESS|PFDOCKOK)
 #define INVISOMASK (PFCLOAK|PFROBOT|PFPRACTR|PFDOCKOK)
@@ -799,26 +658,6 @@ updateShips(void)
 	    stats->pnum = i;
 /*      if (blk_metaserver == 0)*/
 	    sendClientPacket((struct player_spacket *) stats);
-#if 0
-	    else {
-		ms_stats.type = SP_STATS;
-		ms_stats.pnum = i;
-		ms_stats.tkills = htonl(pl->p_stats.st_tkills);
-		ms_stats.tlosses = htonl(pl->p_stats.st_tlosses);
-		ms_stats.kills = htonl(1);
-		ms_stats.losses = htonl(1);
-		ms_stats.tticks = htonl(pl->p_stats.st_tticks);
-		ms_stats.tplanets = htonl(pl->p_stats.st_tplanets);
-		ms_stats.tarmies = htonl(pl->p_stats.st_tarmsbomb);
-		ms_stats.sbkills = htonl(pl->p_stats.st_sbkills);
-		ms_stats.sblosses = htonl(pl->p_stats.st_sblosses);
-		ms_stats.armies = htonl(1);
-		ms_stats.planets = htonl(1);
-		ms_stats.maxkills = htonl((long) (pl->p_stats.st_tmaxkills * 100));
-		ms_stats.sbmaxkills = htonl((long) (pl->p_stats.st_sbmaxkills * 100));
-		sendClientPacket((struct player_spacket *) & ms_stats);
-	    }
-#endif
 	}
 	if (maybe_watching(pl)->p_ship.s_type != cpli->shiptype ||
 	    pl->p_team != cpli->team) {
@@ -839,11 +678,9 @@ updateShips(void)
 	{
 	    int     plstat = pl->p_status;
 
-#ifdef LEAGUE_SUPPORT
 	    if (status2->paused && pl->p_team != me->p_team)
 		plstat = PFREE;	/* enemies are invisible when the game is
 				   paused */
-#endif
 
 	    if (pstatus->status != plstat) {
 		/*
@@ -982,12 +819,10 @@ updateTorpInfos(void)
 	    else {		/* in view */
 		enum torp_status_e tstatus = torp->t_status;
 
-#ifdef LEAGUE_SUPPORT
 		if (status2->paused
 		    && players[torp->t_owner].p_team != me->p_team)
 		    tstatus = TFREE;	/* enemy torps are invisible during
 					   game pause */
-#endif
 
 		if (tstatus != tpi->status ||
 		    (torp->t_war & me->p_team) != tpi->war) {
@@ -1038,12 +873,10 @@ updateTorps(void)
 	    else {		/* in view */
 		enum torp_status_e tstatus = torp->t_status;
 
-#ifdef LEAGUE_SUPPORT
 		if (status2->paused
 		    && players[torp->t_owner].p_team != me->p_team)
 		    tstatus = TFREE;	/* enemy torps are invisible during
 					   game pause */
-#endif
 
 		if (tstatus==TFREE)
 		    continue;	/* no need to transmit position */
@@ -1061,8 +894,6 @@ updateTorps(void)
 	}
     }
 }
-
-#ifdef SHORT_PACKETS
 
 #define NIBBLE()	*(*data)++ = (torp->t_war & 0xf) | (torp->t_status << 4)
 
@@ -1142,10 +973,8 @@ encode_torp_position(struct torp *torp, int pnum, char **data, int *shift,
     cache->y = htonl(torp->t_y);
 
     if (TORP_INVISIBLE(torp->t_status)
-#ifdef LEAGUE_SUPPORT
 	|| ( status2->paused &&
 	    players[pnum].p_team != me->p_team)
-#endif
 	)
 	return 0;
 
@@ -1234,10 +1063,6 @@ short_updateTorps(void)
 #undef TIDX
 }
 
-
-#endif
-
-
 void
 updateMissiles(void)
 {
@@ -1251,12 +1076,10 @@ updateMissiles(void)
 	 i++, missile++, dpi++, dp++) {
 	enum torp_status_e msstatus = missile->ms_status;
 
-#ifdef LEAGUE_SUPPORT
 	if (status2->paused &&
 	    players[missile->ms_owner].p_team != me->p_team)
 	    msstatus = TFREE;	/* enemy torps are invisible during game
 				   pause */
-#endif
 
 	switch (msstatus) {
 	case TFREE:
@@ -1457,12 +1280,10 @@ updatePlasmas(void)
 	else {			/* Someone else's torp... */
 	    enum torp_status_e ptstatus = torp->pt_status;
 
-#ifdef LEAGUE_SUPPORT
 	    if (status2->paused &&
 		players[torp->pt_owner].p_team != me->p_team)
 		ptstatus = TFREE;	/* enemy torps are invisible during
 					   game pause */
-#endif
 	    if (torp->pt_y > me->p_y + SCALE * WINSIDE / 2 ||
 		torp->pt_x > me->p_x + SCALE * WINSIDE / 2 ||
 		torp->pt_x < me->p_x - SCALE * WINSIDE / 2 ||
@@ -1549,9 +1370,6 @@ updatePlanets(void)
     register int i;
     register struct planet *plan;
     register struct planet_loc_spacket *pll;
-#if 0
-    register struct planet_spacket *mspl;
-#endif
     register struct planet_spacket2 *pl;
     int     dx, dy;
     int     d2x, d2y;
@@ -1711,8 +1529,10 @@ updateTerrain(void){
     unsigned char origBuf[DIM*DIM];
     unsigned char gzipBuf[DIM*DIM/1000+
 		          DIM*DIM+13];
-	/* Don't ask me.  The compression libs need (original size + 0.1% + 12 bytes). */
-	/* Note - this will have to be RADICALLY changed if alt1/alt2 are sent as well. */
+    /* Don't ask me.  The compression libs need (original size + 0.1% +
+       12 bytes). */
+    /* Note - this will have to be RADICALLY changed if alt1/alt2 are sent 
+       as well. */
 
   /* check to see if client can handle the terrain data first */
   if( F_terrain ){
@@ -1774,11 +1594,6 @@ updateTerrain(void){
       sendClientPacket( (struct player_spacket *) &tpkt );
     }
   }
-#ifdef FEATURE_DIAG
-  else{
-    pmessage( "Mis-timed terrain data (F_terrain = 0)!", 0, MALL, MSERVA );
-  }
-#endif
 }
 
 void
@@ -1843,9 +1658,6 @@ sendClientSizedPacket(struct player_spacket *packet, int size)
     int     issc;
     static int oldStatus = POUTFIT;
 
-#if 0
-    if (blk_metaserver)
-#endif
 #ifdef SHOW_PACKETS
     {
 	FILE   *logfile;
@@ -1867,22 +1679,7 @@ sendClientSizedPacket(struct player_spacket *packet, int size)
 #endif
 
     orig_type = packet->type;
-#if 0
-    packet->type &= ~(0x40 | 0x80);	/* clear special flags */
-#else
-    packet->type &= (char) 0x3f;/* above doesn't work? 4/18/92 TC */
-#endif
-#ifdef MAYBE
-    /*
-       If we're dead, dying, or just born, we definitely want the
-       transmission to get through (otherwise we can get stuck).  I don't
-       think this will be a problem for anybody, though it might hang for a
-       bit if the TCP connection is bad.
-    */
-    /* Okay, now I'm not so sure.  Whatever. */
-    if (oldStatus != PALIVE || (me != NULL && me->p_status != PALIVE))
-	orig_type = packet->type | 0x80;	/* pretend it's critical */
-#endif
+    packet->type &= (char) 0x3f;
 
     /* if we're not given the size, calculate it */
     if (size<0) {
@@ -1941,10 +1738,8 @@ sendClientSizedPacket(struct player_spacket *packet, int size)
 
 	case SP_PLAYER:
 	case SP_TORP:
-#ifdef SHORT_PACKETS
 	case SP_S_TORP:
 	case SP_S_8_TORP:
-#endif
 	case SP_THINGY:
 	case SP_YOU:
 	case SP_PLASMA:
@@ -2025,12 +1820,8 @@ input_allowed(int packettype)
     case CP_ASK_MOTD:
     case CP_PING_RESPONSE:
     case CP_UDP_REQ:
-#ifdef FEATURE
     case CP_FEATURE:
-#endif
-#ifdef SHORT_PACKETS
     case CP_S_MESSAGE:
-#endif
 	return 1;
     default:
 	if (!me)
@@ -2162,20 +1953,6 @@ doRead(int asock)
 	   Check to see if the handler is there and the request is legal. The
 	   code is a little ugly, but it isn't too bad to worry about yet.
 	*/
-#if 0
-	{
-	    FILE   *logfile;
-	    char   *paths;
-	    if (blk_metaserver) {
-		paths = build_path("logs/metaserver.log");
-		logfile = fopen(paths, "a");
-		if (logfile) {
-		    fprintf(logfile, "Receiving packet type %d\n", (int) *bufptr);
-		    fclose(logfile);
-		}
-	    }
-	}
-#endif
 	packetsReceived[(unsigned char)*bufptr]++;
 
 	if (asock == udpSock)
@@ -2227,38 +2004,33 @@ doRead(int asock)
     return (1);
 }
 
-void 
-handleTorpReq(packet)
-    struct torp_cpacket *packet;
+static void 
+handleTorpReq(struct torp_cpacket *packet)
 {
     ntorp((CARD8)packet->dir, (int)TMOVE);
 }
 
-void 
-handlePhasReq(packet)
-    struct phaser_cpacket *packet;
+static void 
+handlePhasReq(struct phaser_cpacket *packet)
 {
     phaser(packet->dir);
 }
 
-void 
-handleSpeedReq(packet)
-    struct speed_cpacket *packet;
+static void 
+handleSpeedReq(struct speed_cpacket *packet)
 {
     set_speed(packet->speed, 1);
 }
 
-void 
-handleDirReq(packet)
-    struct dir_cpacket *packet;
+static void 
+handleDirReq(struct dir_cpacket *packet)
 {
     me->p_flags &= ~(PFPLOCK | PFPLLOCK);
     set_course(packet->dir);
 }
 
-void 
-handleShieldReq(packet)
-    struct shield_cpacket *packet;
+static void 
+handleShieldReq(struct shield_cpacket *packet)
 {
     if (packet->state) {
 	shield_up();
@@ -2268,9 +2040,8 @@ handleShieldReq(packet)
     }
 }
 
-void 
-handleRepairReq(packet)
-    struct repair_cpacket *packet;
+static void 
+handleRepairReq(struct repair_cpacket *packet)
 {
     if (packet->state) {
 	repair();
@@ -2280,18 +2051,14 @@ handleRepairReq(packet)
     }
 }
 
-void 
-handleOrbitReq(packet)
-    struct orbit_cpacket *packet;
+static void 
+handleOrbitReq(struct orbit_cpacket *packet)
 {
     if (packet->state) {
 	orbit();
     }
     else {
 	me->p_flags &= ~PFORBIT;
-#if 0
-	planets[me->p_planet].pl_torbit &= ~me->p_team;
-#endif
 	if (me->p_flags & PFDOCK) {
 	    if (players[me->p_docked].p_speed > 4) {
 		warning("It's unsafe to disengage from bases while over warp 4.");
@@ -2361,16 +2128,14 @@ practice_robo(void)
 /*--------------------------------------------------------------------------*/
 
 /* ARGSUSED */
-void 
-handlePractrReq(packet)
-    struct practr_cpacket *packet;
+static void 
+handlePractrReq(struct practr_cpacket *packet)
 {
     practice_robo();
 }
 
-void 
-handleBombReq(packet)
-    struct bomb_cpacket *packet;
+static void 
+handleBombReq(struct bomb_cpacket *packet)
 {
     if (packet->state) {
 	bomb_planet();
@@ -2380,9 +2145,8 @@ handleBombReq(packet)
     }
 }
 
-void 
-handleBeamReq(packet)
-    struct beam_cpacket *packet;
+static void 
+handleBeamReq(struct beam_cpacket *packet)
 {
     if (packet->state == 1) {
 	beam_up();
@@ -2395,9 +2159,8 @@ handleBeamReq(packet)
     }
 }
 
-void 
-handleCloakReq(packet)
-    struct cloak_cpacket *packet;
+static void 
+handleCloakReq(struct cloak_cpacket *packet)
 {
     if (packet->state) {
 	cloak_on();
@@ -2408,17 +2171,15 @@ handleCloakReq(packet)
 }
 
 /* ARGSUSED */
-void 
-handleDetTReq(packet)
-    struct det_torps_cpacket *packet;
+static void 
+handleDetTReq(struct det_torps_cpacket *packet)
 {
     detothers();
 }
 
 /* ARGSUSED */
-void 
-handleCopilotReq(packet)
-    struct copilot_cpacket *packet;
+static void 
+handleCopilotReq(struct copilot_cpacket *packet)
 {
 /*
  * Unsupported...
@@ -2430,17 +2191,15 @@ handleCopilotReq(packet)
  */
 }
 
-void 
-handleOutfit(packet)
-    struct outfit_cpacket *packet;
+static void 
+handleOutfit(struct outfit_cpacket *packet)
 {
     shipPick = packet->ship;
     teamPick = packet->team;
 }
 
 void
-sendPickokPacket(state)
-    int     state;
+sendPickokPacket(int state)
 {
     struct pickok_spacket pickPack;
 
@@ -2449,9 +2208,8 @@ sendPickokPacket(state)
     sendClientPacket((struct player_spacket *) & pickPack);
 }
 
-void 
-handleLoginReq(packet)
-    struct login_cpacket *packet;
+static void 
+handleLoginReq(struct login_cpacket *packet)
 {
     if (packet->pad2 == 0x69) {
 	if (packet->pad3 == 0x42)
@@ -2472,8 +2230,7 @@ handleLoginReq(packet)
 }
 
 void
-sendClientLogin(stats)
-    struct stats *stats;
+sendClientLogin(struct stats *stats)
 {
     struct login_spacket logPacket;
     logPacket.pad2 = 69;
@@ -2492,9 +2249,8 @@ sendClientLogin(stats)
     sendClientPacket((struct player_spacket *) & logPacket);
 }
 
-void 
-handlePlasmaReq(packet)
-    struct plasma_cpacket *packet;
+static void 
+handlePlasmaReq(struct plasma_cpacket *packet)
 {
     if (me->p_specweap & SFNHASMISSILE) {
 	fire_missile_dir(packet->dir);
@@ -2507,30 +2263,26 @@ handlePlasmaReq(packet)
     }
 }
 
-void 
-handleWarReq(packet)
-    struct war_cpacket *packet;
+static void 
+handleWarReq(struct war_cpacket *packet)
 {
     declare_war(packet->newmask);
 }
 
-void 
-handlePlanlockReq(packet)
-    struct planlock_cpacket *packet;
+static void 
+handlePlanlockReq(struct planlock_cpacket *packet)
 {
     lock_planet(packet->pnum);
 }
 
-void 
-handlePlaylockReq(packet)
-    struct playlock_cpacket *packet;
+static void 
+handlePlaylockReq(struct playlock_cpacket *packet)
 {
     lock_player(packet->pnum);
 }
 
-void 
-handleDetMReq(packet)
-    struct det_mytorp_cpacket *packet;
+static void 
+handleDetMReq(struct det_mytorp_cpacket *packet)
 {
     struct torp *atorp;
     short   t;
@@ -2585,9 +2337,8 @@ handleDetMReq(packet)
     }
 }
 
-void 
-handleTractorReq(packet)
-    struct tractor_cpacket *packet;
+static void 
+handleTractorReq(struct tractor_cpacket *packet)
 {
     int     target;
     struct player *player;
@@ -2618,18 +2369,6 @@ handleTractorReq(packet)
 	(TRACTDIST) * me->p_ship.s_tractrng) {
 	undock_player(me);
 	me->p_flags &= ~PFORBIT;
-#if 0
-	undock_player(player);	/* harmless if they're not docked */
-
-#if 0
-	if (player->p_flags & PFORBIT)
-	    planets[player->p_planet].pl_torbit &= ~player->p_team;
-	if (me->p_flags & PFORBIT)
-	    planets[me->p_planet].pl_torbit &= ~me->p_team;
-#endif
-	player->p_flags &= ~(PFORBIT | PFDOCK);
-	me->p_flags &= ~(PFORBIT | PFDOCK);
-#endif
 	me->p_tractor = target;
 	me->p_flags |= PFTRACT;
 
@@ -2639,9 +2378,8 @@ handleTractorReq(packet)
     }
 }
 
-void 
-handleRepressReq(packet)
-    struct repress_cpacket *packet;
+struct void 
+handleRepressReq(struct repress_cpacket *packet)
 {
     int     target;
     struct player *player;
@@ -2672,18 +2410,6 @@ handleRepressReq(packet)
 	(TRACTDIST) * me->p_ship.s_tractrng) {
 	undock_player(me);
 	me->p_flags &= ~PFORBIT;
-#if 0
-	undock_player(player);
-
-#if 0
-	if (player->p_flags & PFORBIT)
-	    planets[player->p_planet].pl_torbit &= ~player->p_team;
-	if (me->p_flags & PFORBIT)
-	    planets[me->p_planet].pl_torbit &= ~me->p_team;
-#endif
-	player->p_flags &= ~(PFORBIT | PFDOCK);
-	me->p_flags &= ~(PFORBIT | PFDOCK);
-#endif
 	me->p_tractor = target;
 	me->p_flags |= (PFTRACT | PFPRESS);
     }
@@ -2693,8 +2419,7 @@ handleRepressReq(packet)
 }
 
 void
-sendMotdLine(line)
-    char   *line;
+sendMotdLine(char *line)
 {
     struct motd_spacket motdPacket;
 
@@ -2705,23 +2430,20 @@ sendMotdLine(line)
 }
 
 /* ARGSUSED */
-void 
-handleCoupReq(packet)
-    struct coup_cpacket *packet;
+static void 
+handleCoupReq(struct coup_cpacket *packet)
 {
     switch_special_weapon();
 }
 
-void 
-handleRefitReq(packet)
-    struct refit_cpacket *packet;
+static void 
+handleRefitReq(struct refit_cpacket *packet)
 {
     do_refit(packet->ship);
 }
 
-void 
-handleMessageReq(packet)
-    struct mesg_cpacket *packet;
+static void 
+handleMessageReq(struct mesg_cpacket *packet)
 {
     char    addrbuf[9];
     static long lasttime = 0 /* , time() */ ;
@@ -2796,16 +2518,6 @@ handleMessageReq(packet)
     } else {
 	return;
     }
-#if 0
-    if ((packet->group == MGOD
-	 || me->p_no == packet->indiv && packet->group == MINDIV)
-	&& parse_command_mess(packet->mesg, me->p_no)) {
-	/* message parsed. Eat it */
-    }
-    else {
-	pmessage2(packet->mesg, packet->indiv, packet->group, addrbuf, me->p_no);
-    }
-#else
     /* don't eat the parsed messages */
     pmessage2(packet->mesg, packet->indiv, packet->group, addrbuf, me->p_no);
     if (me->p_no == packet->indiv && packet->group == MINDIV) {
@@ -2814,7 +2526,6 @@ handleMessageReq(packet)
 	tmpbuf[sizeof(packet->mesg)] = 0;
 	parse_command_mess(tmpbuf, me->p_no);
     }
-#endif
 
 /*
  * Blech !!!
@@ -2827,9 +2538,8 @@ handleMessageReq(packet)
 }
 
 /* ARGSUSED */
-void 
-handleQuitReq(packet)
-    struct quit_cpacket *packet;
+static void 
+handleQuitReq(struct quit_cpacket *packet)
 {
     if (me->p_status == POBSERVE) {
 	me->p_status = PTQUEUE;
@@ -2852,8 +2562,7 @@ handleQuitReq(packet)
 }
 
 void
-sendMaskPacket(mask)
-    int     mask;
+sendMaskPacket(int mask)
 {
     struct mask_spacket maskPacket;
 
@@ -2862,18 +2571,16 @@ sendMaskPacket(mask)
     sendClientPacket((struct player_spacket *) & maskPacket);
 }
 
-void 
-handleOptionsPacket(packet)
-    struct options_cpacket *packet;
+static void 
+handleOptionsPacket(struct options_cpacket *packet)
 {
     mystats->st_flags = ntohl(packet->flags) |
 	(mystats->st_flags & ST_CYBORG);	/* hacked fix 8/24/91 TC */
     keeppeace = (mystats->st_flags / ST_KEEPPEACE) & 1;
 }
 
-void 
-handleSocketReq(packet)
-    struct socket_cpacket *packet;
+static void 
+handleSocketReq(struct socket_cpacket *packet)
 {
     nextSocket = ntohl(packet->socket);
     userVersion = packet->version;
@@ -2881,9 +2588,8 @@ handleSocketReq(packet)
 }
 
 /* ARGSUSED */
-void 
-handleByeReq(packet)
-    struct bye_cpacket *packet;
+static void 
+handleByeReq(struct bye_cpacket *packet)
 {
     noressurect = 1;
 }
@@ -2916,18 +2622,9 @@ logEntry(void)
 	return;
     curtime = time(NULL);
 
-#ifdef LOG_LONG_INFO		/*-[ prints out long info to the log files ]-*/
-
     fprintf(logfile, "Joining: %s, (%c) <%s@%s> %s", me->p_name,
 	    shipnos[me->p_no],
 	    me->p_login,	/* debug 2/21/92 TMC */
-
-#else
-
-    fprintf(logfile, "Joining: %s <%s@%s> %s", me->p_name, me->p_login,
-
-#endif				/*-[ LOG_LONG_INFO ]-*/
-
 	    me->p_full_hostname,
 	    ctime((time_t *) & curtime));
 
@@ -2936,9 +2633,8 @@ logEntry(void)
 
 /* gwrite was here */
 
-void 
-handleDockingReq(packet)
-    struct dockperm_cpacket *packet;
+static void 
+handleDockingReq(struct dockperm_cpacket *packet)
 {
     int     i;
 
@@ -2960,9 +2656,8 @@ handleDockingReq(packet)
     }
 }
 
-void 
-handleReset(packet)
-    struct resetstats_cpacket *packet;
+static void 
+handleReset(struct resetstats_cpacket *packet)
 {
     extern int startTkills, startTlosses, startTarms, startTplanets, startTticks;
 
@@ -2970,31 +2665,6 @@ handleReset(packet)
 	return;
 
     /* Gee, they seem to want to reset their stats!  Here goes... */
-#if 0
-    mystats->st_maxkills = 0.0;
-    mystats->st_kills = 0;
-    mystats->st_losses = 0;
-    mystats->st_armsbomb = 0;
-    mystats->st_planets = 0;
-    mystats->st_ticks = 0;
-    mystats->st_tkills = 0;
-    mystats->st_tlosses = 0;
-    mystats->st_tarmsbomb = 0;
-    mystats->st_tplanets = 0;
-    mystats->st_tticks = 1;
-    mystats->st_rank = 0;
-    mystats->st_sbkills = 0;
-    mystats->st_sblosses = 0;
-    mystats->st_sbticks = 0;
-    mystats->st_sbmaxkills = 0.0;
-
-    startTkills = mystats->st_tkills;
-    startTlosses = mystats->st_tlosses;
-    startTarms = mystats->st_tarmsbomb;
-    startTplanets = mystats->st_tplanets;
-    startTticks = mystats->st_tticks;
-#endif
-
     mystats->st_genocides = 0;
     mystats->st_tmaxkills = 0.0;
     mystats->st_di = 0.0;
@@ -3025,9 +2695,8 @@ handleReset(packet)
     startTticks = mystats->st_tticks;
 }
 
-void 
-handleUpdatesReq(packet)
-    struct updates_cpacket *packet;
+static void 
+handleUpdatesReq(struct updates_cpacket *packet)
 {
     struct itimerval udt;
     extern int interrupting;	/* main.c */
@@ -3068,64 +2737,8 @@ logmessage(char *string)
     }
 }
 
-#if 0
-handleReserved(packet)
-    struct reserved_cpacket *packet;
-{
-/*    char temp[20];*/
-    struct reserved_cpacket mycp;
-    struct reserved_spacket mysp;
-    char    serverName[64];	/* now get serverName from system 8/2/92 TC */
-
-    if (testtime == 1)
-	return;
-    if (memcmp(packet->data, testdata, 16) != 0) {
-	testtime = 1;
-	return;
-    }
-    memcpy(mysp.data, testdata, 16);
-    if (gethostname(serverName, 64))
-	fprintf(stderr, "gethostname() error\n");	/* 8/2/92 TC */
-    encryptReservedPacket(&mysp, &mycp, serverName, me->p_no);
-    if (memcmp(packet->resp, mycp.resp, 16) != 0) {
-	fprintf(stderr, "User verified incorrectly.\n");
-	testtime = 1;
-	return;
-    }
-    testtime = 0;
-}
-
-#ifdef ATM_STUFF
-void dummy_()
-{
-    if ((configvals->binconfirm == 2) &&
-	!strcmp(packet->resp, "Cyborg")) {
-	testtime = 0;		/* accept */
-	cyborg = 1;
-	if (me->p_name[0] != '+') {
-	    temp[0] = '+';	/* indicate cyborg */
-	    strcpy(temp + 1, me->p_name); /* this happens AFTER entry, */
-	    temp[15] = '\0';	/* so changing enter() isn't */
-	    strcpy(me->p_name, temp); /* sufficient */
-	}
-	return;
-    }
-
-    if (memcmp(packet->resp, mycp.resp, 16) != 0) {
-	fprintf(stderr, "User verified incorrectly.\n");
-	testtime = 1;
-	return;
-    }
-
-    testtime = 0;
-}
-
-#endif
-#else
-
-void 
-handleRSAKey(packet)
-    struct rsa_key_cpacket *packet;
+static void 
+handleRSAKey(struct rsa_key_cpacket *packet)
 {
 #ifdef AUTHORIZE
     struct rsa_key_spacket mysp;
@@ -3147,9 +2760,8 @@ handleRSAKey(packet)
 #endif				/* AUTHORIZE */
 }
 
-void 
-handleReserved(packet)
-    struct reserved_cpacket *packet;
+static void 
+handleReserved(struct reserved_cpacket *packet)
 {
 #ifdef AUTHORIZE
     struct reserved_cpacket mycp;
@@ -3196,11 +2808,8 @@ handleReserved(packet)
 #endif				/* AUTHORIZE */
 }
 
-#endif
-
-void 
-handleScan(packet)		/* ATM */
-    struct scan_cpacket *packet;
+static void 
+handleScan(struct scan_cpacket *packet)		/* ATM */
 {
 #if 0
     struct scan_spacket response;
@@ -3231,9 +2840,8 @@ handleScan(packet)		/* ATM */
 }
 
 
-void
-handlePingResponse(packet)
-    struct ping_cpacket *packet;
+static void
+handlePingResponse(struct ping_cpacket *packet)
 {
     char    buf[80];
     /* client requests pings by sending pingme == 1 on TCP socket */
@@ -3256,10 +2864,8 @@ handlePingResponse(packet)
     pingResponse(packet);	/* ping.c */
 }
 
-#ifdef SHORT_PACKETS
-
-void handleShortReq(packet)
-   struct shortreq_cpacket	*packet;
+static void
+handleShortReq(struct shortreq_cpacket *packet)
 {
     struct shortreply_spacket	resp;
 
@@ -3344,35 +2950,15 @@ void handleShortReq(packet)
     sendClientPacket((struct player_spacket *) &resp);
 }
 
-void handleThresh(packet)
-     struct threshold_cpacket	*packet;
+static void
+handleThresh(struct threshold_cpacket *packet)
 {
     send_threshold = packet->thresh;
-#ifdef SHORT_THRESHOLD
-    if (  send_threshold == 0) {
-	actual_threshold = 0;
-   	warning("Threshold test deactivated.");
-    }
-    else {
-	actual_threshold = send_threshold / numupdates;
-	if ( actual_threshold < 60 ) { /* my low value */
-	    actual_threshold = 60; /* means: 1 SP_S_PLAYER+SP_S_YOU + 16 bytes */
-	    sprintf(buf, "Threshold set to %d .  %d / Update(Server limit!)",
-		    numupdates * 60, 60);
-	    warning(buf);
-	}
-	else {
-	    sprintf(buf, "Threshold set to %d .  %d / Update",send_threshold , actual_threshold);
-	    warning(buf);		
-	}
-    }
-#else
     warning("Server is compiled without Thresholdtesting!");
-#endif
 }
 
-void handleSMessageReq(packet)
-     struct mesg_s_cpacket *packet;
+static void
+handleSMessageReq(struct mesg_s_cpacket *packet)
 {
     /* If someone would delete the hardcoded things in handleMessageReq */
     /*	like     packet->mesg[69]='\0';   */
@@ -3388,18 +2974,14 @@ void handleSMessageReq(packet)
     /* I hope this was it */
 }
 
-
-#endif
-
 /*
  * ---------------------------------------------------------------------------
  *	Strictly UDP from here on
  * ---------------------------------------------------------------------------
  */
 
-void 
-handleUdpReq(packet)
-    struct udp_req_cpacket *packet;
+static void
+handleUdpReq(struct udp_req_cpacket *packet)
 {
     struct udp_reply_spacket response;
     int     mode;
@@ -3679,14 +3261,14 @@ printUdpInfo(void)
 	     addr.sin_family, ntohs(addr.sin_port)));
 }
 
-void 
-handleSequence()
+static void 
+handleSequence(void)
 {
     /* we don't currently deal with sequence numbers from clients */
 }
 
-void 
-handleAskMOTD()
+static void 
+handleAskMOTD(void)
 {
     sendMotd();
 }
@@ -3799,6 +3381,8 @@ forceUpdate(void)
     clientSelf.pnum = -1;
 }
 
+/* note - this should really be replaced with a conf.whatever file that
+   lists the logins of people that can't shut up */
 int 
 isCensured(char *s)		/* return true if cannot message opponents */
 {
@@ -4033,11 +3617,7 @@ sendShipCap(void)
 	temppack.operation = 0;
 	temppack.s_type = htons(ship.s_type);
 	temppack.s_torpspeed = htons(ship.s_torp.speed);
-#if 1
 	temppack.s_phaserrange = htons(ship.s_phaser.speed);
-#else
-	temppack.s_phaserrange = htons(ship.s_phaser.damage);
-#endif
 	temppack.s_maxspeed = htonl(ship.s_imp.maxspeed);
 	temppack.s_maxfuel = htonl(ship.s_maxfuel);
 	temppack.s_maxshield = htonl(ship.s_maxshield);
@@ -4114,8 +3694,6 @@ sendMissileNum(int num)
 
     sendClientPacket((struct player_spacket *) & clientMissiles);
 }
-
-#ifdef RSA_EXEMPTION_FILE
 
 /* this code was copied from
 
@@ -4217,5 +3795,3 @@ site_rsa_exempt(void)
 
     return 0;
 }
-
-#endif /* RSA_EXEMPTION_FILE */

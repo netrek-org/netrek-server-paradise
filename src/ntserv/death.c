@@ -27,11 +27,6 @@ suitability of this software for any purpose.  This software is provided
 #include "data.h"
 #include "shmem.h"
 
-#if 0
-extern jmp_buf env;
-#endif
-
-
 /* Figure out ratings for player p.  Computed ratings are filled into r */
 void 
 compute_ratings(struct player *p, struct rating *r)
@@ -113,9 +108,6 @@ death(void)
     int     genocides;		/* player's genocides */
     float   di;			/* player's di */
 
-#if 0
-    stop_interruptor();
-#endif
     me->p_status = POUTFIT;	/* Stop the ghost buster */
     switch (me->p_whydead) {	/* determine whether the player */
     case KTORP:		/* should be forced out of the */
@@ -162,9 +154,6 @@ death(void)
     }
     updateClient();		/* update the client */
     savestats();		/* save players stats */
-#if 0
-    longjmp(env, 0);		/* jump to start of ntserv */
-#endif
 }
 
 /*-------------------------------------------------------------------------*/
