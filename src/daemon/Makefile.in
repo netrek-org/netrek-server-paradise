@@ -30,7 +30,7 @@ INSTALL=@INSTALL@
 INSTALL_SCRIPT=@INSTALL_SCRIPT@
 INSTALL_DATA=@INSTALL_DATA@
 
-VPATH=../common:../rsa:galaxygen
+VPATH=../common:../rsa:./galaxygen
 
 ####
 
@@ -42,7 +42,7 @@ all: generators daemonII
 generators:
 	@cd galaxygen && $(MAKE)
 
-daemonII: galaxygen.a common.a $(DAEMON_OBJS)
+daemonII: generators common.a $(DAEMON_OBJS)
 	$(CC) $(CFLAGS) -o $@ $(DAEMON_OBJS) galaxygen/galaxygen.a ../common/common.a $(LDFLAGS) $(LIBS)
 
 clean:

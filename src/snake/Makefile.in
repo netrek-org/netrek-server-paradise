@@ -47,5 +47,5 @@ clean:
 install:
 	$(INSTALL) snake $(prefix)/bin
 
-distclea:
+distclean:
 	-rm -f Makefile
