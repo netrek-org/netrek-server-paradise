@@ -34,9 +34,8 @@ VPATH=galaxygen:../common:../rsa
 
 ####
 
-DAEMON_OBJS=daemonII.o dutil.o conquer.o shipvals.o \
-	    sysdefaults.o weapons.o planets.o player.o stats.o misc.o \
-	    tourny.o terrain.o
+DAEMON_OBJS=conquer.o daemonII.o dutil.o misc.o planets.o player.o \
+            shipvals.o stats.o sysdefaults.o tourny.o terrain.o weapons.o
 
 all: generators daemonII
 
