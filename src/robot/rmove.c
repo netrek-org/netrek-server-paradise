@@ -1130,8 +1130,7 @@ rmove(int unused)
 	    if ((enemy_buf->e_dist < 15000) || (avoidTime > 0)) {
 		numHits = projectDamage(enemy->p_no, &avDir);
 		if (debug) {
-		    fprintf(stderr, "%d hits expected from %d from dir =
-		    %d\n", numHits, enemy->p_no, avDir);
+		    fprintf(stderr, "%d hits expected from %d from dir = %d\n", numHits, enemy->p_no, avDir);
 		}
 		if (numHits == 0) {
 		    if (--avoidTime > 0) {	/* we may still be avoiding */

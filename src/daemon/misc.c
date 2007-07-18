@@ -335,8 +335,13 @@ tolstoy_message(char *p, char *transition)
 void
 warmessage(void)
 {
+  char *msg;
   series = lrand48() % NWARMESSAGES;
-  tolstoy_message(warmessages[series], "  WAR->  ");
+  msg = strdup(warmessages[series]);
+  if(msg) {
+    tolstoy_message(msg, "  WAR->  ");
+    free(msg);
+  }
 }
 
 

@@ -301,7 +301,6 @@ main(int argc, char **argv)
     {
       names = (char **)malloc(sizeof(char *) * (pn + 1));
       pn = 0;
-      getoptreset();
       while((c = getopt(argc, argv, "n:c:p:")))
       {
         if(c == 'p')
