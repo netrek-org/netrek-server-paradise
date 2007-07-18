@@ -887,7 +887,7 @@ sendMotd(void)
     tmstruct = localtime(&curtime);
     if (!(hour = tmstruct->tm_hour % 12))
 	hour = 12;
-    sprintf(buf, "Netrek Paradise II (3.1p0), connection established at %d:%02d%s.",
+    sprintf(buf, "Netrek Paradise II (3.1p1), connection established at %d:%02d%s.",
             hour,
 	    tmstruct->tm_min,
 	    tmstruct->tm_hour >= 12 ? "pm" : "am");
