@@ -109,7 +109,7 @@ WARPPREPSTYLE=3		# 0 - tractors have no effect 1 - tractors abort at end
 # Ship and weapon options
 #
 # BRONCOSHIPVALS=0	# Sets Bronco-style ship values
-SHIPS=SC,DD,BB,CA,CL,AS,SB,JS,FR,WB,UT,PT
+SHIPS=SC,DD,BB,CA,CL,AS,SB,JS,FR,WB,CV,UT,PT
 WEAPONS=PLASMA,TRACTOR,MISSILE,FIGHTER
 IMPROVED_TRACKING=MISSILE,FIGHTER
 MSKILLS=2		# How many kills before one can use missiles
@@ -207,10 +207,10 @@ end
 # Battleship (BB) specifications
 #
 SHIP=3
-BB maxarmies 0
 BB bomb 30
 BB bombflags ALL
 BB cloakcost 150
+BB maxarmies 0
 BB maxdamage 130
 BB maxfuel 14000
 BB maxshield 130
@@ -325,56 +325,16 @@ end
 #
 # Frigate (FR) specifications
 #
-#SHIP=8
-#FR bombflags NONE
-#FR cloakcost 140
-#FR maxarmies 0
-#FR phaser.cost 816
-#FR phaser.damage 102
-#FR phaser.range 6150
-#FR plasma.damage -1
-#FR warp.cost 80
-#FR warp.maxspeed 15
-#end
-
-#
-# Fuel Tanker (TN)
-#
 SHIP=8
-TN bitmap 11		# use the carrier ship.
-TN bombflags NONE
-TN cloakcost 2000
-TN desig1 T
-TN desig2 N
-TN detcost 10
-TN detdist 1800
-TN imp.maxspeed 6
-TN letter t
-TN maxarmies 0
-TN maxdamage 150
-TN maxfuel 100000
-TN maxnum 1		# How many maximum may be in the game at one time
-TN maxshield 50
-TN name Transport
-TN nflags CANWARP,CANFUEL
-TN numdefn 1
-TN numplan 1
-TN numports 2		# let two ships take on fuel simultaneously
-TN plasma.damage -1
-TN rank 0		# Should be 1 normally
-TN recharge 30
-TN repair 30
-TN scanrange -1
-TN shieldcost 4
-TN timer 10
-TN torp.cost 10
-TN torp.damage 2
-TN torp.fuse 5
-TN torp.speed 8
-TN warp.cost 100
-TN warp.maxspeed 8
-TN warpinitcost 1000
-TN warpinittime 75
+FR bombflags NONE
+FR cloakcost 140
+FR maxarmies 0
+FR phaser.cost 816
+FR phaser.damage 102
+FR phaser.range 6150
+FR plasma.damage -1
+FR warp.cost 80
+FR warp.maxspeed 15
 end
 
 #
@@ -435,7 +395,7 @@ end
 SHIP=11
 CV bombflags NONE
 CV cloakcost 135
-CV maxarmies 12		# Must be equal to the number of fighters
+CV maxarmies 3		# Must be equal to the number of fighters / 8
 CV missilestored 24	# How many fighters the CV has
 CV phaser.cost 570
 CV phaser.damage 95
