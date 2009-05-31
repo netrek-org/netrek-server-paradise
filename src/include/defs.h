@@ -199,6 +199,7 @@ notice appear in all copies.
 #define LOGFILENAME     "logs/server.log"
 #define CONQFILE	"logs/conquer"
 #define SYSDEF_FILE     "etc/conf.sysdef"
+#define META_FILE	"etc/conf.metaservers"
 #define RSA_KEY_FILE	"etc/rsa.keys"
 #define GODLOGFILE 	"logs/god.log"
 #define CLUEPHRASEFILE	"etc/cluephrases"

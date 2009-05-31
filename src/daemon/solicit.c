@@ -13,7 +13,7 @@
 #include "shmem.h"
 #include "solicit.h"
 
-/* our copy of .metaservers file */
+/* our copy of conf.metaservers file */
 static struct metaserver metaservers[MAXMETASERVERS];
 
 /* initialisation done flag */
@@ -56,7 +56,7 @@ static int udp_attach(struct metaserver *m)
     /* then name */
     if ((hp = gethostbyname(m->ours)) == NULL) {
       /* bad hostname or unable to get ip address */
-      fprintf(stderr, "Bad this.host.name field in .metaservers.\n");
+      fprintf(stderr, "Bad this.host.name field (%s) in conf.metaservers.\n", m->ours);
       return 0;
     } else {
       m->address.sin_addr.s_addr = *(long *) hp->h_addr;
@@ -114,6 +114,7 @@ void solicit(int force)
   char *name, *login;             /* name and login guaranteed not blank */
   char unknown[] = "unknown";     /* unknown player/login string */
   char *here = packet;
+  char *path;
   time_t now = time(NULL);
   int gamefull = 0;               /* is the game full? */
   int isrsa = 0;                  /* is this server RSA? */
@@ -126,8 +127,10 @@ void solicit(int force)
     for (i=0; i<MAXMETASERVERS; i++) metaservers[i].sock = -1;
     
     /* open the metaserver list file */
-    file = fopen(".metaservers", "r"); /* ??? LIBDIR prefix? */
+    path = build_path(META_FILE);
+    file = fopen(path, "r");
     if (file == NULL) {
+      fprintf(stderr, "solicit: no conf.metaservers file found\n");
       initialised++;
       return;
     }
@@ -135,7 +138,7 @@ void solicit(int force)
     /* read the metaserver list file */
     for (i=0; i<MAXMETASERVERS; i++) {
       struct metaserver *m = &metaservers[i];
-      char buffer[256];         /* where to hold the .metaservers line */
+      char buffer[256];         /* where to hold the conf.metaservers line */
       char *line;		/* return from fgets() */
       char *token;		/* current line token */
       
