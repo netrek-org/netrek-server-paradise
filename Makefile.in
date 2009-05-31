@@ -5,6 +5,8 @@
 
 bindir=@bindir@
 datadir=@datadir@
+docsdir=@docsdir@
+sysconfdir=@sysconfdir@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
 libexecdir=@libexecdir@
@@ -34,9 +36,10 @@ INSTALL_BLANKS=etc/db.players etc/db.global etc/rsa-exemption \
                etc/rsa.keys etc/cluephrases logs/server.log logs/conquer \
 	       logs/god.log
 
-INSTALL_COPIES=etc/motd etc/conf.pics etc/ranks.conf \
-               etc/cluephrases etc/conf.hours pics/cd.xbm pics/Mecha.xbm \
-	       pics/enterprise.xbm pics/info.xbm
+INSTALL_COPIES=pics/cd.xbm pics/Mecha.xbm pics/enterprise.xbm pics/info.xbm
+
+INSTALL_CONF=cluephrases conf.hours conf.metaservers conf.netrekdir conf.pics \
+             motd ranks.conf ranks.conf.ranks2 conf.sysdef \
 
 INSTALL_SCRIPTS=bin/dbbackup bin/init.shutdown bin/init.startup \
                 bin/makemotd bin/ntstart bin/ntstop
@@ -76,9 +79,11 @@ install: all
 	    $(INSTALL_DATA) $(srcdir)/$${i} $(prefix)/$${i}; \
           fi \
 	done
-	@if test ! -r $(prefix)/etc/conf.sysdef; then \
-	  $(INSTALL_DATA) $(srcdir)/etc/conf.balanced $(prefix)/etc/conf.sysdef; \
-	fi
+	@for i in $(INSTALL_CONF); do \
+	  if test ! -r $(sysconfdir)/$${i}; then \
+	    $(INSTALL_DATA) $(docsdir)/$${i} $(sysconfdir)/$${i}; \
+          fi \
+	done
 
 distclean: clean
 	@cd src && $(MAKE) distclean

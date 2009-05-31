@@ -43,6 +43,7 @@ bindir='${exec_prefix}/bin'
 sbindir='${exec_prefix}/sbin'
 libexecdir='${exec_prefix}/libexec'
 datadir='${prefix}/share'
+docsdir='${prefix}/docs'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
@@ -102,6 +103,11 @@ do
   | --da=*)
     datadir="$ac_optarg" ;;
 
+  -docsdir | --docsdir | --docsdi | --docsd | --docs | --doc)
+    ac_prev=docsdir ;;
+  -docsdir=* | --docsdir=* | --docsdi=* | --docsd=* | --docs=* | --doc=*)
+    docsdir="$ac_optarg" ;;
+ 
   -disable-* | --disable-*)
     ac_feature=`echo $ac_option|sed -e 's/-*disable-//'`
     # Reject names that are not valid shell variable names.
@@ -159,6 +165,7 @@ Directory and file names:
   --libexecdir=DIR        program executables in DIR [EPREFIX/libexec]
   --datadir=DIR           read-only architecture-independent data in DIR
                           [PREFIX/share]
+  --docsdir=DIR           find the docs (conf. files) in DIR [PREFIX/docs]
   --sysconfdir=DIR        read-only single-machine data in DIR [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data in DIR
                           [PREFIX/com]
@@ -2158,6 +2165,7 @@ s%@bindir@%$bindir%g
 s%@sbindir@%$sbindir%g
 s%@libexecdir@%$libexecdir%g
 s%@datadir@%$datadir%g
+s%@docsdir@%$docsdir%g
 s%@sysconfdir@%$sysconfdir%g
 s%@sharedstatedir@%$sharedstatedir%g
 s%@localstatedir@%$localstatedir%g
