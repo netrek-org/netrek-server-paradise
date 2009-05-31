@@ -42,6 +42,8 @@ notice appear in all copies.
 #include "data.h"
 #include "shmem.h"
 
+extern void solicit(int force);
+
 #define TellERR(x)     fprintf(stderr, "!  %s: %s\n", argv0, x)
 #define TellERRf(x, y) { \
                          sprintf(buf, x, y); \
@@ -128,6 +130,7 @@ freemem(int sig)
     status->gameup = 0;		/* say goodbye to xsg et. al. 4/10/92 TC */
     status->count = 0;
     save_planets();
+    solicit(0);
     sleep(2);
     blast_shmem();
     exit(0);
@@ -477,6 +480,7 @@ move(void)
 	    }
 	}
 #endif
+	solicit(0);
     }
 
     if (status2->newgalaxy) {

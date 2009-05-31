@@ -1,6 +1,11 @@
 ########################################################################
 	------ Netrek II: Paradise - Server ChangeLog ------
 
+2009-05-30	Bill Balcerski <billbalcerski@gmail.com> 
+
+	* src/daemon/solicit.c (solicit): add UDP metaserver solicitation.
+	Patch by James Cameron  <quozl@us.netrek.org>.
+
 2007-08-27	Jeffrey Watts <watts@jayhawks.net>
 
 	* 3.1p0 release.
@@ -49,7 +54,7 @@
 
 
 ########################################################################
-	$Id: CHANGELOG,v 1.1 2007/08/27 20:03:23 watts Exp $
+	$Id: CHANGELOG,v 1.2 2009/05/31 00:45:57 modemhero Exp $
 
 
 ############################# Prior CHANGES ############################
