@@ -3,6 +3,17 @@
 
 2009-05-30	Bill Balcerski <billbalcerski@gmail.com> 
 
+	* Fixed default MOTD page length to match what clients assume.
+
+	* Moved configuration files from /etc to /docs.  Configuration
+	files are installed into /etc by Makefile.  Allows local changes
+	to configuration files without polluting CVS repository.
+
+	* Removed conf.balanced.  This file has been superceded by
+	conf.sysdef.
+
+	* Added conf.metaservers as the default metaservers file.
+
 	* src/daemon/solicit.c (solicit): add UDP metaserver solicitation.
 	Patch by James Cameron  <quozl@us.netrek.org>.
 
@@ -54,7 +65,7 @@
 
 
 ########################################################################
-	$Id: CHANGELOG,v 1.2 2009/05/31 00:45:57 modemhero Exp $
+	$Id: CHANGELOG,v 1.3 2009/05/31 20:56:57 modemhero Exp $
 
 
 ############################# Prior CHANGES ############################
