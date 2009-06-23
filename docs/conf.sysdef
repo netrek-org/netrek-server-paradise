@@ -104,6 +104,8 @@ WARPPREP_SUSPENDABLE=0	# If enabled, warpprep can be suspended
 WARPPREPSTYLE=3		# 0 - tractors have no effect 1 - tractors abort at end
 			# 2 - tractors prevent while on 3 - tractors abort
 			# 4 - tractors suspend warpprep
+WARPZONE=0 		# Radius of warp zone around planets, using galaxy
+			# unit of distance
 
 #
 # Ship and weapon options

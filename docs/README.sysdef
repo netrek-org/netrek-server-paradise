@@ -438,3 +438,7 @@ no loss of armies on the planet).  Likewise there is a 15% chance that
 the incoming army will be destroyed on a planet without any facilities.
 Code default is 0% for both (old-style Paradise); new sysdef defaults
 are 50% and 15%, respectively.
+
+WARPZONE=%d
+Radius of warp zone around planets, using galaxy unit of distance
+
