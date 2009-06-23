@@ -668,19 +668,11 @@ struct missile {
 
 enum thingy_type {
     TT_NONE,
-    TT_WARP_BEACON
 };
 
-struct warp_beacon {
-    int     owner;
-    int     x, y;
-};
 
 struct thingy {
     enum thingy_type type;
-    union {
-	struct warp_beacon wbeacon;
-    }       u;
 };
 
 

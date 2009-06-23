@@ -892,17 +892,6 @@ fill_thingy_info_packet(struct thingy *thing,
 	packet->shape = htons(SHP_BLANK);
 	packet->owner = 0;
 	break;
-    case TT_WARP_BEACON:
-	packet->war = 0;
-	if (thing->u.wbeacon.owner == me->p_team) {
-	    packet->shape = htons(SHP_WARP_BEACON);
-	    packet->owner = htons(thing->u.wbeacon.owner);
-	}
-	else {
-	    packet->shape = htons(SHP_BLANK);
-	    packet->owner = 0;
-	}
-	break;
     default:
 	printf("Unknown thingy type: %d\n", (int) thing->type);
 	break;
@@ -917,16 +906,6 @@ fill_thingy_packet(struct thingy *thing,
     case TT_NONE:
 	packet->dir = 0;
 	packet->x = packet->y = htonl(0);
-	break;
-    case TT_WARP_BEACON:
-	packet->dir = 0;
-	if (thing->u.wbeacon.owner == me->p_team) {
-	    packet->x = htonl(thing->u.wbeacon.x);
-	    packet->y = htonl(thing->u.wbeacon.y);
-	}
-	else {
-	    packet->x = packet->y = htonl(0);
-	}
 	break;
     default:
 	printf("Unknown thingy type: %d\n", (int) thing->type);
